@@ -21,9 +21,14 @@ library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
-filePaths = getGEOSuppFiles("GSE39940")
-GSE39940_Non_normalized <- read.delim("GSE39940/GSE39940_Sample_Probe_Profile_with_no_BG_subtracted_and_not_normalised_GEO_upload_CT_MLW_07_08_12.txt.gz", row.names = 1, header = TRUE)
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
+urls <- getGEOSuppFiles("GSE39940", fetch_files = FALSE);urls
+url_non_normalized <- as.character(urls$url[2])
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+GSE39940_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
+
 dim(GSE39940_Non_normalized)
 ```
 
@@ -102,7 +107,7 @@ GSE39940_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE39940_
 
 ```
 ```{r}
-saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
+saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/curatedTBData/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
 
 ```
 

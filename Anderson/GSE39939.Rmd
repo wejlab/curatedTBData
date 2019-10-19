@@ -21,9 +21,17 @@ library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
+<<<<<<< HEAD
+urls <- getGEOSuppFiles("GSE39939", fetch_files = FALSE);urls
+url_non_normalized <- as.character(urls$url[2])
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+GSE39939_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
+=======
 setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
 filePaths <- getGEOSuppFiles("GSE39939")
 GSE39939_Non_normalized <- read.delim("GSE39939/GSE39939_non-normalized_data.txt.gz", row.names = 1, header = TRUE)
+>>>>>>> eddd8a8f44e55c2edc57d76b0030ee7d726335ec
 dim(GSE39939_Non_normalized)
 ```
 
