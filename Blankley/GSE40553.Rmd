@@ -1,7 +1,7 @@
 ---
 title: "GSE40553"
 author: "Xutao Wang"
-date: "10/18/2019"
+date: "10/15/2019"
 output: html_document
 ---
 
@@ -32,7 +32,6 @@ download.file(url_non_normalized_UK,temp_UK)
 
 GSE40553_Non_normalized_SA <- read.delim(gzfile(temp_SA),row.names = 1, header = TRUE)
 GSE40553_Non_normalized_UK <- read.delim(gzfile(temp_UK),row.names = 1, header = TRUE)
-
 ```
 
 ```{r}
@@ -121,8 +120,8 @@ colnames(characteristic_data_frame) <- c('TBStatus','TimePoint','Tissue','Geogra
 row.names(characteristic_data_frame) <- colnames(GSE40553_Non_normalized_counts)
 
 GSE40553_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE40553_Non_normalized_counts= as.matrix(GSE40553_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE40553_experimentData)); GSE40553_summarizedExperiemnt
-
 ```
+
 ```{r}
 saveRDS(GSE40553_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE40553/GSE40553_summarizedExperiemnt.RDS')
 ```
