@@ -1,0 +1,118 @@
+---
+title: "GSE39940"
+author: "Xutao Wang"
+date: "9/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Non_normalized data not available from GEO
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+```
+
+## Read in Non-normalized data
+```{r, cache = TRUE}
+setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
+filePaths = getGEOSuppFiles("GSE39940")
+GSE39940_Non_normalized <- read.delim("GSE39940/GSE39940_Sample_Probe_Profile_with_no_BG_subtracted_and_not_normalised_GEO_upload_CT_MLW_07_08_12.txt.gz", row.names = 1, header = TRUE)
+dim(GSE39940_Non_normalized)
+```
+
+```{r}
+# Remove P.val
+GSE39940_Non_pvalue <- GSE39940_Non_normalized[,-grep('.Pval',colnames(GSE39940_Non_normalized))]
+dim(GSE39940_Non_pvalue)
+```
+```{r get corresponding sample ID , cache=TRUE}
+# Obtain raw data information from GEO
+gse <- getGEO("GSE39940", GSEMatrix =  F)
+description_id_raw <- sapply(1:length(names(GSMList(gse))), 
+                             function(x) GSMList(gse)[[x]]@header$characteristics_ch1[4])
+# Demo: Convert 'barcode: 6247215037_A' to 6247215037_A
+description_id <- sapply(1:length(description_id_raw), 
+                         function(x) gsub('(.*?): ', "", description_id_raw[x]))
+ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
+head(ID_table)
+```
+
+```{r mapping DescriptionID to sampleID}
+# Demo: convert X6116725094_A to 6116725094_A, should use \\. when mathcing . 
+colnames(GSE39940_Non_pvalue) <- sapply(1:ncol(GSE39940_Non_pvalue), 
+                             function(x) gsub(".*X|\\..*", "", colnames(GSE39940_Non_pvalue)[x]))
+indx <- sapply(1:length(ID_table$DescriptionID), 
+              function(x) which(ID_table$DescriptionID %in% colnames(GSE39940_Non_pvalue)[x]))
+colnames(GSE39940_Non_pvalue) <- ID_table$SampleID[indx]
+GSE39940_Non_normalized_counts <- GSE39940_Non_pvalue
+colnames(GSE39940_Non_normalized_counts)[1:10]
+```
+
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation
+PROBES <- row.names(GSE39940_Non_pvalue) # Should subsitute to Normalized file???
+OUT <- AnnotationDbi::select(illuminaHumanv4.db, PROBES, "SYMBOL")
+OUT[is.na(OUT)] <- 'Unmapped'
+
+# Map ProbeID to Gene Symbol 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
+  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+
+GSE39940_Non_pvalue$ID_REF <- row.names(GSE39940_Non_pvalue)
+GSE39940_final <- OUT_collapse %>% left_join(GSE39940_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+
+arrange(GSE39940_final, desc(times))
+```
+
+```{r create SummarizedExperiment}
+# Create Row data annotation
+row_data <- DataFrame(SYMBOL=GSE39940_final$SYMBOL)
+
+# Create Metadata
+GSE39940_experimentData <- new('MIAME',
+                      name="Victoria Wright",
+                      lab="Wright Fleming Institute",
+                      contact="v.wright@imperial.ac.uk",
+                      title="Diagnosis of childhood tuberculosis and host RNA expression in Africa",
+                      abstract="An example ExpressionSet",
+                      url="10.1056/NEJMoa1303657",
+                      pubMedIds = '24785206',
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+## Demo convert 'geographical region: Kenya' to 'Kenya'
+characteristic_data_frame <- gsub('(.*?): ','',characteristic_table) %>% as_tibble() %>% select(-V4) %>% DataFrame()
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalRegion')
+row.names(characteristic_data_frame) <- colnames(GSE39940_Non_normalized_counts)
+
+GSE39940_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE39940_Non_normalized_counts= as.matrix(GSE39940_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE39940_experimentData)); GSE39940_summarizedExperiemnt
+
+```
+```{r}
+saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
+
+```
+
+
+
+
+
+
+
+
+
+
+

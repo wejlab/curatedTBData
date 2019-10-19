@@ -1,0 +1,28 @@
+---
+title: "GSE28623"
+author: "Xutao Wang"
+date: "10/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(affy)
+library(dplyr)
+library(AgiMicroRna)
+library(limma)
+```
+
+```{r Read in AgiMicroRna, cache = TRUE}
+setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+getwd()
+geo_access <- "GSE28623"
+filePaths = getGEOSuppFiles(geo_access)
+untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
+```

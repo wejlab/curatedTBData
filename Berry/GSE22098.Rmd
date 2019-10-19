@@ -1,0 +1,31 @@
+---
+title: "GSE22098"
+author: "Xutao Wang"
+date: "10/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
+```
+
+## Read in Non-normalized data
+```{r, cache = TRUE}
+setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
+getwd()
+filePaths = getGEOSuppFiles("GSE22098")
+untar('GSE22098/GSE22098_RAW.tar', exdir="GSE22098/GSE22098_Raw")
+files <- list.files("GSE22098/GSE22098_Raw", pattern = "txt.*");files
+GSE22098_Non_normalized_list <- lapply(files, function(x) read.delim(paste0('GSE22098/GSE22098_Raw/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
+GSE22098_Non_normalized <- do.call(cbind,GSE22098_Non_normalized_list)
+dim(GSE22098_Non_normalized)
+```
