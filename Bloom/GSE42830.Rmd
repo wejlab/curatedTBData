@@ -1,0 +1,93 @@
+---
+title: "GSE42830"
+author: "Xutao Wang"
+date: "10/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+library(GEOmetadb)
+```
+
+```{r}
+urls <- getGEOSuppFiles('GSE42830', fetch_files = FALSE);urls
+url_non_normalized <- as.character(urls$url[2])
+
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+GSE42830_Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE) %>% dplyr::select_if(~sum(!is.na(.)) > 0)
+dim(GSE42830_Non_normalized)
+```
+
+
+```{r}
+# Renaming column names, remove .pVal
+GSE42830_Non_pvalue <- GSE42830_Non_normalized[,-grep('.Pval',colnames(GSE42830_Non_normalized))]
+GSE42830_Non_normalized_counts <- GSE42830_Non_normalized[,-grep('.Pval',colnames(GSE42830_Non_normalized))]
+dim(GSE42830_Non_pvalue)
+
+gse <- getGEO("GSE42830", GSEMatrix =  F)
+colnames(GSE42830_Non_pvalue) <- names(GSMList(gse))
+colnames(GSE42830_Non_normalized_counts) <- names(GSMList(gse))
+colnames(GSE42830_Non_normalized_counts)
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation
+PROBES <- row.names(GSE42830_Non_pvalue) # Should subsitute to Normalized file???
+OUT <- AnnotationDbi::select(illuminaHumanv4.db, PROBES, "SYMBOL")
+OUT[is.na(OUT)] <- 'Unmapped'
+
+# Map ProbeID to Gene Symbol 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
+  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+
+GSE42830_Non_pvalue$ID_REF <- row.names(GSE42830_Non_pvalue)
+GSE42830_final <- OUT_collapse %>% left_join(GSE42830_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+
+arrange(GSE42830_final, desc(times))
+```
+
+```{r create SummarizedExperiment}
+# Create Row data annotation
+row_data <- DataFrame(SYMBOL=GSE42830_final$SYMBOL)
+
+# Create Metadata
+GSE42830_experimentData <- new('MIAME',
+                      name="Chole Bloom",
+                      lab="MRC National Institute for Medical Research",
+                      contact="cbloom@nimr.mrc.ac.uk",
+                      title="Transcriptional blood signatures distinguish pulmonary tuberculosis, pulmonary sarcoidosis, pneumonias and lung cancers.",
+                      abstract="An example ExpressionSet",
+                      url="10.1371/journal.pone.0070630",
+                      pubMedIds = '23940611',
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)); characteristic_table
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame();characteristic_data_frame
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('Gender','Ethnicity','TBStatus','Tissue')
+row.names(characteristic_data_frame) <- colnames(GSE42830_Non_normalized_counts)
+
+GSE42830_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE42830_Non_normalized_counts= as.matrix(GSE42830_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE42830_experimentData)); GSE42830_summarizedExperiemnt
+```
+
+```{r}
+saveRDS(GSE42830_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Bloom/GSE42830/GSE42830_summarizedExperiemnt.RDS')
+```
