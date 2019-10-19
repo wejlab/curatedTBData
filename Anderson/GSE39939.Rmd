@@ -100,10 +100,10 @@ colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalReg
 row.names(characteristic_data_frame) <- colnames(GSE39939_Non_normalized_counts)
 
 GSE39939_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE39939_Non_normalized_counts= as.matrix(GSE39939_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE39939_experimentData)); GSE39939_summarizedExperiemnt
-
 ```
+
 ```{r}
-saveRDS(GSE39939_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
+saveRDS(GSE39939_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/curatedTBData/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
 ```
 
 
