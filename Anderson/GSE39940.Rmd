@@ -28,6 +28,7 @@ temp <- tempfile()
 download.file(url_non_normalized,temp)
 
 GSE39940_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
+
 dim(GSE39940_Non_normalized)
 ```
 
