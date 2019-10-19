@@ -1,0 +1,189 @@
+---
+title: "GSE34608"
+author: "Xutao Wang"
+date: "10/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_knit$set(root.dir = normalizePath('~/Desktop/test/'))
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(affy)
+library(dplyr)
+library(AgiMicroRna)
+library(limma)
+```
+
+```{r Read in AgiMicroRna, cache = TRUE}
+setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+getwd()
+geo_access <- "GSE34608"
+filePaths = getGEOSuppFiles(geo_access)
+untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
+```
+
+```{r Create Target file for AgiMicroRna microRNA, include=FALSE}
+# Create Target file for AgiMicroRna
+## Sarcoidosis--1 for micro,  Tuberculosis--2 for micro, control -- 3 for micro 
+# Platform: Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)
+Treatment <- c(rep('Sarcoidosis_micro',8),
+               rep('Tuberculosis_micro',8),
+               rep('Control_micro',8))
+Treatment_RNA <- c(rep('Sarcoidosis',18),
+               rep('Tuberculosis',8),
+               rep('Control',18))
+
+GErep <- c(rep(1,8),
+              rep(2,8),
+               rep(3,8))
+
+GErep_RNA <- c(rep(1,18),
+              rep(2,8),
+               rep(3,18))
+target_micro <- data.frame(FileName=list.files(paste0(geo_access,'/',geo_access,'_Raw'),pattern = "txt.gz.*")[1:24],Treatment=Treatment,GErep=GErep)
+write.table(target_micro,paste0(geo_access,'/',geo_access,'_Raw','/target_micro.txt'),sep='\t')
+
+target_RNA <-  data.frame(FileName=list.files(paste0(geo_access,'/',geo_access,'_Raw'),pattern = "txt.gz.*")[25:68],Treatment=Treatment_RNA,GErep=GErep_RNA)
+write.table(target_RNA,paste0(geo_access,'/',geo_access,'_Raw','/target_RNA.txt'),sep='\t')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r read in AgiMicroRna,cache=TRUE}
+getwd()
+target_micro <- read.delim('target_micro.txt')
+
+GSE34608_micro <- readMicroRnaAFE(target_micro,verbose=TRUE)
+
+# Get gMeanSignal: Raw signal for every probe
+GSE34608_non_normalized_micro <- GSE34608_micro$meanS
+
+# Assign rownames and colnames to the raw signal, assign micro RNA name to the row
+row.names(GSE34608_non_normalized_micro) <- GSE34608_micro$genes$GeneName
+files <- list.files(paste0(geo_access,'/',geo_access,'_Raw'),pattern = "txt.gz.*")
+files_names <- gsub('_.*','',files)
+colnames(GSE34608_non_normalized_micro) <- files_names[1:24]
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+BiocManager::install("mirbase.db")
+library(mirbase.db)
+# MicroRNA annotation 
+# Need Further discussion
+# RowData is empty for now
+```
+
+```{r create Column Data, cache=TRUE}
+gse <- getGEO(geo_access, GSEMatrix =  F)
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+colnames(characteristic_data_frame) <- c('Gender','Tissue','TBStatus','Subject')
+row.names(characteristic_data_frame) <- files_names
+
+# Split MicroRNA & RNA
+characteristic_data_frame_micro <- characteristic_data_frame[1:24,]
+characteristic_data_frame_RNA <- characteristic_data_frame[25:68,]
+head(characteristic_data_frame_micro)
+```
+
+```{r create SummarizedExperimentObject for MicroRNA, cache=TRUE}
+# Create Metadata
+GSE34608_experimentData_micro <- new('MIAME',
+                      name="Jeroen Maertzdorf",
+                      lab="MPIIB",
+                      contact=" maertzdorf@mpiib-berlin.mpg.de",
+                      title="Common patterns and disease-related signatures in tuberculosis and sarcoidosis.",
+                      abstract="An example SummarizedExperimentObject",
+                      url="10.1073/pnas.1121072109",
+                      pubMedIds = '22547807',
+                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
+
+GSE34608_summarizedExperiemnt_micro <- SummarizedExperiment(assays = list(GSE34608_non_normalized_micro= as.matrix(GSE34608_non_normalized_micro)), colData = characteristic_data_frame_micro, metadata = list(GSE34608_experimentData_micro)); GSE34608_summarizedExperiemnt_micro
+
+```
+
+```{r}
+saveRDS(GSE34608_summarizedExperiemnt_micro, ascii=FALSE, file=paste0(geo_access,'/GSE34608_summarizedExperiemnt_micro.RDS')
+)
+```
+
+## Create Summarized Experiment Object for RNA
+
+```{r setup,include=FALSE}
+knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+
+```
+
+
+```{r}
+# Create Target file for Agi whole RNA
+## Sarcoidosis--1 for micro,  Tuberculosis--2 for micro, control -- 3 for micro 
+# Platform: Agilent-014850 Whole Human Genome Microarray 4x44K G4112F (Probe Name version)
+#Load limma
+library(limma)
+targetinfo <- read.delim("target_RNA.txt")
+#Read files
+# One color??
+GSE34608_RNA <- read.maimages(targetinfo,source="agilent",green.only = TRUE)
+GSE34608_raw <- GSE34608_RNA$E
+row.names(GSE34608_raw) <- GSE34608_RNA$genes$ProbeName
+colnames(GSE34608_raw) <- files_names[25:68]
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GPL6480-9577.txt", comment.char="#")
+
+x=data.frame(ProbeName=GSE34608_RNA$genes$ProbeName)
+indx <- sapply(GSE34608_RNA$genes$ProbeName, function(x) which(Agi_annotate$ID %in% x))
+
+# Creare Row Data
+row_data <- DataFrame(Agi_annotate[indx,c('ID','GENE_SYMBOL')])
+row.names(row_data) <- GSE34608_RNA$genes$ProbeName
+```
+
+```{r create SummarizedExperimentObject, cache=TRUE}
+GSE34608_experimentData_RNA <- new('MIAME',
+                      name="Jeroen Maertzdorf",
+                      lab="MPIIB",
+                      contact=" maertzdorf@mpiib-berlin.mpg.de",
+                      title="Common patterns and disease-related signatures in tuberculosis and sarcoidosis.",
+                      abstract="An example SummarizedExperimentObject",
+                      url="10.1073/pnas.1121072109",
+                      pubMedIds = '22547807',
+                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
+
+GSE34608_summarizedExperiemnt_RNA <- SummarizedExperiment(assays = list(GSE34608_non_normalized_RNA= as.matrix(GSE34608_raw)), colData = characteristic_data_frame_RNA, rowData = row_data, metadata = list(GSE34608_experimentData_RNA)); GSE34608_summarizedExperiemnt_RNA
+```
+```{r}
+saveRDS(GSE34608_summarizedExperiemnt_RNA, ascii=FALSE, file=paste0(geo_access,'/GSE34608_summarizedExperiemnt_RNA.RDS')
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
