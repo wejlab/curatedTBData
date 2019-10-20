@@ -20,17 +20,18 @@ library(hgu133plus2.db) # Affymetrix Human Genome U133 Plus 2.0 Array
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
-getwd()
-geo_access <- "GSE31348"
-#filePaths = getGEOSuppFiles(geo_access)
-#untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
-## Cannot untar the SuppFiles, manually Download from GEO
-celFiles <- list.celfiles(path = paste0(geo_access,'/',geo_access,'_Raw'), full.names=TRUE)
+urls <-  getGEOSuppFiles("GSE31348",fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
+
+celFiles <- list.celfiles(path = tempd, full.names=TRUE)
 GSE31348_data.affy <- ReadAffy(filenames = celFiles)
+unlink(tempd)
 
 # Conduct RMA
-#GSE54992_Non_normalized <- GSE54992_data.affy@assayData$exprs
 GSE31348_normalized_rma <- exprs(rma(GSE31348_data.affy)) # A matrix
 
 # Convert GSM1327554.CEL.gz to GSM1327554

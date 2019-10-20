@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-```{r libraries, message = FALSE, cache=TRUE}
+```{r libraries, message = FALSE}
 library(GEOquery)
 library(preprocessCore)
 library(SummarizedExperiment)
@@ -21,17 +21,15 @@ library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-<<<<<<< HEAD
-urls <- getGEOSuppFiles("GSE39939", fetch_files = FALSE);urls
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
+urls <- getGEOSuppFiles('GSE39939', fetch_files = FALSE)
 url_non_normalized <- as.character(urls$url[2])
+
 temp <- tempfile()
 download.file(url_non_normalized,temp)
-GSE39939_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
-=======
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
-filePaths <- getGEOSuppFiles("GSE39939")
-GSE39939_Non_normalized <- read.delim("GSE39939/GSE39939_non-normalized_data.txt.gz", row.names = 1, header = TRUE)
->>>>>>> eddd8a8f44e55c2edc57d76b0030ee7d726335ec
+
+GSE39939_Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE)
+
 dim(GSE39939_Non_normalized)
 ```
 
@@ -76,7 +74,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE39939_Non_pvalue$ID_REF <- row.names(GSE39939_Non_pvalue)
-GSE39939_final <- OUT_collapse %>% left_join(GSE39939_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE39939_final <- GSE39939_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
 arrange(GSE39939_final, desc(times))
 ```
@@ -108,10 +106,10 @@ colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalReg
 row.names(characteristic_data_frame) <- colnames(GSE39939_Non_normalized_counts)
 
 GSE39939_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE39939_Non_normalized_counts= as.matrix(GSE39939_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE39939_experimentData)); GSE39939_summarizedExperiemnt
-```
 
+```
 ```{r}
-saveRDS(GSE39939_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/curatedTBData/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
+saveRDS(GSE39939_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
 ```
 
 

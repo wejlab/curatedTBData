@@ -20,14 +20,19 @@ library(hgu133plus2.db) # Affymetrix Human Genome U133 Plus 2.0 Array
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
-getwd()
-geo_access <- "GSE36238"
-filePaths = getGEOSuppFiles(geo_access)
-paste0(geo_access,'/',geo_access,'_RAW.tar')
-untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
-celFiles <- list.celfiles(path = paste0(geo_access,'/',geo_access,'_Raw'), full.names=TRUE)
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+#getwd()
+urls <-  getGEOSuppFiles("GSE36238",fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
+
+#untar('GSE36238/GSE36238_RAW.tar', exdir="GSE36238/GSE36238_Raw")
+celFiles <- list.celfiles(path = tempd, full.names=TRUE)
 GSE36238_data.affy <- ReadAffy(filenames = celFiles)
+unlink(tempd)
 
 # Conduct RMA
 #GSE54992_Non_normalized <- GSE54992_data.affy@assayData$exprs

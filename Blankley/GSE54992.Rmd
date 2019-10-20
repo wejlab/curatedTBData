@@ -20,12 +20,19 @@ library(hgu133plus2.db) # Affymetrix Human Genome U133 Plus 2.0 Array
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
-getwd()
-filePaths = getGEOSuppFiles("GSE54992")
-untar('GSE54992/GSE54992_RAW.tar', exdir="GSE54992/GSE54992_Raw")
-celFiles <- list.celfiles(path = "GSE54992/GSE54992_Raw", full.names=TRUE)
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+#getwd()
+urls <-  getGEOSuppFiles("GSE54992",fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
+
+#untar('GSE54992/GSE54992_RAW.tar', exdir="GSE54992/GSE54992_Raw")
+celFiles <- list.celfiles(path = tempd, full.names=TRUE)
 GSE54992_data.affy <- ReadAffy(filenames = celFiles)
+unlink(tempd)
 
 # Conduct RMA
 #GSE54992_Non_normalized <- GSE54992_data.affy@assayData$exprs
@@ -49,7 +56,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE54992_normalized_rma <- GSE54992_normalized_rma %>% as_tibble() %>% mutate(ID_REF=row.names(GSE54992_normalized_rma))
-GSE54992_final <- OUT_collapse %>% left_join(GSE54992_normalized_rma, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE54992_final <- GSE54992_normalized_rma %>% left_join(OUT_collapse, by=c('ID_REF'='PROBEID')) %>% as_tibble()
 
 arrange(GSE54992_final, desc(times))
 ```
@@ -90,7 +97,7 @@ GSE54992_experimentData <- new('MIAME',
                       pubMedIds = '24647646',
                       other=list(Platform = 'Affymetrix Human Genome U133 Plus 2.0 Array'))
 
-GSE54992_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE54992_normalized_counts= as.matrix(GSE54992_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE54992_experimentData)); GSE54992_summarizedExperiemnt
+GSE54992_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE54992_normalized_counts= as.matrix(GSE54992_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE54992_experimentData)); GSE54992_summarizedExperiemnt
 
 ```
 
