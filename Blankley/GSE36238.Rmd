@@ -1,0 +1,107 @@
+---
+title: "GSE36238"
+author: "Xutao Wang"
+date: "10/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(affy)
+library(dplyr)
+library(hgu133plus2.db) # Affymetrix Human Genome U133 Plus 2.0 Array
+```
+
+## Read in Non-normalized data
+```{r, cache = TRUE}
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+#getwd()
+urls <-  getGEOSuppFiles("GSE36238",fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
+
+#untar('GSE36238/GSE36238_RAW.tar', exdir="GSE36238/GSE36238_Raw")
+celFiles <- list.celfiles(path = tempd, full.names=TRUE)
+GSE36238_data.affy <- ReadAffy(filenames = celFiles)
+unlink(tempd)
+
+# Conduct RMA
+#GSE54992_Non_normalized <- GSE54992_data.affy@assayData$exprs
+GSE36238_normalized_rma <- exprs(rma(GSE36238_data.affy)) # A matrix
+
+# Convert GSM1327554.CEL.gz to GSM1327554
+colnames(GSE36238_normalized_rma) <- sapply(1:ncol(GSE36238_normalized_rma), 
+                                          function(x) gsub('\\..*','',colnames(GSE36238_normalized_rma)[x]))
+GSE36238_normalized_counts <- GSE36238_normalized_rma
+GSE36238_normalized_counts[1:5,1:5]
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation
+PROBES <- row.names(GSE36238_normalized_rma) # Should subsitute to Normalized file???
+OUT <- AnnotationDbi::select(hgu133plus2.db, PROBES, "SYMBOL")
+OUT[is.na(OUT)] <- 'Unmapped'
+
+# Map ProbeID to Gene Symbol 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
+  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+
+GSE36238_normalized_rma <- GSE36238_normalized_rma %>% as_tibble() %>% mutate(ID_REF=row.names(GSE36238_normalized_rma))
+GSE36238_final <- OUT_collapse %>% left_join(GSE36238_normalized_rma, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+
+arrange(GSE36238_final, desc(times))
+```
+
+```{r create column data}
+gse <- getGEO(geo_access, GSEMatrix =  F)
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+# Get string between two words
+#characteristic_data_frame$TimePostTreatment <- gsub('.*for (.+).*','\\1',characteristic_data_frame$V1)
+#characteristic_data_frame$TimePostTreatment[-grep('month',characteristic_data_frame$TimePostTreatment)] <-'n.a.'
+
+#characteristic_data_frame$TBStatus <- plyr::revalue(characteristic_data_frame$V1,c('tuberculosis'='TB','TB patient after anti-tuberculosis treatment for 3 months'='TB_treatment','TB patient after anti-tuberculosis treatment for 6 months'='TB_treatment','latent tuberculosis infection'='latent','healthy donor'='control'))
+#characteristic_data_frame$Tissue <- characteristic_data_frame$V2
+#characteristic_data_frame <- characteristic_data_frame[,-c(1,2)]
+colnames(characteristic_data_frame) <- c('TimePoint','Tissue','Pateient_id','SampleTime')
+row.names(characteristic_data_frame) <- colnames(GSE36238_normalized_counts)
+head(characteristic_data_frame)
+```
+
+```{r Create RowData MetaData and summarized experiment}
+# Create Row data annotation
+row_data <- DataFrame(SYMBOL=GSE36238_final$SYMBOL)
+
+# Create Metadata
+GSE36238_experimentData <- new('MIAME',
+                      name="Jackie Cliff",
+                      lab="London School of Hygiene & Tropical Medicine",
+                      contact="jackie.cliff@lshtm.ac.uk",
+                      title="Distinct phases of blood gene expression pattern through tuberculosis treatment reflect modulation of the humoral immune response.",
+                      abstract="An example SummarizedExperimentObject",
+                      url="10.1093/infdis/jis499",
+                      pubMedIds = '22872737',
+                      other=list(Platform = 'Affymetrix Human Genome U133 Plus 2.0 Array'))
+
+GSE36238_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE36238_normalized_counts= as.matrix(GSE36238_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE36238_experimentData)); GSE36238_summarizedExperiemnt
+
+```
+
+```{r}
+saveRDS(GSE36238_summarizedExperiemnt, ascii=FALSE, file='GSE36238/GSE36238_summarizedExperiemnt.RDS')
+```
+

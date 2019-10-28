@@ -1,0 +1,129 @@
+---
+title: "GSE40553"
+author: "Xutao Wang"
+date: "10/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+library(GEOmetadb)
+```
+
+```{r}
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+urls <- getGEOSuppFiles('GSE40553', fetch_files = FALSE)
+url_non_normalized_SA <- as.character(urls$url[4])
+url_non_normalized_UK <- as.character(urls$url[5])
+
+temp_SA <- tempfile()
+download.file(url_non_normalized_SA,temp_SA)
+temp_UK <- tempfile()
+download.file(url_non_normalized_UK,temp_UK)
+
+GSE40553_Non_normalized_SA <- read.delim(gzfile(temp_SA),row.names = 1, header = TRUE)
+GSE40553_Non_normalized_UK <- read.delim(gzfile(temp_UK),row.names = 1, header = TRUE)
+```
+
+```{r}
+# Renaming colnames
+GSE40553_Non_pvalue_SA <- GSE40553_Non_normalized_SA[,-grep('.Pval',colnames(GSE40553_Non_normalized_SA))]
+dim(GSE40553_Non_pvalue_SA)
+GSE40553_Non_pvalue_UK <- GSE40553_Non_normalized_UK[,-grep('.Pval',colnames(GSE40553_Non_normalized_UK))]
+dim(GSE40553_Non_pvalue_UK)
+```
+
+
+```{r}
+# Obtain raw data information from GEO
+gse <- getGEO("GSE40553", GSEMatrix =  F)
+description_id_raw <- sapply(1:length(names(GSMList(gse))), 
+                             function(x) GSMList(gse)[[x]]@header$title)
+description_id_UK_ori <- description_id_raw[1:ncol(GSE40553_Non_pvalue_UK)]
+description_id_UK <- gsub('-','.',description_id_UK_ori)
+# Get character between []
+decription_id_SA_ori <- gsub(".*[[]([^]]+)[]].*", "\\1",description_id_raw[(ncol(GSE40553_Non_pvalue_UK)+1):length(description_id_raw)])
+decription_id_SA <- gsub('/','.',decription_id_SA_ori)
+
+# Demo: Convert 6116725094_J.Detection Pval to 6116725094_J
+description_id <- c(description_id_UK,decription_id_SA)
+
+ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
+head(ID_table)
+```
+
+```{r mapping DescriptionID to sampleID , cache=TRUE}
+# Merge two datasets
+GSE40553_Non_pvalue_ori <- merge(GSE40553_Non_pvalue_SA, GSE40553_Non_pvalue_UK, by='row.names', all=TRUE) 
+row.names(GSE40553_Non_pvalue_ori) <- GSE40553_Non_pvalue_ori$Row.names
+GSE40553_Non_pvalue <- GSE40553_Non_pvalue_ori %>% dplyr::select(-c('Row.names'))
+
+# Renaming column names. remove X
+colnames(GSE40553_Non_pvalue) <- gsub('X','',colnames(GSE40553_Non_pvalue))
+  
+indx <- sapply(1:length(ID_table$DescriptionID), 
+              function(x) which(ID_table$DescriptionID %in% colnames(GSE40553_Non_pvalue)[x]))
+colnames(GSE40553_Non_pvalue) <- ID_table$SampleID[indx]
+GSE40553_Non_normalized_counts <- GSE40553_Non_pvalue
+colnames(GSE40553_Non_normalized_counts)[1:10]
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation
+PROBES <- row.names(GSE40553_Non_pvalue) # Should subsitute to Normalized file???
+OUT <- AnnotationDbi::select(illuminaHumanv4.db, PROBES, "SYMBOL")
+OUT[is.na(OUT)] <- 'Unmapped'
+
+# Map ProbeID to Gene Symbol 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
+  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+
+GSE40553_Non_pvalue$ID_REF <- row.names(GSE40553_Non_pvalue)
+GSE40553_final <- GSE40553_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+
+arrange(GSE40553_final, desc(times))
+```
+
+```{r create SummarizedExperiment}
+# Create Row data annotation
+row_data <- DataFrame(SYMBOL=GSE40553_final$SYMBOL)
+
+# Create Metadata
+GSE40553_experimentData <- new('MIAME',
+                      name="Chole Bloom",
+                      lab="MRC National Institute for Medical Research",
+                      contact="cbloom@nimr.mrc.ac.uk",
+                      title="Detectable changes in the blood transcriptome are present after two weeks of antituberculosis therapy.",
+                      abstract="An example ExpressionSet",
+                      url="10.1371/journal.pone.0046191",
+                      pubMedIds = '23056259',
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('TBStatus','TimePoint','Tissue','GeographicalRegion')
+row.names(characteristic_data_frame) <- colnames(GSE40553_Non_normalized_counts)
+
+GSE40553_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE40553_Non_normalized_counts= as.matrix(GSE40553_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE40553_experimentData)); GSE40553_summarizedExperiemnt
+```
+
+```{r}
+saveRDS(GSE40553_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE40553/GSE40553_summarizedExperiemnt.RDS')
+```
+
+
