@@ -107,9 +107,13 @@ row.names(characteristic_data_frame) <- colnames(GSE39940_Non_normalized_counts)
 GSE39940_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE39940_Non_normalized_counts= as.matrix(GSE39940_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE39940_experimentData)); GSE39940_summarizedExperiemnt
 
 ```
+
 ```{r}
 saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
 
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```
 
 
