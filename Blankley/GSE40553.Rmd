@@ -88,7 +88,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE40553_Non_pvalue$ID_REF <- row.names(GSE40553_Non_pvalue)
-GSE40553_final <- OUT_collapse %>% left_join(GSE40553_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE40553_final <- GSE40553_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
 arrange(GSE40553_final, desc(times))
 ```
@@ -125,3 +125,5 @@ GSE40553_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE40553_Non
 ```{r}
 saveRDS(GSE40553_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE40553/GSE40553_summarizedExperiemnt.RDS')
 ```
+
+

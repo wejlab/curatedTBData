@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 #### Non_normalized data not available from GEO
-```{r libraries, message = FALSE, cache=TRUE}
+```{r libraries, message = FALSE}
 library(GEOquery)
 library(preprocessCore)
 library(SummarizedExperiment)
@@ -22,12 +22,13 @@ library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
 #setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
-urls <- getGEOSuppFiles("GSE39940", fetch_files = FALSE);urls
+urls <- getGEOSuppFiles('GSE39940', fetch_files = FALSE)
 url_non_normalized <- as.character(urls$url[2])
+
 temp <- tempfile()
 download.file(url_non_normalized,temp)
 
-GSE39940_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
+GSE39940_Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE)
 
 dim(GSE39940_Non_normalized)
 ```
@@ -72,7 +73,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE39940_Non_pvalue$ID_REF <- row.names(GSE39940_Non_pvalue)
-GSE39940_final <- OUT_collapse %>% left_join(GSE39940_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE39940_final <- GSE39940_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
 arrange(GSE39940_final, desc(times))
 ```
@@ -106,9 +107,13 @@ row.names(characteristic_data_frame) <- colnames(GSE39940_Non_normalized_counts)
 GSE39940_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE39940_Non_normalized_counts= as.matrix(GSE39940_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE39940_experimentData)); GSE39940_summarizedExperiemnt
 
 ```
-```{r}
-saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/curatedTBData/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
 
+```{r}
+saveRDS(GSE39940_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```
 
 

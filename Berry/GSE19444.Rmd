@@ -22,20 +22,30 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
 getwd()
 
-filePaths = getGEOSuppFiles("GSE19444")
-untar('GSE19444/GSE19444_RAW.tar', exdir="GSE19444/GSE19444_Raw")
-files <- list.files("GSE19444/GSE19444_Raw", pattern = "txt.*");files
+urls = getGEOSuppFiles("GSE19444", fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
 
-# Special handling for GSM484599_LTB_LON_test009.txt.gz
+
+#untar('GSE19444/GSE19444_RAW.tar', exdir="GSE19444/GSE19444_Raw")
+files <- list.files(tempd, pattern = "txt.*");files
+
+## Special handling for GSM484599_LTB_LON_test009.txt.gz
 GSE19444_Non_normalized_list <-lapply(files[-which(files=='GSM484599_LTB_LON_test009.txt.gz')],
-                                      function(x) read.delim(paste0('GSE19444/GSE19444_Raw/',x),  row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
+                                      function(x) read.delim(paste0(tempd,'/',x),  row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
 
 GSE19444_Non_normalized_temp <- do.call(cbind,GSE19444_Non_normalized_list)
 
-GSM484599 <- na.omit(read.delim("GSE19444/GSE19444_Raw/GSM484599_LTB_LON_test009.txt.gz"))
+GSM484599 <- na.omit(read.delim(paste0(tempd,'/GSM484599_LTB_LON_test009.txt.gz')))
 colnames(GSM484599) <- c('ID_REF','GSM484599','GSM484599.Pval')
 GSE19444_Non_normalized <- cbind(GSE19444_Non_normalized_temp,GSM484599[,-1])
 dim(GSE19444_Non_normalized)
+
+unlink(tempd)
+unlink(temp)
 ```
 
 ```{r}
@@ -56,7 +66,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE19444_Non_pvalue$ID_REF <- row.names(GSE19444_Non_pvalue)
-GSE19444_final <- OUT_collapse %>% left_join(GSE19444_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE19444_final <- GSE19444_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF' = "PROBEID")) %>% as_tibble()
 
 arrange(GSE19444_final, desc(times))
 ```

@@ -20,18 +20,24 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
-getwd()
-filePaths = getGEOSuppFiles("GSE19442")
-untar('GSE19442/GSE19442_RAW.tar', exdir="GSE19442/GSE19442_Raw")
-files <- list.files("GSE19442/GSE19442_Raw", pattern = "txt.*");files
-GSE19442_Non_normalized_list <- lapply(files, function(x) read.delim(paste0('GSE19442/GSE19442_Raw/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
+#getwd()
+urls <- getGEOSuppFiles("GSE19442", fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+untar(temp,exdir = tempd)
+#untar('GSE19442/GSE19442_RAW.tar', exdir="GSE19442/GSE19442_Raw")
+files <- list.files(tempd, pattern = "txt.*");files
+GSE19442_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
 GSE19442_Non_normalized <- do.call(cbind,GSE19442_Non_normalized_list)
+
 dim(GSE19442_Non_normalized)
 ```
 
 ```{r}
-# Remove P-values
+# Remove .Pval
 GSE19442_Non_pvalue <- GSE19442_Non_normalized[,-grep('.Pval',colnames(GSE19442_Non_normalized))]
 GSE19442_Non_normalized_counts <- GSE19442_Non_pvalue
 dim(GSE19442_Non_pvalue)
@@ -48,9 +54,10 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE19442_Non_pvalue$ID_REF <- row.names(GSE19442_Non_pvalue)
-GSE19442_final <- OUT_collapse %>% left_join(GSE19442_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE19442_final <- GSE19442_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
 arrange(GSE19442_final, desc(times))
+
 ```
 
 ```{r create column data}
@@ -84,10 +91,14 @@ GSE19442_experimentData <- new('MIAME',
                       pubMedIds = '20725040',
                       other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
 
-GSE19442_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE19442_Non_normalized_counts= as.matrix(GSE19442_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19442_experimentData)); GSE19442_summarizedExperiemnt
+GSE19442_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE19442_Non_normalized_counts= as.matrix(GSE19442_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19442_experimentData)); GSE19442_summarizedExperiemnt
 
 ```
 
 ```{r}
 saveRDS(GSE19442_summarizedExperiemnt, ascii=FALSE, file='GSE19442/GSE19442_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```
