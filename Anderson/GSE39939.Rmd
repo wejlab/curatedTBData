@@ -110,7 +110,7 @@ GSE39939_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE39939_Non
 ```
 ```{r}
 saveRDS(GSE39939_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
-
+#### Add for test ####
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
