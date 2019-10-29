@@ -12,13 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Anderson
 ```{r}
 GSE39939 <- readRDS('~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39939/GSE39939_summarizedExperiemnt.RDS')
-colData(GSE39939)
-dim(assay(GSE39939))
 ```
 
 ```{r}
 GSE39940 <- readRDS('~/Desktop/RA work/build_TB_data/Signatures/Anderson/GSE39940/GSE39940_summarizedExperiemnt.RDS')
-colData(GSE39940)
+rowData(GSE39940)
 ```
 
 ## Berry
@@ -44,6 +42,8 @@ GSE19443 <- readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/G
 #colnames(colData(GSE19443))[17] <- 'IsolateSensitivity'
 #saveRDS(GSE19443, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/GSE19443_summarizedExperiemnt.RDS')
 colData(GSE19443)
+rowData(GSE19443)[1:5,]
+assay(GSE19443)
 ```
 
 
@@ -52,6 +52,7 @@ GSE19444 <- readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19444/G
 #colnames(colData(GSE19444))[17] <- 'IsolateSensitivity'
 #saveRDS(GSE19444, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19444/GSE19444_summarizedExperiemnt.RDS')
 colData(GSE19444)
+rowData(GSE19444)
 ```
 
 
@@ -59,7 +60,7 @@ colData(GSE19444)
 ### Affymetrix Human Genome
 ```{r}
 GSE54992 <- readRDS('~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE54992/GSE54992_summarizedExperiemnt.RDS')
-colData(GSE54992)
+rowData(GSE54992)
 # PBMC=peripheral blood mononuclear cell
 ```
 
