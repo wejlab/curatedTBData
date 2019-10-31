@@ -1,0 +1,109 @@
+---
+title: "GSE37250"
+author: "Xutao Wang"
+date: "10/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+```
+
+## Read in Non-normalized data
+
+```{r, cache = TRUE}
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Anderson')
+urls <- getGEOSuppFiles('GSE37250', fetch_files = FALSE)
+url_non_normalized <- as.character(urls$url[2])
+
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+GSE37250_Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE)
+
+# Contain Symbol information, create row_data first
+row_info <- c('SYMBOL',"SEARCH_KEY","ILMN_GENE", "CHROMOSOME", "DEFINITION","SYNONYMS")
+row_data <- GSE37250_Non_normalized %>% dplyr::select(row_info) %>% DataFrame()
+
+dim(GSE37250_Non_normalized)
+```
+
+```{r}
+# Remove .Pval
+GSE37250_Non_pvalue <- GSE37250_Non_normalized[,-grep('.Pval',colnames(GSE37250_Non_normalized))] %>% dplyr::select(-row_info) %>% data.frame()
+dim(GSE37250_Non_pvalue)
+```
+
+```{r get corresponding sample ID , cache=TRUE}
+# Obtain raw data information from GEO
+gse <- getGEO("GSE37250", GSEMatrix =  F)
+description_id_raw <- sapply(1:length(names(GSMList(gse))), 
+                             function(x) GSMList(gse)[[x]]@dataTable@columns$Column[3])
+# Demo: Convert 6116725094_J.Detection Pval to 6116725094_J
+description_id <- sapply(1:length(description_id_raw), 
+                         function(x) gsub("\\..*", "", description_id_raw[x]))
+ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
+ID_table
+```
+
+```{r mapping DescriptionID to sampleID}
+# Demo: convert X6247215025_L.AVG_Signal to 6247215025_L, should use \\. when mathcing . 
+colnames(GSE37250_Non_pvalue) <- sapply(1:ncol(GSE37250_Non_pvalue), 
+                             function(x) gsub(".*X|\\..*", "", colnames(GSE37250_Non_pvalue)[x]))
+indx <- sapply(1:length(ID_table$DescriptionID), 
+              function(x) which(ID_table$DescriptionID %in% colnames(GSE37250_Non_pvalue)[x]))
+colnames(GSE37250_Non_pvalue) <- ID_table$SampleID[indx]
+GSE37250_Non_normalized_counts <- GSE37250_Non_pvalue
+colnames(GSE37250_Non_normalized_counts)[1:10]
+```
+
+```{r}
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+head(characteristic_table)
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+head(characteristic_data_frame)
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalRegion','Tissue')
+row.names(characteristic_data_frame) <- colnames(GSE37250_Non_normalized_counts)
+```
+
+```{r create Summarized Experiment Object}
+# Create Metadata
+GSE37250_experimentData <- new('MIAME',
+                      name="Victoria Wright",
+                      lab="Wright Fleming Institute",
+                      contact="v.wright@imperial.ac.uk",
+                      title="Detection of tuberculosis in HIV-infected and -uninfected African adults using whole blood RNA expression signatures: a case-control study.",
+                      abstract="Adults were recruited from Cape Town, South Africa (n=300) and Karonga, Malawi (n=237) who were either HIV+ or HIV - with either active TB, LTBI or OD.",
+                      url="10.1371/journal.pmed.1001538",
+                      pubMedIds = '24167453',
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+
+GSE37250_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE37250_Non_normalized_counts= as.matrix(GSE37250_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE37250_experimentData)); GSE37250_summarizedExperiemnt
+```
+
+```{r save the summarized experiment object}
+saveRDS(GSE37250_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Kaforou/GSE37250/GSE37250_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
+
+
+
+
