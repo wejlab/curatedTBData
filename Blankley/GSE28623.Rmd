@@ -1,0 +1,107 @@
+---
+title: "GSE28623"
+author: "Xutao Wang"
+date: "10/2/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(affy)
+library(dplyr)
+library(AgiMicroRna)
+library(limma)
+```
+
+
+```{r Create Column data, cache=TRUE}
+gse <- getGEO('GSE28623', GSEMatrix =  F)
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+colnames(characteristic_data_frame) <- c('TBStatus','Gender')
+row.names(characteristic_data_frame) <- names(GSMList(gse))
+```
+
+```{r Read in AgiMicroRna, cache = TRUE}
+# Create Target file for AgiMicroRna
+characteristic_data_frame$TBStatus
+Treatment_RNA <- as.character(characteristic_data_frame$TBStatus)
+
+GErep_RNA <- plyr::revalue(characteristic_data_frame$TBStatus, 
+        c("healthy non-infected donors"=1, 
+          "healthy donors latently infected with M. tuberculosis"=2,
+          'tuberculosis patients'=3))
+characteristic_data_frame$TBStatus
+
+geo_access <- 'GSE28623'
+target_RNA <-  data.frame(FileName=list.files(paste0(geo_access,'/',geo_access,'_Raw'),pattern = "txt.gz.*"),Treatment=Treatment_RNA,GErep=GErep_RNA)
+write.table(target_RNA,paste0(geo_access,'/',geo_access,'_Raw','/target_RNA.txt'),sep='\t')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE28623/GSE28623_Raw")
+
+#knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read in files
+```{r}
+targetinfo <- read.delim("target_RNA.txt")
+GSE28623_RNA <- read.maimages(targetinfo,source="agilent",green.only = TRUE)
+GSE28623_raw <- GSE28623_RNA$E
+row.names(GSE28623_raw) <- GSE28623_RNA$genes$ProbeName
+colnames(GSE28623_raw) <- names(GSMList(gse))
+```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE28623/GPL4133-12599.txt", comment.char="#",stringsAsFactors = FALSE)
+
+# Reorganize the reference files, remove redundant ID_REF (make each ID unique)
+### Need to have ont-to-one mapping, cannot use merge b/c probe names are no unique?
+Agi_probe <- Agi_annotate %>% as_tibble() %>% distinct(NAME, .keep_all = TRUE)
+
+# Probe Name is not unique
+data.frame((table(GSE28623_RNA$genes$ProbeName)))
+data.frame((table(Agi_probe$NAME)))
+
+# Creare Row Data
+GSE28623_probe <- data.frame(GSE28623_RNA$genes$ProbeName)
+colnames(GSE28623_probe) <- "ID_REF"
+row_data <- GSE28623_probe %>% left_join(Agi_probe,by=c('ID_REF'='NAME'))
+row_data$GENE_SYMBOL[row_data$GENE_SYMBOL==""] <- "Unmapped"
+row_data <- DataFrame(row_data)
+row.names(row_data) <- GSE28623_RNA$genes$ProbeName
+```
+
+```{r create SummarizedExperimentObject, cache=TRUE}
+GSE28623_experimentData_RNA <- new('MIAME',
+                      name="Jeroen Maertzdorf",
+                      lab="MPIIB",
+                      contact=" maertzdorf@mpiib-berlin.mpg.de",
+                      title="Functional correlations of pathogenesis-driven gene expression signatures in tuberculosis. ",
+                      abstract="A total of 46 sputum smear and chest x-ray positive TB patients (TB), 25 latently infected healthy donors (LTBI, TB case contacts with Mantoux test induration >= 10mm) and 37 uninfected donors (NID, Mantoux test induration = 0mm) were included from a cohort in The Gambia.",
+                      url="10.1371/journal.pone.0026938",
+                      pubMedIds = '22046420',
+                      other=list(Platform = 'Agilent-014850 Whole Human Genome Microarray 4x44K G4112F (Feature Number version)'))
+
+GSE28623_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE28623_non_normalized_RNA= as.matrix(GSE28623_raw)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE28623_experimentData_RNA)); GSE28623_summarizedExperiemnt
+```
+
+```{r}
+saveRDS(GSE28623_summarizedExperiemnt, ascii=FALSE, file='/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE28623/GSE28623_summarizedExperiemnt.RDS')
+
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
