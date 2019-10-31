@@ -53,7 +53,7 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
   summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
 
 GSE42827_Non_pvalue$ID_REF <- row.names(GSE42827_Non_pvalue)
-GSE42827_final <- OUT_collapse %>% left_join(GSE42827_Non_pvalue, by=c("PROBEID" = 'ID_REF')) %>% as_tibble()
+GSE42827_final <- GSE42827_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
 arrange(GSE42827_final, desc(times))
 ```
@@ -68,7 +68,7 @@ GSE42827_experimentData <- new('MIAME',
                       lab="MRC National Institute for Medical Research",
                       contact="cbloom@nimr.mrc.ac.uk",
                       title="Transcriptional blood signatures distinguish pulmonary tuberculosis, pulmonary sarcoidosis, pneumonias and lung cancers.",
-                      abstract="An example ExpressionSet",
+                      abstract="Overall Design: There were 5 pneumonia patients, the same patients were sampled before and after their treatment",
                       url="10.1371/journal.pone.0070630",
                       pubMedIds = '23940611',
                       other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
@@ -89,4 +89,9 @@ GSE42827_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE42827_Non
 
 ```{r}
 saveRDS(GSE42827_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Bloom/GSE42827/GSE42827_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+
 ```
