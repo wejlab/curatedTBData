@@ -1,0 +1,109 @@
+---
+title: "GSE79362"
+author: "Xutao Wang"
+date: "10/25/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## READ in data
+```{r}
+urls <-  getGEOSuppFiles("GSE79362",fetch_files = FALSE)
+url_non_normalized <- as.character(urls$url[1])
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+library(readxl)
+GSE79362_Non_normalized <- read_excel(temp)
+
+colnames(GSE79362_Non_normalized)
+# Obtain row data information from the raw data
+row_info <- colnames(GSE79362_Non_normalized)[1:6]
+row_data <- GSE79362_Non_normalized %>% dplyr::select(row_info) %>% DataFrame()
+row.names(row_data) <- GSE79362_Non_normalized$entry
+
+GSE79362_raw_counts <- GSE79362_Non_normalized %>% dplyr::select(-row_info) %>% data.frame()
+row.names(GSE79362_raw_counts) <- GSE79362_Non_normalized$entry
+```
+
+```{r}
+##  remove row information from the original data and get column data information
+gse <- getGEO("GSE79362", GSEMatrix =  F)
+
+description_id_raw <- sapply(1:length(names(GSMList(gse))), 
+                             function(x) GSMList(gse)[[x]]@header$title)
+
+# Demo: Convert Non-progressor (82_L2.LB19) to 82_L2.LB19
+description_id <- sapply(1:length(description_id_raw), 
+                         function(x) gsub(".*[(] *(.*?) *[)].*", "\\1", description_id_raw[x]))
+ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
+head(ID_table)
+```
+
+```{r mapping DescriptionID to sampleID}
+# Demo: convert X6247215025 to 6247215025 should use \\. when mathcing . 
+# Only match the first X
+colnames(GSE79362_raw_counts) <- sapply(1:ncol(GSE79362_raw_counts), 
+                             function(x) sub(".*?X", "", colnames(GSE79362_raw_counts)[x]))
+merge_table <- data.frame(colnames(GSE79362_raw_counts)) %>% inner_join(ID_table, by=c('colnames.GSE79362_raw_counts.'='DescriptionID'))
+
+# Does not contain all the samples from the website
+
+colnames(GSE79362_raw_counts) <- merge_table$SampleID
+GSE79362_Non_normalized_counts <- GSE79362_raw_counts
+colnames(GSE79362_Non_normalized_counts)[1:10]
+```
+
+
+```{r}
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+indx <- which(sapply(data_characteristic,length)!=length(data_characteristic[[1]]))
+data_characteristic[[indx]][8] <- c("qft: NA") 
+data_characteristic[[indx]] <- c(data_characteristic[[indx]],"tissue: blood") 
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+head(characteristic_table)
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% data.frame()
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('TBStatus','Bin','Age','Gender','Ethnicity','PreviousTB','TST','QFT','Tissue')
+row.names(characteristic_data_frame) <- names(GSMList(gse)) 
+head(characteristic_data_frame)
+characteristic_data_frame$SampleID <- row.names(characteristic_data_frame)
+characteristic_data_frame_sub <- merge_table %>% inner_join(characteristic_data_frame, by=c('SampleID'='SampleID'))
+row.names(characteristic_data_frame_sub) <- characteristic_data_frame_sub$SampleID
+
+```
+
+## Create Summarized Experiment
+```{r}
+# Create Metadata
+GSE79362_experimentData <- new('MIAME',
+                      name="Daniel Edward Zak",
+                      lab="Seattle Biomedical Research Institute",
+                      contact="Willem.hanekom@gatesfoundation.org",
+                      title="A blood RNA signature for tuberculosis disease risk: a prospective cohort study.",
+                      abstract="In this prospective cohort study, we followed up healthy, South African adolescents aged 12–18 years from the adolescent cohort study (ACS) who were infected with M tuberculosis for 2 years. We collected blood samples from study participants every 6 months and monitored the adolescents for progression to tuberculosis disease. ",
+                      url="10.1016/S0140-6736(15)01316-1",
+                      pubMedIds = '27017310',
+                      other=list(Platform = 'Illumina HiSeq 2000 (Homo sapiens)'))
+
+
+GSE79362_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE79362_Non_normalized_counts= as.matrix(GSE79362_Non_normalized_counts)), colData = characteristic_data_frame_sub, rowData = row_data, metadata = list(GSE79362_experimentData)); GSE79362_summarizedExperiemnt
+
+```
+
+```{r}
+saveRDS(GSE79362_summarizedExperiemnt, ascii=FALSE, file='GSE79362/GSE79362_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
+
