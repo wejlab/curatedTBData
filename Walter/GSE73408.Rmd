@@ -1,0 +1,182 @@
+---
+title: "GSE73408"
+author: "Xutao Wang"
+date: "11/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(affy)
+library(dplyr)
+library(oligo)
+library(pd.hugene.1.1.st.v1)
+#library(hgu133plus2.db) # Affymetrix Human Gene 1.1 ST Array [transcript (gene) version]
+```
+
+## Read in raw data and conduct RMA
+```{r}
+#setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
+#getwd()
+urls <-  getGEOSuppFiles("GSE73408",fetch_files = FALSE)
+url_cel <- as.character(urls$url[1])
+temp <- tempfile()
+tempd <- tempdir()
+download.file(url_cel,temp)
+
+
+untar(temp,exdir = tempd)
+
+# Use oligo to read in the cel files
+
+celFiles <- list.celfiles(path = tempd, full.names=TRUE);celFiles
+GSE73408_data.oligo <- read.celfiles(celFiles)
+
+GSE73408_normalized_rma <- exprs(rma(GSE73408_data.oligo)) # A matrix
+
+```
+
+
+```{r}
+# Convert GSM1327554.CEL.gz to GSM1327554
+colnames(GSE73408_normalized_rma) <- sapply(1:ncol(GSE73408_normalized_rma), 
+                                          function(x) gsub('_.*','',colnames(GSE73408_normalized_rma)[x]))
+GSE73408_normalized_counts <- GSE73408_normalized_rma
+GSE73408_normalized_counts[1:5,1:5]
+```
+
+```{r convert transcript ID to gene symbol}
+# Annotation provided by the platform
+GPL11532 <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Walter/GSE73408/GPL11532-32230.txt", comment.char="#", stringsAsFactors = FALSE)
+
+GPL11532$ID <- as.character(GPL11532$ID)
+# Reorganize the reference files, remove redundant ID_REF (make each ID unique)
+View(data.frame((table(GPL11532$ID))))
+# Checked, they are unique
+GSE73408_normalized_rma <- GSE73408_normalized_rma %>% as_tibble() %>% mutate(ID_REF=row.names(GSE73408_normalized_rma))
+row_data <- GSE73408_normalized_rma %>% left_join(GPL11532, by=c('ID_REF' = 'ID'))
+row_data <- row_data[,-grep('GSM',colnames(row_data))]
+
+row_data <- DataFrame(row_data)
+row.names(row_data) <- GSE73408_normalized_rma$ID_REF
+```
+
+```{r create column data}
+gse <- getGEO('GSE73408', GSEMatrix =  F)
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+head(characteristic_table)
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+head(characteristic_data_frame)
+
+colnames(characteristic_data_frame) <- c('Tissue','Gender','TBStatus','Ethnicity', 'Age', 'GeographicalRegion', 'DiabetesStatus','SmokingStatus','BCG')
+row.names(characteristic_data_frame) <- colnames(GSE73408_normalized_counts)
+head(characteristic_data_frame)
+```
+
+```{r create SummarizedExperimentObject, cache=TRUE}
+GSE73408_experimentData <- new('MIAME',
+                      name="Nicholas Walter",
+                      lab="University of Colorado",
+                      contact="nicholas.walter@ucdenver.edu",
+                      title="Blood Transcriptional Biomarkers for Active Tuberculosis among Patients in the United States: a Case-Control Study with Systematic Cross-Classifier Evaluation.",
+                      abstract="Whole blood from US patients was collected to accurately diagnose active TB in racially and ethnically diverse populations for RNA extraction and hybridization on Affymetrix microarrays.",
+                      url="10.1128/JCM.01990-15",
+                      pubMedIds = '26582831',
+                      other=list(Platform = 'Affymetrix Human Gene 1.1 ST Array'))
+
+GSE73408_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE73408_normalized_counts= as.matrix(GSE73408_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE73408_experimentData)); GSE73408_summarizedExperiemnt
+```
+
+```{r}
+saveRDS(GSE73408_summarizedExperiemnt, ascii=FALSE, file='GSE73408/GSE73408_summarizedExperiemnt.RDS')
+
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
