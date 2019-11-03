@@ -22,35 +22,49 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
 getwd()
 
-urls = getGEOSuppFiles("GSE19444", fetch_files = FALSE)
+urls <- getGEOSuppFiles("GSE19444", fetch_files = FALSE)
 url_cel <- as.character(urls$url[1])
 temp <- tempfile()
 tempd <- tempdir()
 download.file(url_cel,temp)
 untar(temp,exdir = tempd)
 
-
 #untar('GSE19444/GSE19444_RAW.tar', exdir="GSE19444/GSE19444_Raw")
 files <- list.files(tempd, pattern = "txt.*");files
 
 ## Special handling for GSM484599_LTB_LON_test009.txt.gz
 GSE19444_Non_normalized_list <-lapply(files[-which(files=='GSM484599_LTB_LON_test009.txt.gz')],
-                                      function(x) read.delim(paste0(tempd,'/',x),  row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
+                                      function(x) read.delim(paste0(tempd,'/',x),  header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
 
-GSE19444_Non_normalized_temp <- do.call(cbind,GSE19444_Non_normalized_list)
-
-GSM484599 <- na.omit(read.delim(paste0(tempd,'/GSM484599_LTB_LON_test009.txt.gz')))
-colnames(GSM484599) <- c('ID_REF','GSM484599','GSM484599.Pval')
-GSE19444_Non_normalized <- cbind(GSE19444_Non_normalized_temp,GSM484599[,-1])
-dim(GSE19444_Non_normalized)
-
-unlink(tempd)
-unlink(temp)
 ```
 
+## Check the names of ID_REF in each dataset
 ```{r}
-# Remove P-values
-GSE19444_Non_pvalue <- GSE19444_Non_normalized[,-grep('.Pval',colnames(GSE19444_Non_normalized))]
+GSE19444_Non_normalized_list_ID <- sapply(GSE19444_Non_normalized_list, function(x) x[,1]) %>% data.frame()
+# check they have identical ID_REF
+check_1 <- sapply(1:ncol(GSE19444_Non_normalized_list_ID),function(x) all(GSE19444_Non_normalized_list_ID[,1]==GSE19444_Non_normalized_list_ID[,x]));check_1
+
+# No problem, all true
+```
+
+## Combine two datasets, get the final non-normalized data
+```{r}
+GSE19444_Non_normalized_temp <- do.call(cbind,GSE19444_Non_normalized_list) 
+GSE19444_Non_normalized_temp <- GSE19444_Non_normalized_temp[,-which(colnames(GSE19444_Non_normalized_temp)=='ID_REF')[-1]]
+
+## Special handling for GSM484599_LTB_LON_test009.txt.gz
+GSM484599 <- na.omit(read.delim(paste0(tempd,'/GSM484599_LTB_LON_test009.txt.gz'), stringsAsFactors = FALSE))
+colnames(GSM484599) <- c('ID_REF','GSM484599','GSM484599.Pval')
+
+# Combine the data
+GSE19444_Non_normalized <- GSE19444_Non_normalized_temp %>% inner_join(GSM484599, by= c('ID_REF'="ID_REF")) %>% data.frame()
+row.names(GSE19444_Non_normalized) <- GSE19444_Non_normalized$ID_REF
+```
+
+
+```{r}
+# Remove .Pvals
+GSE19444_Non_pvalue <- GSE19444_Non_normalized[,-c(1,grep('.Pval',colnames(GSE19444_Non_normalized)))]
 GSE19444_Non_normalized_counts <- GSE19444_Non_pvalue
 dim(GSE19444_Non_pvalue)
 ```
@@ -108,4 +122,8 @@ GSE19444_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE19444_
 
 ```{r}
 saveRDS(GSE19444_summarizedExperiemnt, ascii=FALSE, file='GSE19444/GSE19444_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```

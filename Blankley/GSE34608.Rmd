@@ -6,7 +6,6 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-#knitr::opts_knit$set(root.dir = normalizePath('~/Desktop/test/'))
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -28,6 +27,7 @@ filePaths = getGEOSuppFiles(geo_access)
 untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
 ```
 
+## Preprocessing step, no need to run again
 ```{r Create Target file for AgiMicroRna microRNA, include=FALSE}
 # Create Target file for AgiMicroRna
 ## Sarcoidosis--1 for micro,  Tuberculosis--2 for micro, control -- 3 for micro 
@@ -54,11 +54,14 @@ write.table(target_RNA,paste0(geo_access,'/',geo_access,'_Raw','/target_RNA.txt'
 ```
 
 ```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+knitr::opts_knit$set(root.dir = "/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw")
+
+#knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r read in AgiMicroRna,cache=TRUE}
+#setwd("/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw")
 getwd()
 target_micro <- read.delim('target_micro.txt')
 
@@ -69,17 +72,13 @@ GSE34608_non_normalized_micro <- GSE34608_micro$meanS
 
 # Assign rownames and colnames to the raw signal, assign micro RNA name to the row
 row.names(GSE34608_non_normalized_micro) <- GSE34608_micro$genes$GeneName
-files <- list.files(paste0(geo_access,'/',geo_access,'_Raw'),pattern = "txt.gz.*")
+files <- list.files('/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw',pattern = "txt.gz.*")
 files_names <- gsub('_.*','',files)
 colnames(GSE34608_non_normalized_micro) <- files_names[1:24]
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
-BiocManager::install("mirbase.db")
-library(mirbase.db)
-# MicroRNA annotation 
-# Need Further discussion
-# RowData is empty for now
+# Use information provided by vendor
 ```
 
 ```{r create Column Data, cache=TRUE}
@@ -90,8 +89,7 @@ characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
   sapply(data_characteristic, '[[',x)) 
 characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
 colnames(characteristic_data_frame) <- c('Gender','Tissue','TBStatus','Subject')
-row.names(characteristic_data_frame) <- files_names
-
+row.names(characteristic_data_frame) <- names(GSMList(gse))
 # Split MicroRNA & RNA
 characteristic_data_frame_micro <- characteristic_data_frame[1:24,]
 characteristic_data_frame_RNA <- characteristic_data_frame[25:68,]
@@ -105,7 +103,7 @@ GSE34608_experimentData_micro <- new('MIAME',
                       lab="MPIIB",
                       contact=" maertzdorf@mpiib-berlin.mpg.de",
                       title="Common patterns and disease-related signatures in tuberculosis and sarcoidosis.",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Gene and microRNA expression analysis of whole blood RNA from tuberculosis and sarcoidosis patients and healthy controls",
                       url="10.1073/pnas.1121072109",
                       pubMedIds = '22547807',
                       other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
@@ -115,17 +113,18 @@ GSE34608_summarizedExperiemnt_micro <- SummarizedExperiment(assays = list(GSE346
 ```
 
 ```{r}
-saveRDS(GSE34608_summarizedExperiemnt_micro, ascii=FALSE, file=paste0(geo_access,'/GSE34608_summarizedExperiemnt_micro.RDS')
-)
+saveRDS(GSE34608_summarizedExperiemnt_micro, ascii=FALSE, file='/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_summarizedExperiemnt_micro.RDS')
 ```
 
-## Create Summarized Experiment Object for RNA
 
-```{r setup,include=FALSE}
-knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+### Create Summarized Experiment Object for whole blood RNA
 
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw")
+
+#knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
+knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 ```{r}
 # Create Target file for Agi whole RNA
@@ -139,17 +138,22 @@ targetinfo <- read.delim("target_RNA.txt")
 GSE34608_RNA <- read.maimages(targetinfo,source="agilent",green.only = TRUE)
 GSE34608_raw <- GSE34608_RNA$E
 row.names(GSE34608_raw) <- GSE34608_RNA$genes$ProbeName
-colnames(GSE34608_raw) <- files_names[25:68]
+colnames(GSE34608_raw) <- names(GSMList(gse))[25:68]
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
-Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GPL6480-9577.txt", comment.char="#")
+Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GPL6480-9577.txt", comment.char="#", stringsAsFactors = FALSE)
 
-x=data.frame(ProbeName=GSE34608_RNA$genes$ProbeName)
-indx <- sapply(GSE34608_RNA$genes$ProbeName, function(x) which(Agi_annotate$ID %in% x))
+View(data.frame((table(Agi_annotate$ID))))
+## Each ID is unique in the reference file
 
-# Creare Row Data
-row_data <- DataFrame(Agi_annotate[indx,c('ID','GENE_SYMBOL')])
+# Create Row Data
+GSE34608_probe <- data.frame(GSE34608_RNA$genes$ProbeName)
+colnames(GSE34608_probe) <- "ID_REF"
+row_data <- GSE34608_probe %>% left_join(Agi_annotate,by=c('ID_REF'='ID'))
+row_data$GENE_SYMBOL[row_data$GENE_SYMBOL==""] <- "Unmapped"
+
+row_data <- DataFrame(row_data)
 row.names(row_data) <- GSE34608_RNA$genes$ProbeName
 ```
 
@@ -159,16 +163,21 @@ GSE34608_experimentData_RNA <- new('MIAME',
                       lab="MPIIB",
                       contact=" maertzdorf@mpiib-berlin.mpg.de",
                       title="Common patterns and disease-related signatures in tuberculosis and sarcoidosis.",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Gene and microRNA expression analysis of whole blood RNA from tuberculosis and sarcoidosis patients and healthy controls",
                       url="10.1073/pnas.1121072109",
                       pubMedIds = '22547807',
                       other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
 
 GSE34608_summarizedExperiemnt_RNA <- SummarizedExperiment(assays = list(GSE34608_non_normalized_RNA= as.matrix(GSE34608_raw)), colData = characteristic_data_frame_RNA, rowData = row_data, metadata = list(GSE34608_experimentData_RNA)); GSE34608_summarizedExperiemnt_RNA
 ```
+
 ```{r}
-saveRDS(GSE34608_summarizedExperiemnt_RNA, ascii=FALSE, file=paste0(geo_access,'/GSE34608_summarizedExperiemnt_RNA.RDS')
-)
+saveRDS(GSE34608_summarizedExperiemnt_RNA, ascii=FALSE, file='/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_summarizedExperiemnt_RNA.RDS')
+
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```
 
 

@@ -1,0 +1,121 @@
+---
+title: "GSE74092"
+author: "Xutao Wang"
+date: "10/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(limma)
+library(dplyr)
+# Qiagen custom RT2 Profiler Array
+```
+
+```{r}
+urls <- getGEOSuppFiles('GSE74092', fetch_files = FALSE)
+url_non_normalized <- as.character(urls$url[1])
+
+
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+GSE74092_Non_normalized <- read.delim(gzfile(temp), stringsAsFactors = FALSE)
+dim(GSE74092_Non_normalized)
+# Remove columns with unknown sample names, remove rows with empty string
+GSE74092_raw <- GSE74092_Non_normalized %>% filter(GSE74092_Non_normalized[,1]!='') %>% select_if(!is.na(GSE74092_Non_normalized[2,]) == TRUE)
+dim(GSE74092_raw)
+colnames(GSE74092_raw) <- as.character(t(GSE74092_raw[1,]))
+GSE74092_raw_final <- GSE74092_raw[-1,]
+
+sum(table(GSE74092_raw_final$ID_REF)!=1) # ID_REF is not Unique
+sum(table(GSE74092_raw_final$SPOT_ID)!=1) # Spot ID is unique
+
+row.names(GSE74092_raw_final) <- GSE74092_raw_final$SPOT_ID
+
+## Create Expression matrix
+GSE74092_non_normalized_counts <- GSE74092_raw_final %>% dplyr::select(-c('ID_REF','SPOT_ID'))
+dim(GSE74092_non_normalized_counts)
+```
+
+## Create Row data info
+```{r}
+GPL21040_raw <- getGEO("GPL21040", GSEMatrix =  F)
+GPL21040_annotate <- GPL21040_raw@dataTable@table
+sum(table(GPL21040_raw@dataTable@table$WELL)!=1)
+row_data <- GSE74092_raw_final %>% dplyr::select(c('ID_REF','SPOT_ID')) %>% left_join(GPL21040_annotate, by=c('SPOT_ID'='WELL')) %>% dplyr::select(-ID) %>% DataFrame()
+
+row.names(row_data) <- row_data$SPOT_ID
+```
+
+## Convert description ID to sample ID
+```{r}
+gse <- getGEO("GSE74092", GSEMatrix =  F)
+description_id_raw <- sapply(1:length(names(GSMList(gse))), 
+                             function(x) GSMList(gse)[[x]]@header$title)
+ID_table <- data.frame(SampleID=names(GSMList(gse)),DescriptionID=description_id_raw)
+indx <- which(ID_table$DescriptionID %in% colnames(GSE74092_non_normalized_counts))
+colnames(GSE74092_non_normalized_counts) <- ID_table$SampleID[indx]
+colnames(GSE74092_non_normalized_counts)[1:10]
+```
+
+## Create column data
+```{r}
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+head(characteristic_table)
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% data.frame()
+head(characteristic_data_frame)
+colnames(characteristic_data_frame) <- c('SkinTest','TBStatus','Tissue','ActivationAgent','Time')
+
+characteristic_data_frame$SampleID <- names(GSMList(gse))
+data.frame(colnames(GSE74092_non_normalized_counts))
+
+characteristic_data_frame_sub <- data.frame(colnames(GSE74092_non_normalized_counts)) %>% left_join(characteristic_data_frame, by=c('colnames.GSE74092_non_normalized_counts.'='SampleID')) %>% DataFrame()
+
+row.names(characteristic_data_frame_sub) <- characteristic_data_frame_sub$colnames.GSE74092_non_normalized_counts.
+```
+
+## create summarized experiment object
+```{r}
+GSE74092_experimentData <- new('MIAME',
+                      name="Jeroen Maertzdorf",
+                      lab="MPIIB",
+                      contact="maertzdorf@mpiib-berlin.mpg.de",
+                      title="Concise gene signature for point-of-care classification of tuberculosis.",
+                      abstract="qPCR gene expression profiling. Whole blood gene expression from TB patients (positive in GenXpert assay) and healthy controls; both tuberculin skin test positive (TSTpos) and -negative (TSTneg).",
+                      url="10.15252/emmm.201505790",
+                      pubMedIds = '26682570',
+                      other=list(Platform = 'Qiagen custom RT2 Profiler Array'))
+
+GSE74092_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE74092_Non_normalized_counts= as.matrix(GSE74092_non_normalized_counts)), colData = characteristic_data_frame_sub, rowData = row_data, metadata = list(GSE74092_experimentData)); GSE74092_summarizedExperiemnt
+
+```
+
+```{r}
+saveRDS(GSE74092_summarizedExperiemnt, ascii=FALSE, file='GSE74092/GSE74092_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
+
+
+
+
+
+
+
+
+
+

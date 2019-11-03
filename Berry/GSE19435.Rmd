@@ -20,7 +20,6 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-
 urls <- getGEOSuppFiles("GSE19435", fetch_files = FALSE)
 url_cel <- as.character(urls$url[1])
 temp <- tempfile()
@@ -29,14 +28,38 @@ download.file(url_cel,temp)
 untar(temp,exdir = tempd)
 #untar('GSE19435/GSE19435_RAW.tar', exdir="GSE19435/GSE19435_Raw")
 files <- list.files(tempd, pattern = "txt.*");files
-GSE19435_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
-GSE19435_Non_normalized <- do.call(cbind,GSE19435_Non_normalized_list)
-dim(GSE19435_Non_normalized)
+GSE19435_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
+```
+
+## Check the names of ID_REF in each dataset
+```{r}
+GSE19435_Non_normalized_list_ID <- sapply(GSE19435_Non_normalized_list, function(x) x[,1]) %>% data.frame()
+
+# check they have identical ID_REF
+check_1 <- sapply(1:ncol(GSE19435_Non_normalized_list_ID),function(x) all(GSE19435_Non_normalized_list_ID[,1]==GSE19435_Non_normalized_list_ID[,x]));check_1
+
+GSE19435_Non_normalized_sub1 <- do.call(cbind,GSE19435_Non_normalized_list[which(check_1)])
+GSE19435_Non_normalized_sub1 <- GSE19435_Non_normalized_sub1[,-which(colnames(GSE19435_Non_normalized_sub1)=='ID_REF')[-1]]
+
+#####################
+# Check FALSE part
+GSE19435_dat1 <- GSE19435_Non_normalized_list[-which(check_1)]
+GSE19435_dat1_ID <- sapply(GSE19435_dat1, function(x) x[,1]) %>% data.frame()
+check_2 <- sapply(1:ncol(GSE19435_dat1_ID),function(x) all(GSE19435_dat1_ID[,3]==GSE19435_dat1_ID[,x]));check_2
+
+GSE19435_Non_normalized_sub2 <- do.call(cbind,GSE19435_dat1[which(check_2)])
+GSE19435_Non_normalized_sub2 <- GSE19435_Non_normalized_sub2[,-which(colnames(GSE19435_Non_normalized_sub2)=='ID_REF')[-1]]
+
+# Left two datasets with ID_REF differnt from each other and the two sub datasets
+# Combine two large datasets and two small datasets
+GSE19435_Non_normalized <- GSE19435_Non_normalized_sub1 %>% inner_join(GSE19435_Non_normalized_sub2,by= c('ID_REF'="ID_REF")) %>% inner_join(GSE19435_dat1[-which(check_2)][[1]],by= c('ID_REF'="ID_REF")) %>% inner_join(GSE19435_dat1[-which(check_2)][[2]],by= c('ID_REF'="ID_REF")) %>% data.frame()
+
+row.names(GSE19435_Non_normalized) <- GSE19435_Non_normalized$ID_REF
 ```
 
 ```{r}
-# Remove P-values
-GSE19435_Non_pvalue <- GSE19435_Non_normalized[,-grep('.Pval',colnames(GSE19435_Non_normalized))]
+# Remove .Pval
+GSE19435_Non_pvalue <- GSE19435_Non_normalized[,-c(1,grep('.Pval',colnames(GSE19435_Non_normalized)))]
 GSE19435_Non_normalized_counts <- GSE19435_Non_pvalue
 dim(GSE19435_Non_pvalue)
 ```
@@ -56,6 +79,8 @@ GSE19435_final <- GSE19435_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'=
 
 arrange(GSE19435_final, desc(times))
 ```
+
+## Create ColData
 ```{r get column data, cache=TRUE}
 gse <- getGEO("GSE19435", GSEMatrix =  F)
 data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
@@ -72,6 +97,7 @@ characteristic_data_frame$Age <- sapply(1:nrow(characteristic_data_frame), funct
 row.names(characteristic_data_frame) <- colnames(GSE19435_Non_normalized_counts)
 head(characteristic_data_frame)
 ```
+
 ```{r Create RowData MetaData and summarized experiment}
 # Create Row data annotation
 row_data <- DataFrame(SYMBOL=GSE19435_final$SYMBOL)
@@ -87,9 +113,10 @@ GSE19435_experimentData <- new('MIAME',
                       pubMedIds = '20725040',
                       other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
 
-GSE19435_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE19435_Non_normalized_counts= as.matrix(GSE19435_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19435_experimentData)); GSE19435_summarizedExperiemnt
+GSE19435_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE19435_Non_normalized_counts= as.matrix(GSE19435_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19435_experimentData)); GSE19435_summarizedExperiemnt
 
 ```
+
 ```{r}
 saveRDS(GSE19435_summarizedExperiemnt, ascii=FALSE, file='GSE19435/GSE19435_summarizedExperiemnt.RDS')
 

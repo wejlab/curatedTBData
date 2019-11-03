@@ -20,7 +20,6 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
-
 urls <- getGEOSuppFiles("GSE19439", fetch_files = FALSE)
 url_cel <- as.character(urls$url[1]);url_cel
 temp <- tempfile()
@@ -30,14 +29,27 @@ untar(temp,exdir = tempd)
 
 #untar('GSE19439/GSE19439_RAW.tar', exdir="GSE19439/GSE19439_Raw")
 files <- list.files(tempd, pattern = "txt.*");files
-GSE19439_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
-GSE19439_Non_normalized <- do.call(cbind,GSE19439_Non_normalized_list)
-dim(GSE19439_Non_normalized)
+GSE19439_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
 ```
+
+## Check the names of ID_REF in each dataset
+```{r}
+GSE19439_Non_normalized_list_ID <- sapply(GSE19439_Non_normalized_list, function(x) x[,1]) %>% data.frame()
+# check they have identical ID_REF
+check_1 <- sapply(1:ncol(GSE19439_Non_normalized_list_ID),function(x) all(GSE19439_Non_normalized_list_ID[,1]==GSE19439_Non_normalized_list_ID[,x]));check_1
+# No problem, all true
+
+
+GSE19439_Non_normalized <- do.call(cbind,GSE19439_Non_normalized_list)
+GSE19439_Non_normalized <- GSE19439_Non_normalized[,-which(colnames(GSE19439_Non_normalized)=='ID_REF')[-1]]
+row.names(GSE19439_Non_normalized) <- GSE19439_Non_normalized$ID_REF
+
+```
+
 
 ```{r}
 # Remove .Pval
-GSE19439_Non_pvalue <- GSE19439_Non_normalized[,-grep('.Pval',colnames(GSE19439_Non_normalized))]
+GSE19439_Non_pvalue <- GSE19439_Non_normalized[,-c(1,grep('.Pval',colnames(GSE19439_Non_normalized)))]
 GSE19439_Non_normalized_counts <- GSE19439_Non_pvalue
 dim(GSE19439_Non_pvalue)
 ```

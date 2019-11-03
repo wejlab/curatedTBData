@@ -1,0 +1,89 @@
+---
+title: "GSE107993"
+author: "Xutao Wang"
+date: "10/26/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(GEOquery)
+library(preprocessCore)
+library(SummarizedExperiment)
+library(dplyr)
+library(readxl)
+# Illumina HiSeq 4000 (Homo sapiens)
+```
+
+## READ in data
+```{r}
+urls <-  getGEOSuppFiles("GSE107993",fetch_files = FALSE)
+url_non_normalized <- as.character(urls$url[1])
+temp <- tempfile()
+download.file(url_non_normalized,temp)
+
+library(readxl)
+GSE107993_Non_normalized <- read_excel(temp)
+colnames(GSE107993_Non_normalized)
+# Obtain row data information from the raw data
+row_info <- c('Gene','Gene_name','Gene_biotype')
+row_data <- GSE107993_Non_normalized %>% dplyr::select(row_info) %>% DataFrame()
+row.names(row_data) <- GSE107993_Non_normalized$Gene
+```
+
+```{r}
+##  remove row information from the original data and get column data information
+gse <- getGEO("GSE107993", GSEMatrix =  F)
+
+GSE107993_raw_counts <- GSE107993_Non_normalized %>% dplyr::select(-row_info) %>% data.frame()
+colnames(GSE107993_raw_counts) <- names(GSMList(gse)) 
+row.names(GSE107993_raw_counts) <- GSE107993_Non_normalized$Gene
+
+# Create Column Data
+data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
+  sapply(data_characteristic, '[[',x)) 
+head(characteristic_table)
+## Demo convert geographical region: Kenya to Kenya
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+colnames(characteristic_data_frame) <- c('Tissue','Group','Outlier',
+                                         'PatientID','TBStatus','Smear_result',
+                                         'Ethnicity','GeographicalRegion',"uk_arrival_year",
+                                         'Gender','Age','Visit_date','Timepoint_month')
+row.names(characteristic_data_frame) <- names(GSMList(gse)) 
+head(characteristic_data_frame)
+```
+
+## Create Summarized Experiment
+```{r}
+# Create Metadata
+GSE107993_experimentData <- new('MIAME',
+                      name="Akul Singhania",
+                      lab="The Francis Crick Institute",
+                      contact="akul.singhania@crick.ac.uk",
+                      title="A modular transcriptional signature identifies phenotypic heterogeneity of human tuberculosis infection.",
+                      abstract="We undertook RNA Sequencing (RNA-Seq) of our earlier Berry et al. 2010 (GSE19444 and GSE19442) cohorts and additionally set up a prospective cohort study at Leicester (UK) in subject groups of incident TB and recent TB contacts, respectively.In the Leicester cohort, we performed systematic longitudinal sampling and clinical characterisation first, to validate our TB signature using RNA-Seq in a new and independent cohort of individuals with active TB and LTBI, and secondly to provide longitudinal data in a low TB incidence setting",
+                      url="10.1038/s41467-018-04579-w",
+                      pubMedIds = '29921861',
+                      other=list(Platform = 'Illumina HiSeq 4000 (Homo sapiens)'))
+
+
+GSE107993_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE107993_Non_normalized_counts= as.matrix(GSE107993_raw_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE107993_experimentData)); GSE107993_summarizedExperiemnt
+
+```
+
+
+
+```{r}
+saveRDS(GSE107993_summarizedExperiemnt, ascii=FALSE, file='GSE107993/GSE107993_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+```
+

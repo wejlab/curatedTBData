@@ -30,15 +30,30 @@ download.file(url_cel,temp)
 untar(temp,exdir = tempd)
 #untar('GSE19442/GSE19442_RAW.tar', exdir="GSE19442/GSE19442_Raw")
 files <- list.files(tempd, pattern = "txt.*");files
-GSE19442_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
-GSE19442_Non_normalized <- do.call(cbind,GSE19442_Non_normalized_list)
+GSE19442_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
 
-dim(GSE19442_Non_normalized)
 ```
+
+## Check ID_REF for each data
+```{r}
+GSE19442_Non_normalized_list_ID <- sapply(GSE19442_Non_normalized_list, function(x) x[,1]) %>% data.frame()
+# check they have identical ID_REF
+check_1 <- sapply(1:ncol(GSE19442_Non_normalized_list_ID),function(x) all(GSE19442_Non_normalized_list_ID[,1]==GSE19442_Non_normalized_list_ID[,x]));check_1
+# No problem, all true
+```
+
+# Create Non-normalized data
+```{r}
+GSE19442_Non_normalized <- do.call(cbind,GSE19442_Non_normalized_list)
+GSE19442_Non_normalized <- GSE19442_Non_normalized[,-which(colnames(GSE19442_Non_normalized)=='ID_REF')[-1]]
+row.names(GSE19442_Non_normalized) <- GSE19442_Non_normalized$ID_REF
+#dim(GSE19442_Non_normalized)
+```
+
 
 ```{r}
 # Remove .Pval
-GSE19442_Non_pvalue <- GSE19442_Non_normalized[,-grep('.Pval',colnames(GSE19442_Non_normalized))]
+GSE19442_Non_pvalue <- GSE19442_Non_normalized[,-c(1,grep('.Pval',colnames(GSE19442_Non_normalized)))]
 GSE19442_Non_normalized_counts <- GSE19442_Non_pvalue
 dim(GSE19442_Non_pvalue)
 ```
@@ -56,10 +71,11 @@ OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to th
 GSE19442_Non_pvalue$ID_REF <- row.names(GSE19442_Non_pvalue)
 GSE19442_final <- GSE19442_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
 
-arrange(GSE19442_final, desc(times))
+#arrange(GSE19442_final, desc(times))
 
 ```
 
+## Create colData
 ```{r create column data}
 gse <- getGEO("GSE19442", GSEMatrix =  F)
 data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  

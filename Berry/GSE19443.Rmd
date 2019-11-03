@@ -21,7 +21,7 @@ library(illuminaHumanv3.db) # Illumina HumanHT-12 V3.0 expression beadchip
 ## Read in Non-normalized data
 ```{r, cache = TRUE}
 #setwd('~/Desktop/RA work/build_TB_data/Signatures/Berry')
-urls = getGEOSuppFiles("GSE19443", fetch_files = FALSE)
+urls <- getGEOSuppFiles("GSE19443", fetch_files = FALSE)
 url_cel <- as.character(urls$url[1])
 temp <- tempfile()
 tempd <- tempdir()
@@ -31,16 +31,41 @@ untar(temp,exdir = tempd)
 #untar('GSE19443/GSE19443_RAW.tar', exdir="GSE19443/GSE19443_Raw")
 
 files <- list.files(tempd, pattern = "txt.*");files
-GSE19443_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), row.names=1, header=TRUE, col.names = c(gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
-GSE19443_Non_normalized <- do.call(cbind,GSE19443_Non_normalized_list)
+GSE19443_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
+#GSE19443_Non_normalized <- do.call(cbind,GSE19443_Non_normalized_list)
 
-dim(GSE19443_Non_normalized)
+#dim(GSE19443_Non_normalized)
 
 ```
 
+## Check the names of ID_REF in each dataset
+```{r}
+GSE19443_Non_normalized_list_ID <- sapply(GSE19443_Non_normalized_list, function(x) x[,1]) %>% data.frame()
+# check they have identical ID_REF
+check_1 <- sapply(1:ncol(GSE19443_Non_normalized_list_ID),function(x) all(GSE19443_Non_normalized_list_ID[,1]==GSE19443_Non_normalized_list_ID[,x]));check_1
+
+# Combine data when they have the same ID_REF, create first sub-dataframe
+GSE19443_Non_normalized_sub1 <- do.call(cbind,GSE19443_Non_normalized_list[which(check_1)])
+GSE19443_Non_normalized_sub1 <- GSE19443_Non_normalized_sub1[,-which(colnames(GSE19443_Non_normalized_sub1)=='ID_REF')[-1]]
+
+###########################################
+## Check the FALSE part
+GSE19443_dat1 <- GSE19443_Non_normalized_list[-which(check_1)]
+GSE19443_dat1_ID <- sapply(GSE19443_dat1, function(x) x[,1]) %>% data.frame()
+check_2 <- sapply(1:ncol(GSE19443_dat1_ID),function(x) all(GSE19443_dat1_ID[,1]==GSE19443_dat1_ID[,x]));check_2
+
+GSE19443_Non_normalized_sub2 <- do.call(cbind,GSE19443_dat1)
+GSE19443_Non_normalized_sub2 <- GSE19443_Non_normalized_sub2[,-which(colnames(GSE19443_Non_normalized_sub2)=='ID_REF')[-1]]
+
+GSE19443_Non_normalized <- GSE19443_Non_normalized_sub1 %>% inner_join(GSE19443_Non_normalized_sub2, by= c('ID_REF'="ID_REF")) %>% data.frame()
+
+row.names(GSE19443_Non_normalized) <- GSE19443_Non_normalized$ID_REF
+```
+
+
 ```{r}
 # Remove .Pval
-GSE19443_Non_pvalue <- GSE19443_Non_normalized[,-grep('.Pval',colnames(GSE19443_Non_normalized))]
+GSE19443_Non_pvalue <- GSE19443_Non_normalized[,-c(1,grep('.Pval',colnames(GSE19443_Non_normalized)))]
 GSE19443_Non_normalized_counts <- GSE19443_Non_pvalue
 dim(GSE19443_Non_pvalue)
 ```
