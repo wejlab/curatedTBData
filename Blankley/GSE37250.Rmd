@@ -47,17 +47,24 @@ description_id_raw <- sapply(1:length(names(GSMList(gse))),
 description_id <- sapply(1:length(description_id_raw), 
                          function(x) gsub("\\..*", "", description_id_raw[x]))
 ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
-head(ID_table)
+ID_table
 ```
 
 ```{r mapping DescriptionID to sampleID}
 # Demo: convert X6247215025_L.AVG_Signal to 6247215025_L, should use \\. when mathcing . 
 colnames(GSE37250_Non_pvalue) <- sapply(1:ncol(GSE37250_Non_pvalue), 
                              function(x) gsub(".*X|\\..*", "", colnames(GSE37250_Non_pvalue)[x]))
-indx <- sapply(1:length(ID_table$DescriptionID), 
-              function(x) which(ID_table$DescriptionID %in% colnames(GSE37250_Non_pvalue)[x]))
-colnames(GSE37250_Non_pvalue) <- ID_table$SampleID[indx]
-GSE37250_Non_normalized_counts <- GSE37250_Non_pvalue
+
+## Produce Simialr results for both methods
+#indx <- rep(0,ncol(GSE37250_Non_pvalue))
+#for (i in 1:length(colnames(GSE37250_Non_pvalue))){
+#  indx[i] <- which(colnames(GSE37250_Non_pvalue) %in% ID_table$DescriptionID[i])
+#}
+indx <- sapply(1:length(colnames(GSE37250_Non_pvalue)), function(i) which(colnames(GSE37250_Non_pvalue) %in% ID_table$DescriptionID[i]))
+
+GSE37250_Non_pvalue_reorgan <- GSE37250_Non_pvalue[,indx]
+colnames(GSE37250_Non_pvalue_reorgan) <- ID_table$SampleID
+GSE37250_Non_normalized_counts <- GSE37250_Non_pvalue_reorgan
 colnames(GSE37250_Non_normalized_counts)[1:10]
 ```
 
@@ -68,13 +75,18 @@ data_characteristic <- lapply(1:length(GSMList(gse)), function(x)
 characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
   sapply(data_characteristic, '[[',x)) 
 ## Demo convert geographical region: Kenya to Kenya
-characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble() %>% mutate(ID_table$DescriptionID) %>% DataFrame()
 #colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
-colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalRegion','Tissue')
-row.names(characteristic_data_frame) <- colnames(GSE37250_Non_normalized_counts)
+colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalRegion','Tissue','DescriptionID')
+row.names(characteristic_data_frame) <- names(GSMList(gse))
+head(characteristic_data_frame)
+```
 
+
+```{r}
 # Create Row Data
-row_data <- DataFrame(SYMBOL=GSE37250_Non_normalized$SYMBOL)
+row_data <- DataFrame(GSE37250_col_name)
+row.names(row_data) <- row.names(GSE37250_Non_normalized)
 
 # Create Metadata
 GSE37250_experimentData <- new('MIAME',
@@ -82,10 +94,10 @@ GSE37250_experimentData <- new('MIAME',
                       lab="Imperial College London",
                       contact="v.wright@imperial.ac.uk",
                       title="Detection of tuberculosis in HIV-infected and -uninfected African adults using whole blood RNA expression signatures: a case-control study.",
-                      abstract="An example ExpressionSet",
+                      abstract="Adults were recruited from Cape Town, South Africa (n=300) and Karonga, Malawi (n=237) who were either HIV+ or HIV - with either active TB, LTBI or OD. ",
                       url="10.1371/journal.pmed.1001538",
                       pubMedIds = '24167453',
-                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)'))
 
 GSE37250_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE37250_Non_normalized_counts= as.matrix(GSE37250_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE37250_experimentData)); GSE37250_summarizedExperiemnt
 
@@ -93,4 +105,10 @@ GSE37250_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE37250_Non
 
 ```{r}
 saveRDS(GSE37250_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE37250/GSE37250_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
+
+colData(GSE37250_summarizedExperiemnt) %>% data.frame()
 ```
