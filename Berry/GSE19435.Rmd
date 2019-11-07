@@ -65,19 +65,23 @@ dim(GSE19435_Non_pvalue)
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation from vendor's information
+gpl6947 <- getGEO("GPL6947", GSEMatrix =  F)
+GPL6947_dat <- gpl6947@dataTable@table %>% data.frame()
+
 # Annotation
-PROBES <- row.names(GSE19435_Non_pvalue) # Should subsitute to Normalized file???
+PROBES <- row.names(GSE19435_Non_pvalue)
 OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- 'Unmapped'
+OUT[is.na(OUT)] <- NA
 
 # Map ProbeID to Gene Symbol 
-OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
-  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>% summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
 
 GSE19435_Non_pvalue$ID_REF <- row.names(GSE19435_Non_pvalue)
-GSE19435_final <- GSE19435_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+GSE19435_final <- GSE19435_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL6947_dat, by = c('ID_REF'='ID')) 
 
-arrange(GSE19435_final, desc(times))
+row_data <- GSE19435_final %>% dplyr::select(-grep('GSM',colnames(GSE19435_final))) %>% DataFrame()
+# arrange(GSE19435_final, desc(times))
 ```
 
 ## Create ColData
@@ -94,24 +98,25 @@ colnames(characteristic_data_frame) <- c('Age','Gender','Ethnicity','TBStatus','
 
 characteristic_data_frame$Age <- sapply(1:nrow(characteristic_data_frame), function(x) gsub('years.*','',characteristic_data_frame$Age[x]))
 
+indx <- sapply(1:length(names(GSMList(gse))), function(i) 
+  which(names(GSMList(gse)) %in% colnames(GSE19435_Non_normalized_counts)[i]));indx
+characteristic_data_frame <- characteristic_data_frame[indx,]
+
 row.names(characteristic_data_frame) <- colnames(GSE19435_Non_normalized_counts)
 head(characteristic_data_frame)
 ```
 
 ```{r Create RowData MetaData and summarized experiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE19435_final$SYMBOL)
-
 # Create Metadata
 GSE19435_experimentData <- new('MIAME',
                       name="Damien Chaussabel",
                       lab="Baylor Institute for Immunology Research",
                       contact="DChaussabel@benaroyaresearch.org",
                       title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Whole blood collected in tempus tubes from patients with different spectra of TB disease and healthy controls. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
                       url="10.1038/nature09247",
                       pubMedIds = '20725040',
-                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
 
 GSE19435_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE19435_Non_normalized_counts= as.matrix(GSE19435_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19435_experimentData)); GSE19435_summarizedExperiemnt
 
