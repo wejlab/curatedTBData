@@ -42,19 +42,25 @@ colnames(GSE56153_Non_normalized_counts) <- names(GSMList(gse))
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation from vendor's information
+gpl6883 <- getGEO("GPL6883", GSEMatrix = F)
+GPL6883_dat <- gpl6883@dataTable@table %>% data.frame()
+
 # Annotation
 PROBES <- row.names(GSE56153_Non_pvalue) # Should subsitute to Normalized file???
 OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- 'Unmapped'
+OUT[is.na(OUT)] <- NA
 
 # Map ProbeID to Gene Symbol 
 OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
-  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+  summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
 
 GSE56153_Non_pvalue$ID_REF <- row.names(GSE56153_Non_pvalue)
-GSE56153_final <- GSE56153_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+GSE56153_final <- GSE56153_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL6883_dat, by = c('ID_REF'='ID')) 
 
-#arrange(GSE42825_final, desc(times))
+# Create Row data annotation
+row_data <- GSE56153_final %>% dplyr::select(-grep('GSM',colnames(GSE56153_final))) %>% DataFrame()
+#arrange(GSE56153_final, desc(times))
 ```
 
 ## Create ColData
@@ -72,9 +78,6 @@ head(characteristic_data_frame)
 ```
 
 ```{r Create RowData MetaData and summarized experiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE56153_final$SYMBOL)
-
 # Create Metadata
 GSE56153_experimentData <- new('MIAME',
                       name="Ahmad Nazri Mohamed Naim",
@@ -84,7 +87,7 @@ GSE56153_experimentData <- new('MIAME',
                       abstract="Overall Design: Total RNA obtained from human whole blood of TB patients longitudinally sampled along 3 time-points: during active infection, during treatment, and after completion of curative treatment",
                       url="10.1371/journal.pone.0045839",
                       pubMedIds = '23029268',
-                      other=list(Platform = 'Illumina HumanRef-8 v3.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanRef-8 v3.0 expression beadchip (GPL6883)'))
 
 GSE56153_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE56153_Non_normalized_counts= as.matrix(GSE56153_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE56153_experimentData)); GSE56153_summarizedExperiemnt
 

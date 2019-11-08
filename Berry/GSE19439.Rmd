@@ -41,9 +41,12 @@ check_1 <- sapply(1:ncol(GSE19439_Non_normalized_list_ID),function(x) all(GSE194
 
 
 GSE19439_Non_normalized <- do.call(cbind,GSE19439_Non_normalized_list)
-GSE19439_Non_normalized <- GSE19439_Non_normalized[,-which(colnames(GSE19439_Non_normalized)=='ID_REF')[-1]]
-row.names(GSE19439_Non_normalized) <- GSE19439_Non_normalized$ID_REF
 
+# Remove redundant ID_REF
+GSE19439_Non_normalized <- GSE19439_Non_normalized[,-which(colnames(GSE19439_Non_normalized)=='ID_REF')[-1]]
+dim(GSE19439_Non_normalized)
+row.names(GSE19439_Non_normalized) <- GSE19439_Non_normalized$ID_REF
+dim(GSE19439_Non_normalized)
 ```
 
 
@@ -55,19 +58,24 @@ dim(GSE19439_Non_pvalue)
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation from vendor's information
+gpl6947 <- getGEO("GPL6947", GSEMatrix =  F)
+GPL6947_dat <- gpl6947@dataTable@table %>% data.frame()
+
 # Annotation
 PROBES <- row.names(GSE19439_Non_pvalue) # Should subsitute to Normalized file???
 OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- 'Unmapped'
+OUT[is.na(OUT)] <- NA
 
 # Map ProbeID to Gene Symbol 
-OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
-  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>% summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
 
 GSE19439_Non_pvalue$ID_REF <- row.names(GSE19439_Non_pvalue)
-GSE19439_final <- GSE19439_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+GSE19439_final <- GSE19439_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL6947_dat, by = c('ID_REF'='ID'))
 
-arrange(GSE19439_final, desc(times))
+row_data <- GSE19439_final %>% dplyr::select(-grep('GSM',colnames(GSE19439_final))) %>% DataFrame()
+View(row_data)
+# arrange(GSE19439_final, desc(times))
 ```
 
 ```{r get column data, cache=TRUE}
@@ -81,24 +89,25 @@ characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFram
 #colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
 colnames(characteristic_data_frame) <- c('Age','Gender','Ethnicity','TBStatus','GeographicalRegion','BcgVaccinated','BirthRegion','TST','ExposureLatent','index_case_disease_site','smear_of_index_case','modal_x-ray_grade', 'SputumSmearStatus','sputum_culture','bal_smear','bal_culture','IsolateSensitivity')
 
+indx <- sapply(1:length(names(GSMList(gse))), function(i) 
+  which(names(GSMList(gse)) %in% colnames(GSE19439_Non_normalized_counts)[i]));indx
+characteristic_data_frame <- characteristic_data_frame[indx,]
+
 row.names(characteristic_data_frame) <- colnames(GSE19439_Non_normalized_counts)
-head(characteristic_data_frame)
+#head(characteristic_data_frame)
 ```
 
 ```{r Create RowData MetaData and summarized experiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE19439_final$SYMBOL)
-
 # Create Metadata
 GSE19439_experimentData <- new('MIAME',
                       name="Damien Chaussabel",
                       lab="Baylor Institute for Immunology Research",
                       contact="DChaussabel@benaroyaresearch.org",
                       title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Whole blood collected in tempus tubes from patients with different spectra of TB disease and healthy controls. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
                       url="10.1038/nature09247",
                       pubMedIds = '20725040',
-                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
 
 GSE19439_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE19439_Non_normalized_counts= as.matrix(GSE19439_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19439_experimentData)); GSE19439_summarizedExperiemnt
 

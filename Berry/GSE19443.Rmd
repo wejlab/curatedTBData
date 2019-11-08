@@ -46,6 +46,8 @@ check_1 <- sapply(1:ncol(GSE19443_Non_normalized_list_ID),function(x) all(GSE194
 
 # Combine data when they have the same ID_REF, create first sub-dataframe
 GSE19443_Non_normalized_sub1 <- do.call(cbind,GSE19443_Non_normalized_list[which(check_1)])
+
+## Remove redundant ID_REF column
 GSE19443_Non_normalized_sub1 <- GSE19443_Non_normalized_sub1[,-which(colnames(GSE19443_Non_normalized_sub1)=='ID_REF')[-1]]
 
 ###########################################
@@ -55,6 +57,8 @@ GSE19443_dat1_ID <- sapply(GSE19443_dat1, function(x) x[,1]) %>% data.frame()
 check_2 <- sapply(1:ncol(GSE19443_dat1_ID),function(x) all(GSE19443_dat1_ID[,1]==GSE19443_dat1_ID[,x]));check_2
 
 GSE19443_Non_normalized_sub2 <- do.call(cbind,GSE19443_dat1)
+
+## Remove redundant ID_REF column
 GSE19443_Non_normalized_sub2 <- GSE19443_Non_normalized_sub2[,-which(colnames(GSE19443_Non_normalized_sub2)=='ID_REF')[-1]]
 
 GSE19443_Non_normalized <- GSE19443_Non_normalized_sub1 %>% inner_join(GSE19443_Non_normalized_sub2, by= c('ID_REF'="ID_REF")) %>% data.frame()
@@ -72,18 +76,23 @@ dim(GSE19443_Non_pvalue)
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
 # Annotation
-PROBES <- row.names(GSE19443_Non_pvalue) # Should subsitute to Normalized file???
+gpl6947 <- getGEO("GPL6947", GSEMatrix =  F)
+GPL6947_dat <- gpl6947@dataTable@table %>% data.frame()
+
+PROBES <- row.names(GSE19443_Non_pvalue)
 OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- 'Unmapped'
+OUT[is.na(OUT)] <- NA
 
 # Map ProbeID to Gene Symbol 
-OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
-  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>% summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
 
 GSE19443_Non_pvalue$ID_REF <- row.names(GSE19443_Non_pvalue)
-GSE19443_final <- GSE19443_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+GSE19443_final <- GSE19443_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL6947_dat, by = c('ID_REF'='ID')) 
 
-arrange(GSE19443_final, desc(times))
+# Create row data
+row_data <- GSE19443_final %>% dplyr::select(-grep('GSM',colnames(GSE19443_final))) %>% DataFrame()
+
+# arrange(GSE19443_final, desc(times))
 ```
 
 ```{r create column data}
@@ -98,24 +107,25 @@ characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFram
 colnames(characteristic_data_frame) <- c('Age','Gender','Ethnicity','TBStatus','GeographicalRegion','BcgVaccinated','BirthRegion','TST',
 'exposure_latent', 'index_case_disease_site', 'smear_of_index_case', 'modal_x_ray_grade','SputumSmearStatus','sputum_culture', 'bal_smear', 'bal_culture','isolate_sensitivity')
 
+indx <- sapply(1:length(names(GSMList(gse))), function(i) 
+  which(names(GSMList(gse)) %in% colnames(GSE19443_Non_normalized_counts)[i]));indx
+characteristic_data_frame <- characteristic_data_frame[indx,]
+
 row.names(characteristic_data_frame) <- colnames(GSE19443_Non_normalized_counts)
 head(characteristic_data_frame)
 ```
 
 ```{r Create RowData MetaData and summarized experiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE19443_final$SYMBOL)
-
 # Create Metadata
 GSE19443_experimentData <- new('MIAME',
                       name="Damien Chaussabel",
                       lab="Baylor Institute for Immunology Research",
                       contact="DChaussabel@benaroyaresearch.org",
                       title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Whole blood collected in EDTA tubes from patients with active TB disease and healthy controls. Blood was then processed or separated sequentially into neutrophil, monocyte, CD4+ or CD8+ populations and then processed. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
                       url="10.1038/nature09247",
                       pubMedIds = '20725040',
-                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
 
 GSE19443_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSEGSE19443_Non_normalized_counts= as.matrix(GSE19443_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE19443_experimentData)); GSE19443_summarizedExperiemnt
 

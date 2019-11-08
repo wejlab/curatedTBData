@@ -29,11 +29,13 @@ untar(temp,exdir = tempd)
 #untar('GSE22098/GSE22098_RAW.tar', exdir="GSE22098/GSE22098_Raw")
 files <- list.files(tempd, pattern = "txt.*");files
 
-# Special handling, different length of files for each sample
+#### Special list of files, different length of files for each sample/file
 GSE22098_Non_normalized_list <- lapply(files, function(x) read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval'))))
 ```
 
+
 ```{r}
+# Two fifferent length of giles: 48804, 48803
 # 48804
 indx_1 <- which(unlist(lapply(GSE22098_Non_normalized_list, nrow))=='48804')
 GSE22098_Non_normalized_list_1 <- GSE22098_Non_normalized_list[indx_1]
@@ -41,25 +43,26 @@ GSE22098_Non_normalized_list_1_ID <- sapply(GSE22098_Non_normalized_list_1, func
 
 # check they have identical ID_REF
 sapply(1:ncol(GSE22098_Non_normalized_list_1_ID),function(x) all(GSE22098_Non_normalized_list_1_ID[,1]==GSE22098_Non_normalized_list_1_ID[,x]))
+
+# Yes, they are all true
 GSE22098_Non_normalized_1 <- do.call(cbind,GSE22098_Non_normalized_list_1)
 
 # Remove redundant ID_REF
-GSE22098_Non_normalized_1 <- GSE22098_Non_normalized_1[,-which(colnames(GSE22098_Non_normalized_1)%in%'ID_REF')[-1]]
+GSE22098_Non_normalized_1 <- GSE22098_Non_normalized_1[,-which(colnames(GSE22098_Non_normalized_1) %in% 'ID_REF')[-1]]
 
 # Check duplicated ID_REF
 GSE22098_Non_normalized_1_ID <- as.data.frame(table(GSE22098_Non_normalized_1$ID_REF))
 duplicate_id <- GSE22098_Non_normalized_1_ID %>% filter(Freq == '2')
 duplicate_value <- GSE22098_Non_normalized_1 %>% filter(ID_REF == duplicate_id$Var1)
-
-
+# ILMN_2038777 is the duplicated ID, we get the mean
 
 GSE22098_Non_normalized_1_final <- GSE22098_Non_normalized_1 %>% filter(ID_REF !=duplicate_id$Var1)
+
+# ILMN_2038777 is the duplicated ID, we get the mean 
 GSE22098_Non_normalized_1_final <- bind_rows(GSE22098_Non_normalized_1_final,apply(duplicate_value[,-1],2,mean))
 GSE22098_Non_normalized_1_final$ID_REF[nrow(GSE22098_Non_normalized_1_final)] <- as.character(duplicate_id$Var1)
 row.names(GSE22098_Non_normalized_1_final) <- GSE22098_Non_normalized_1_final$ID_REF
-
 ```
-
 
 
 ```{r}
@@ -69,13 +72,17 @@ GSE22098_Non_normalized_list_2 <- GSE22098_Non_normalized_list[indx_2]
 GSE22098_Non_normalized_list_2_ID <- sapply(GSE22098_Non_normalized_list_2, function(x) x[,1]) %>% data.frame()
 # check they have identical ID_REF
 check_1 <- sapply(1:ncol(GSE22098_Non_normalized_list_2_ID),function(x) all(GSE22098_Non_normalized_list_2_ID[,1]==GSE22098_Non_normalized_list_2_ID[,x]))
+check_1
+# No #
 
+##########################################################
 ## First sub dataframe ### 261 in the original
 # select 59/261
 GSE22098_Non_normalized_2_sub1 <- do.call(cbind,GSE22098_Non_normalized_list_2[which(check_1)])
-# check they have the same ID_REF, should obtain all trues
+# check they have the same ID_REF, should obtain all trues -- Yes
 sapply(which(colnames(GSE22098_Non_normalized_2_sub1)=='ID_REF'),function(x) all(GSE22098_Non_normalized_2_sub1[,1]==GSE22098_Non_normalized_2_sub1[,x]))
 
+# remove redundant ID_ref
 GSE22098_final_sub1 <- GSE22098_Non_normalized_2_sub1[,-which(colnames(GSE22098_Non_normalized_2_sub1)=='ID_REF')[-1]]
 
 
@@ -84,7 +91,7 @@ GSE22098_final_sub1 <- GSE22098_Non_normalized_2_sub1[,-which(colnames(GSE22098_
 GSE22098_2_dat1 <- GSE22098_Non_normalized_list_2[-which(check_1)]
 
 GSE22098_2_dat1_ID <- sapply(GSE22098_2_dat1, function(x) x[,1]) %>% data.frame()
-check_2 <- sapply(1:ncol(GSE22098_2_dat1_ID),function(x) all(GSE22098_2_dat1_ID[,1]==GSE22098_2_dat1_ID[,x]))
+check_2 <- sapply(1:ncol(GSE22098_2_dat1_ID),function(x) all(GSE22098_2_dat1_ID[,1]==GSE22098_2_dat1_ID[,x]));check_2
 
 # Second sub dataframe 
 # select 18
@@ -95,11 +102,12 @@ sapply(which(colnames(GSE22098_Non_normalized_2_sub2)=='ID_REF'),function(x) all
 
 GSE22098_final_sub2 <- GSE22098_Non_normalized_2_sub2[,-which(colnames(GSE22098_Non_normalized_2_sub2)=='ID_REF')[-1]]
 
+# Take False part from check-2
 ################################
 GSE22098_2_dat2 <- GSE22098_2_dat1[-which(check_2)]
 GSE22098_2_dat2_ID <- sapply(GSE22098_2_dat2, function(x) x[,1]) %>% data.frame()
-check_3 <- sapply(1:ncol(GSE22098_2_dat2_ID),function(x) all(GSE22098_2_dat2_ID[,1]==GSE22098_2_dat2_ID[,x]))
-
+check_3 <- sapply(1:ncol(GSE22098_2_dat2_ID),function(x) all(GSE22098_2_dat2_ID[,1]==GSE22098_2_dat2_ID[,x]));check_3
+sum(check_3=F)
 # Third Sub dataframe
 # all are true
 GSE22098_Non_normalized_2_sub3 <- do.call(cbind,GSE22098_2_dat2)
@@ -110,7 +118,7 @@ GSE22098_Non_normalized_2_sub3 <- do.call(cbind,GSE22098_2_dat2)
 GSE22098_final_sub3 <- GSE22098_Non_normalized_2_sub3[,-which(colnames(GSE22098_Non_normalized_2_sub3)=='ID_REF')[-1]]
 
 # Combine three sub-dataframes from list 2
-GSE22098_Non_normalized_2_final <- GSE22098_final_sub1 %>% inner_join(GSE22098_final_sub2, by= c('ID_REF'="ID_REF")) %>% inner_join(GSE22098_final_sub3, by= c('ID_REF'="ID_REF")) %>% as_tibble()
+GSE22098_Non_normalized_2_final <- GSE22098_final_sub1 %>% inner_join(GSE22098_final_sub2, by= c('ID_REF'="ID_REF")) %>% inner_join(GSE22098_final_sub3, by= c('ID_REF'="ID_REF")) 
 
 ```
 
@@ -118,6 +126,7 @@ GSE22098_Non_normalized_2_final <- GSE22098_final_sub1 %>% inner_join(GSE22098_f
 # Combine dataframes from list 1 and list 2
 GSE22098_Non_normalized <- GSE22098_Non_normalized_1_final %>% inner_join(GSE22098_Non_normalized_2_final, by= c('ID_REF'="ID_REF")) %>% data.frame()
 row.names(GSE22098_Non_normalized) <- GSE22098_Non_normalized$ID_REF
+dim(GSE22098_Non_normalized)
 ```
 
 ```{r}
@@ -128,17 +137,22 @@ dim(GSE22098_Non_pvalue)
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Annotation from vendor's information
+gpl6947 <- getGEO("GPL6947", GSEMatrix =  F)
+GPL6947_dat <- gpl6947@dataTable@table %>% data.frame()
+
 # Annotation
 PROBES <- row.names(GSE22098_Non_pvalue) 
 OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- 'Unmapped'
+OUT[is.na(OUT)] <- NA
 
 # Map ProbeID to Gene Symbol 
-OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
-  summarise(SYMBOL = paste(SYMBOL, collapse=", "), times = length(unlist(strsplit(SYMBOL, ",")))) 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>% summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
 
 GSE22098_Non_pvalue$ID_REF <- row.names(GSE22098_Non_pvalue)
-GSE22098_final <- GSE22098_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% as_tibble()
+GSE22098_final <- GSE22098_Non_pvalue %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL6947_dat, by = c('ID_REF'='ID')) 
+
+row_data <- GSE22098_final %>% dplyr::select(-grep('GSM',colnames(GSE22098_final))) %>% DataFrame()
 
 arrange(GSE22098_final, desc(times))
 ```
@@ -154,21 +168,22 @@ characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFram
 #colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
 colnames(characteristic_data_frame) <- c('Age','Gender','Ethnicity','HealthControl')
 
+indx <- sapply(1:length(names(GSMList(gse))), function(i) 
+  which(names(GSMList(gse)) %in% colnames(GSE22098_Non_normalized_counts)[i]));indx
+characteristic_data_frame <- characteristic_data_frame[indx,]
+
 row.names(characteristic_data_frame) <- colnames(GSE22098_Non_normalized_counts)
 head(characteristic_data_frame)
 ```
 
 ```{r Create RowData MetaData and summarized experiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE22098_final$SYMBOL)
-
 # Create Metadata
 GSE22098_experimentData <- new('MIAME',
                       name="Damien Chaussabel",
                       lab="Baylor Institute for Immunology Research",
                       contact="DChaussabel@benaroyaresearch.org",
                       title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
-                      abstract="An example SummarizedExperimentObject",
+                      abstract="Three milliliters of whole blood was collected in Tempus tubes from 12 pediatric streptococcus, 40 pediatric staphylococcus, 31 still’s disease, 82 pediatric systemic lupus erythematosus (SLE) and 28 adult SLE patients. RNA was extracted and globin reduced.",
                       url="10.1038/nature09247",
                       pubMedIds = '20725040',
                       other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip'))
