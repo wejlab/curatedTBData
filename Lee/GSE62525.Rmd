@@ -15,8 +15,7 @@ library(preprocessCore)
 library(SummarizedExperiment)
 library(dplyr)
 library(limma)
-BiocManager::install('arrayQuality')
-library(arrayQuality)
+
 # Phalanx Human OneArray Ver. 6 Release 1
 ```
 
@@ -29,7 +28,7 @@ download.file(url_cel,temp)
 untar(temp,exdir = tempd)
 
 gprFiles <- list.files(path = tempd, pattern = '*.gpr',full.names=TRUE);gprFiles
-GSE62525_RG <- read.maimages(gprFiles, source="genepix",columns = list(R = "F635 Median", Rb = "B635 Median"))
+GSE62525_RG <- read.maimages(gprFiles, source="genepix",columns = list(R = "F635 Median", G = "B635 Median"))
 ```
 
 ## Create Row Data
@@ -37,13 +36,14 @@ GSE62525_RG <- read.maimages(gprFiles, source="genepix",columns = list(R = "F635
 ## Create Row Data
 row_data <- GSE62525_RG$genes %>% DataFrame()
 row.names(row_data) <- paste0(row_data$Block,'_',row_data$Row,'_',row_data$Column)
+head(row_data)
 ```
 
 ## Create Non-normalized counts
 ```{r}
 gse <- getGEO("GSE62525", GSEMatrix = F)
 
-GSE62525_raw <- GSE62525_RG$E-GSE62525_RG$Eb
+GSE62525_raw <- GSE62525_RG$R-GSE62525_RG$G # Forefround - Background
 GSE62525_Non_normalized_counts <- GSE62525_raw
 
 colnames(GSE62525_Non_normalized_counts) <- names(GSMList(gse))
@@ -56,14 +56,16 @@ row.names(GSE62525_Non_normalized_counts) <- row.names(row_data)
 # Create Column Data
 data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
   GSMList(gse)[[x]]@header$characteristics_ch1)
+Title <- data_characteristic <- sapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$title)
 characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
   sapply(data_characteristic, '[[',x)) 
 head(characteristic_table)
 ## Demo convert geographical region: Kenya to Kenya
-characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble() %>% mutate(Title=Title) %>% DataFrame()
 #colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
-colnames(characteristic_data_frame) <- c('TBStatus')
-row.names(characteristic_data_frame) <- colnames(GSE62525_Non_normalized_counts)
+colnames(characteristic_data_frame) <- c('TBStatus','Title')
+row.names(characteristic_data_frame) <- names(GSMList(gse))
 ```
 
 ```{r}
@@ -76,7 +78,7 @@ GSE62525_experimentData <- new('MIAME',
                       abstract="We isolated total RNA from the PBMC from 7 active TB, 7 latent infection, and 7 healthy individuals and profiled their transcriptional profiles to identify signficantly differentially expressed geens that differ among these three groups",
                       url="10.1186/s12859-015-0848-x",
                       pubMedIds = '26818387',
-                      other=list(Platform = 'Phalanx Human OneArray Ver. 6 Release 1 (GPL1695)'))
+                      other=list(Platform = 'Phalanx Human OneArray Ver. 6 Release 1 :GPL1695'))
 
 
 GSE62525_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE62525_Non_normalized_counts= as.matrix(GSE62525_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE62525_experimentData)); GSE62525_summarizedExperiemnt

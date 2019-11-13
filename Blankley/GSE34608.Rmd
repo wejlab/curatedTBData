@@ -23,7 +23,7 @@ library(limma)
 setwd('~/Desktop/RA work/build_TB_data/Signatures/Blankley')
 getwd()
 geo_access <- "GSE34608"
-filePaths = getGEOSuppFiles(geo_access)
+filePaths <- getGEOSuppFiles(geo_access)
 untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',geo_access,'_Raw'))
 ```
 
@@ -32,6 +32,7 @@ untar(paste0(geo_access,'/',geo_access,'_RAW.tar'), exdir=paste0(geo_access,'/',
 # Create Target file for AgiMicroRna
 ## Sarcoidosis--1 for micro,  Tuberculosis--2 for micro, control -- 3 for micro 
 # Platform: Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)
+## A first column FileName is mandatory and includes the image data files names. A second column Treatment is also mandatory and includes the treatment effect. The third column, GErep is also mandatory, and includes the treatment effect in a numeric code
 Treatment <- c(rep('Sarcoidosis_micro',8),
                rep('Tuberculosis_micro',8),
                rep('Control_micro',8))
@@ -67,20 +68,29 @@ target_micro <- read.delim('target_micro.txt')
 
 GSE34608_micro <- readMicroRnaAFE(target_micro,verbose=TRUE)
 
-# Get gMeanSignal: Raw signal for every probe
-GSE34608_non_normalized_micro <- GSE34608_micro$meanS
+# Get gTotalGeneSignal as the TotalProbeSignal times the number of probes per gene. 
+# gTotalGeneSignal can be used in the differential expres- sion analysis after a possible normalization step
+GSE34608_non_normalized_micro <- GSE34608_micro$TGS
 
-# Assign rownames and colnames to the raw signal, assign micro RNA name to the row
-row.names(GSE34608_non_normalized_micro) <- GSE34608_micro$genes$GeneName
+# Assign rownames and colnames to the raw signal, assign Probe name to the row
+row.names(GSE34608_non_normalized_micro) <- GSE34608_micro$genes$ProbeName
 files <- list.files('/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw',pattern = "txt.gz.*")
 files_names <- gsub('_.*','',files)
 colnames(GSE34608_non_normalized_micro) <- files_names[1:24]
 ```
 
-```{r convert ProbeID to Gene Symbol, cache=TURE}
-# Use information provided by vendor
+## Create Row data
+```{r}
+gpl7731 <- getGEO('GPL7731', GSEMatrix =  F)
+gpl7331_annotate <- gpl7731@dataTable@table %>% distinct(`PROBE NAME`, .keep_all = TRUE) %>% filter(`PROBE NAME`!='')
+
+GSE34608_micro_row_name <- row.names(GSE34608_non_normalized_micro) %>% data.frame()
+names(GSE34608_micro_row_name) <- c('ProbeName')
+
+row_data_micro <- GSE34608_micro_row_name %>%  left_join(gpl7331_annotate, by=c('ProbeName'='PROBE NAME')) %>% DataFrame()
 ```
 
+## Create Column data
 ```{r create Column Data, cache=TRUE}
 gse <- getGEO(geo_access, GSEMatrix =  F)
 data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
@@ -88,6 +98,7 @@ data_characteristic <- lapply(1:length(GSMList(gse)), function(x)
 characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
   sapply(data_characteristic, '[[',x)) 
 characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+head(characteristic_data_frame)
 colnames(characteristic_data_frame) <- c('Gender','Tissue','TBStatus','Subject')
 row.names(characteristic_data_frame) <- names(GSMList(gse))
 # Split MicroRNA & RNA
@@ -106,9 +117,9 @@ GSE34608_experimentData_micro <- new('MIAME',
                       abstract="Gene and microRNA expression analysis of whole blood RNA from tuberculosis and sarcoidosis patients and healthy controls",
                       url="10.1073/pnas.1121072109",
                       pubMedIds = '22547807',
-                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
+                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version) GPL7731'))
 
-GSE34608_summarizedExperiemnt_micro <- SummarizedExperiment(assays = list(GSE34608_non_normalized_micro= as.matrix(GSE34608_non_normalized_micro)), colData = characteristic_data_frame_micro, metadata = list(GSE34608_experimentData_micro)); GSE34608_summarizedExperiemnt_micro
+GSE34608_summarizedExperiemnt_micro <- SummarizedExperiment(assays = list(GSE34608_non_normalized_micro= as.matrix(GSE34608_non_normalized_micro)), colData = characteristic_data_frame_micro, rowData = row_data_micro, metadata = list(GSE34608_experimentData_micro)); GSE34608_summarizedExperiemnt_micro
 
 ```
 
@@ -123,7 +134,7 @@ saveRDS(GSE34608_summarizedExperiemnt_micro, ascii=FALSE, file='/Users/xutaowang
 knitr::opts_knit$set(root.dir = "/Users/xutaowang/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GSE34608_Raw")
 
 #knitr::opts_knit$set(root.dir = paste0(geo_access,'/',geo_access,'_Raw'))
-knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
@@ -133,28 +144,26 @@ knitr::opts_chunk$set(echo = TRUE)
 #Load limma
 library(limma)
 targetinfo <- read.delim("target_RNA.txt")
-#Read files
-# One color??
+
+# Reading Single-Channel Agilent Intensity Data
 GSE34608_RNA <- read.maimages(targetinfo,source="agilent",green.only = TRUE)
+
+# The green.only argument tells read.maimages() to output an EList object instead an RGList. The raw intensities will be stored in the E component of the data object
 GSE34608_raw <- GSE34608_RNA$E
 row.names(GSE34608_raw) <- GSE34608_RNA$genes$ProbeName
-colnames(GSE34608_raw) <- names(GSMList(gse))[25:68]
+colnames(GSE34608_raw) <- files_names[25:68]
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
-Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE34608/GPL6480-9577.txt", comment.char="#", stringsAsFactors = FALSE)
+gpl6480 <- getGEO('GPL6480',GSEMatrix = F) 
+gpl6480_annotate <- gpl6480@dataTable@table
 
-View(data.frame((table(Agi_annotate$ID))))
 ## Each ID is unique in the reference file
 
 # Create Row Data
 GSE34608_probe <- data.frame(GSE34608_RNA$genes$ProbeName)
 colnames(GSE34608_probe) <- "ID_REF"
-row_data <- GSE34608_probe %>% left_join(Agi_annotate,by=c('ID_REF'='ID'))
-row_data$GENE_SYMBOL[row_data$GENE_SYMBOL==""] <- "Unmapped"
-
-row_data <- DataFrame(row_data)
-row.names(row_data) <- GSE34608_RNA$genes$ProbeName
+row_data <- GSE34608_probe %>% left_join(gpl6480_annotate,by=c('ID_REF'='ID')) %>% DataFrame()
 ```
 
 ```{r create SummarizedExperimentObject, cache=TRUE}
@@ -166,7 +175,7 @@ GSE34608_experimentData_RNA <- new('MIAME',
                       abstract="Gene and microRNA expression analysis of whole blood RNA from tuberculosis and sarcoidosis patients and healthy controls",
                       url="10.1073/pnas.1121072109",
                       pubMedIds = '22547807',
-                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version)'))
+                      other=list(Platform = 'Agilent-019118 Human miRNA Microarray 2.0 G4470B (Feature Number version) GPL6480'))
 
 GSE34608_summarizedExperiemnt_RNA <- SummarizedExperiment(assays = list(GSE34608_non_normalized_RNA= as.matrix(GSE34608_raw)), colData = characteristic_data_frame_RNA, rowData = row_data, metadata = list(GSE34608_experimentData_RNA)); GSE34608_summarizedExperiemnt_RNA
 ```
