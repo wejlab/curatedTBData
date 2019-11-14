@@ -61,6 +61,7 @@ View(data.frame((table(GPL11532_annotate$ID))))
 # Checked, they are unique
 GSE73408_normalized_rma <- GSE73408_normalized_rma %>% as_tibble() %>% mutate(ID_REF=as.numeric(row.names(GSE73408_normalized_rma)))
 
+#### Run these two together if need re-run!
 row_data <- GSE73408_normalized_rma %>% left_join(GPL11532_annotate, by=c('ID_REF' = 'ID'))
 row_data <- row_data[,-grep('GSM',colnames(row_data))] %>% DataFrame()
 ```
