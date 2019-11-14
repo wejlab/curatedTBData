@@ -1,0 +1,53 @@
+---
+title: "GSE73408_multi"
+author: "Xutao Wang"
+date: "11/13/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(dplyr)
+library(pd.hugene.1.1.st.v1)
+library(MultiAssayExperiment)
+library(GenomicRanges)
+library(SummarizedExperiment)
+library(RaggedExperiment)
+```
+
+# Read in Summarized experiment object
+```{r}
+GSE73408_summarizedExperiemnt <- readRDS('GSE73408/GSE73408_summarizedExperiemnt.RDS')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
