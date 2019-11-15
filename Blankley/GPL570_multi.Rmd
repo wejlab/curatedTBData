@@ -1,0 +1,125 @@
+---
+title: "GSE54992_Multi"
+author: "Xutao Wang"
+date: "11/10/2019"
+output: html_document
+---
+
+```{r libraries, message = FALSE, cache=TRUE}
+library(GEOquery)
+library(preprocessCore)
+library(dplyr)
+library(pd.hugene.1.1.st.v1)
+library(MultiAssayExperiment)
+library(GenomicRanges)
+library(SummarizedExperiment)
+library(RaggedExperiment)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Function for creating multiassay object for Affymetrix Human Genome U133 Plus 2.0 Array
+```{r}
+# geo_access='GSE54992'
+get_expr_symbol <- function(geo_access){
+  # Read in data and get expression matrix
+  sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+  sobject_exprs <- assay(sobject)
+  
+  # merge two types of symbol and make them into one column, use the platform information as    refernce
+  Symbol_R <- rowData(sobject)@listData$SYMBOL 
+  Symbol_plat <- rowData(sobject)@listData$Gene.Symbol
+  Symbol_plat_new <- Symbol_plat
+  for (i in 1:length(Symbol_R)){
+  if (Symbol_plat_new[i]==''){
+    Symbol_plat_new[i] = Symbol_R[i]
+    }
+  }
+  # Add new column into the expression matrix
+  sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=Symbol_plat_new) %>%    filter(SYMBOL!='NA')
+
+  # Create expression matrix with gene symbol
+  sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
+  row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
+  
+  sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')]
+  
+  # Create Map
+  probe_map <- data.frame(primary =  row.names(colData(sobject)),
+    colname = row.names(colData(sobject)), stringsAsFactors = FALSE)
+  symbol_map <- probe_map
+  
+  result <- list(sobject_exprs_symbol=sobject_exprs_symbol,symbol_map=symbol_map,probe_map=probe_map)
+  
+  return(result)
+  
+}
+
+```
+
+# Create multiassay object for GPL570
+```{r}
+# Still need to get in the .RDS data
+geo_set <- c('GSE54992','GSE36238','GSE31348')
+Affy_RDS <- lapply(geo_set, function(x) readRDS(paste0(x,'/',x,'_summarizedExperiemnt.RDS')))
+names(Affy_RDS) <- geo_set
+
+Affy_info <- lapply(geo_set, function(x) get_expr_symbol(x))
+listmap_symbol <- lapply(Affy_info,'[[',2)
+names(listmap_symbol) <- c("GSE54992_symbol", 'GSE36238_symbol', "GSE31348_symbol")
+
+listmap_probe <- lapply(Affy_info,'[[',3)
+names(listmap_probe) <- c("GSE54992_probe", 'GSE36238_probe', "GSE31348_probe")
+
+listmap <- c(listmap_symbol,listmap_probe)
+dfmap <- listToMap(listmap)
+
+GSE54992_colinfo <- colData(Affy_RDS$GSE54992) %>% data.frame()
+GSE36238_colinfo <- colData(Affy_RDS$GSE36238) %>% data.frame()
+GSE31348_colinfo <- colData(Affy_RDS$GSE31348) %>% data.frame()
+
+all_sample <-  unlist(sapply(listmap_symbol, function(x) x$primary))
+names(all_sample) <- NULL; all_sample
+
+colnames(GSE54992_colinfo);colnames(GSE36238_colinfo);colnames(GSE31348_colinfo)
+```
+
+```{r}
+# Create Tissue
+Tissue <- c(GSE54992_colinfo$Tissue %>% as.character(),GSE36238_colinfo$Tissue %>% as.character(),GSE31348_colinfo$Tissue %>% as.character());Tissue
+
+# Create TBStatus and TimePostTreatment
+TBStatus <- c(GSE54992_colinfo$TBStatus %>% as.character(),rep('Tuberculosis',nrow(GSE36238_colinfo)),as.character(GSE31348_colinfo$TBStatus)%>% as.character());TBStatus
+
+TBStatus <- ifelse(TBStatus=='TB','Tuberculosis',TBStatus) 
+index_treatment <- which(TBStatus %in% 'TB_treatment')
+
+TimePostTreatment <- rep(NA,length(TBStatus))
+TimePostTreatment[index_treatment] <- GSE54992_colinfo$TimePostTreatment[index_treatment];TimePostTreatment
+
+TBStatus[index_treatment] <- 'Tuberculosis';TBStatus
+
+# Create TimePoint
+TimePoint <- c(rep(NA,nrow(GSE54992_colinfo)),GSE36238_colinfo$TimePoint %>% as.character(), GSE31348_colinfo$TimePoint %>% as.character())
+
+# Create PatientID
+Patient_id <- c(rep(NA,nrow(GSE54992_colinfo)),GSE36238_colinfo$Patient_id %>% as.character(), GSE31348_colinfo$Patient_id %>% as.character())
+
+# Get the primary matrix
+primary <- data.frame(TBStatus=TBStatus,Tissue=Tissue, TimePoint=TimePoint,
+                      Patient_id=Patient_id,TimePostTreatment=TimePostTreatment,
+    row.names=all_sample)
+```
+
+# Create Multi Assay Object
+```{r}
+objlist <- list("GSE54992_probe" = Affy_RDS[[1]], "GSE54992_symbol" = lapply(Affy_info,'[[',1)[[1]],
+                "GSE36238_probe" = Affy_RDS[[2]],"GSE36238_symbol" = lapply(Affy_info,'[[',1)[[2]],
+                "GSE31348_probe" = Affy_RDS[[3]], "GSE31348_symbol" = lapply(Affy_info,'[[',1)[[3]])
+myMultiAssay <- MultiAssayExperiment(objlist, primary, dfmap)
+
+myMultiAssay
+```
+
