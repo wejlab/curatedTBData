@@ -100,9 +100,6 @@ head(characteristic_data_frame)
 ```
 
 ```{r create SummarizedExperiment}
-# Create Row data annotation
-row_data <- DataFrame(SYMBOL=GSE50834_final$SYMBOL)
-
 # Create Metadata
 GSE50834_experimentData <- new('MIAME',
                       name="Louise C Showe",
@@ -112,7 +109,7 @@ GSE50834_experimentData <- new('MIAME',
                       abstract="Total RNA obtained from PBMC from a South African cohort. Microarry analysis was performed to compare gene expression in patients either infected with HIV or co-infected with HIV/TB.",
                       url="10.1371/journal.pone.0089925",
                       pubMedIds = '24587128',
-                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip'))
+                      other=list(Platform = 'Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)'))
 
 GSE50834_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE50834_Non_normalized_counts= as.matrix(GSE50834_Non_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE50834_experimentData)); GSE50834_summarizedExperiemnt
 
@@ -126,6 +123,64 @@ saveRDS(GSE50834_summarizedExperiemnt, ascii=FALSE, file='GSE50834/GSE50834_summ
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
 ```
+
+### Make a matrix contain the NA's for the TB status cariter
+#### Standard column names come from Berry GSE19443
+```{r}
+getwd()
+geo_access <- 'GSE50834'
+sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+```
+
+```{r create new column information data}
+standard_name_seq <- colData(readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/GSE19443_summarizedExperiemnt.RDS')) %>% data.frame() %>% colnames
+new_coldata <- function(sobject){
+  col_info <- colData(sobject) %>% data.frame()
+  dat_NA_new <- matrix(c(rep('n.a.',length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
+                             byrow=T,dimnames=list(row.names(col_info),
+                                                   standard_name_seq)) %>% data.frame()
+  
+  # fill in with existing data
+  overlap_name <- standard_name_seq[which(colnames(dat_NA_new) %in% colnames(col_info))]
+  for (i in overlap_name){
+    dat_NA_new[i] <- col_info[i]
+  }
+  
+  # Append the rest of cloumns to the dataframe
+  col_info_rest <- col_info %>% dplyr::select(-overlap_name)
+  dat_final <- cbind(dat_NA_new,col_info_rest)
+  
+  return(dat_final)
+}
+
+new_col_info <- new_coldata(sobject)
+
+```
+
+# Rename TBstatus
+### PTB: active TB
+### Latent
+### Control
+### OD: other disease
+```{r}
+TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
+unique(TBStatus_temp)
+new_col_info$HIVStatus <- "HIV positive"
+
+TBStatus <- ifelse(TBStatus_temp=='HIV/TB','PTB','OD')
+TBStatus
+
+new_col_info$TBStatus <- TBStatus
+
+new_col_info %>% View()
+
+colData(sobject) <- new_col_info %>% DataFrame()
+
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+
+```
+
+
 
 
 

@@ -25,7 +25,6 @@ url_non_normalized <- as.character(urls$url[1])
 temp <- tempfile()
 download.file(url_non_normalized,temp)
 
-library(readxl)
 GSE107993_Non_normalized <- read_excel(temp)
 colnames(GSE107993_Non_normalized)
 # Obtain row data information from the raw data
@@ -49,13 +48,15 @@ characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
   sapply(data_characteristic, '[[',x)) 
 head(characteristic_table)
 ## Demo convert geographical region: Kenya to Kenya
-characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% data.frame()
 #colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
-colnames(characteristic_data_frame) <- c('Tissue','Group','Outlier',
-                                         'PatientID','TBStatus','Smear_result',
-                                         'Ethnicity','GeographicalRegion',"uk_arrival_year",
+colnames(characteristic_data_frame) <- c('Tissue','TBStatus','Outlier',
+                                         'PatientID','TBType','Smear_result',
+                                         'Ethnicity','BirthRegion',"uk_arrival_year",
                                          'Gender','Age','Visit_date','Timepoint_month')
 row.names(characteristic_data_frame) <- names(GSMList(gse)) 
+
+characteristic_data_frame$Gender <- ifelse(characteristic_data_frame$Gender=="M","Male","Female")
 head(characteristic_data_frame)
 ```
 
@@ -70,10 +71,10 @@ GSE107993_experimentData <- new('MIAME',
                       abstract="We undertook RNA Sequencing (RNA-Seq) of our earlier Berry et al. 2010 (GSE19444 and GSE19442) cohorts and additionally set up a prospective cohort study at Leicester (UK) in subject groups of incident TB and recent TB contacts, respectively.In the Leicester cohort, we performed systematic longitudinal sampling and clinical characterisation first, to validate our TB signature using RNA-Seq in a new and independent cohort of individuals with active TB and LTBI, and secondly to provide longitudinal data in a low TB incidence setting",
                       url="10.1038/s41467-018-04579-w",
                       pubMedIds = '29921861',
-                      other=list(Platform = 'Illumina HiSeq 4000 (Homo sapiens)'))
+                      other=list(Platform = 'Illumina HiSeq 4000 (Homo sapiens):GPL20301'))
 
 
-GSE107993_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE107993_Non_normalized_counts= as.matrix(GSE107993_raw_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE107993_experimentData)); GSE107993_summarizedExperiemnt
+GSE107993_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE107993_Non_normalized_counts= as.matrix(GSE107993_raw_counts)), colData = DataFrame(characteristic_data_frame), rowData = row_data, metadata = list(GSE107993_experimentData)); GSE107993_summarizedExperiemnt
 
 ```
 
@@ -86,4 +87,61 @@ saveRDS(GSE107993_summarizedExperiemnt, ascii=FALSE, file='GSE107993/GSE107993_s
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
 ```
+
+### Make a matrix contain the NA's for the TB status cariter
+#### Standard column names come from Berry GSE19443
+```{r}
+getwd()
+geo_access <- 'GSE107993'
+sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+```
+
+```{r create new column information data}
+standard_name_seq <- colData(readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/GSE19443_summarizedExperiemnt.RDS')) %>% data.frame() %>% colnames
+new_coldata <- function(sobject){
+  col_info <- colData(sobject) %>% data.frame()
+  dat_NA_new <- matrix(c(rep('n.a.',length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
+                             byrow=T,dimnames=list(row.names(col_info),
+                                                   standard_name_seq)) %>% data.frame()
+  
+  # fill in with existing data
+  overlap_name <- standard_name_seq[which(colnames(dat_NA_new) %in% colnames(col_info))]
+  for (i in overlap_name){
+    dat_NA_new[i] <- col_info[i]
+  }
+  
+  # Append the rest of cloumns to the dataframe
+  col_info_rest <- col_info %>% dplyr::select(-overlap_name)
+  dat_final <- cbind(dat_NA_new,col_info_rest)
+  
+  return(dat_final)
+}
+
+new_col_info <- new_coldata(sobject)
+
+```
+
+# Rename TBstatus
+### PTB: active TB
+### Latent
+### Control
+### OD: other disease
+```{r}
+TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
+unique(TBStatus_temp)
+
+TBStatus <- ifelse(TBStatus_temp=='LTBI','Latent',TBStatus_temp)
+TBStatus
+
+new_col_info$TBStatus <- TBStatus
+
+new_col_info %>% View()
+
+colData(sobject) <- new_col_info %>% DataFrame()
+
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+
+```
+
+
 
