@@ -1,0 +1,184 @@
+---
+title: "TBSig_test_Hiseq"
+author: "Xutao Wang"
+date: "12/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(MultiAssayExperiment)
+library(GenomicRanges)
+library(RaggedExperiment)
+library(dplyr)
+
+library(SummarizedExperiment)
+library(TBSignatureProfiler)
+```
+
+# Import dataset from Hiseq, 5 in total
+```{r}
+geo_set_hiseq <- c('GSE79362','GSE107991','GSE107992',"GSE107993","GSE107994")
+Hiseq_set_RDS <- lapply(geo_set_hiseq, function(x) readRDS(paste0(x,'_sobject.RDS')))
+names(Hiseq_set_RDS) <- geo_set_hiseq
+
+
+lapply(Hiseq_set_RDS, function(x) colData(x)$TBStatus %>% table())
+colData(Hiseq_set_RDS$GSE107994)$Age
+colData(Hiseq_set_RDS$GSE107994)$TBStatus %>% table()
+metadata()
+```
+
+```{r}
+get_expr_symbol <- function(sobject){
+  # Read in Data
+  sobject_exprs <- assay(sobject)
+  row_data <- rowData(sobject) %>% data.frame()
+  if(all(row.names(assay(sobject))==row_data$ID_REF)==TRUE){
+    
+    # Add new column to the expression matrix
+    sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=row_data$SYMBOL_NEW) %>% filter(SYMBOL!='NA')
+    
+    ## Create expression matrix with gene symbol, take mean values for same genes
+    sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
+    row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
+  
+    sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')]
+      
+    ## Create MultiAssayExperiment object
+    doubleExp <- list('Probe' = sobject, 'Symbol' = sobject_exprs_symbol)
+    symbol_map <- data.frame(primary = row.names(colData(sobject)),
+                     colname = row.names(colData(sobject)), stringsAsFactors = FALSE)
+    probe_map <- data.frame(primary_info = rep("n.a.",length(row.names(colData(sobject)))),stringsAsFactors = FALSE)
+    row.names(probe_map) <- row.names(colData(sobject))
+  
+    listmap <- list(symbol_map,symbol_map)
+    names(listmap) <- c("Probe", "Symbol")
+    dfmap <- listToMap(listmap)
+   
+    simpleMultiAssay <- MultiAssayExperiment(experiments=doubleExp,
+                                          colData=probe_map,dfmap)
+  
+    return(simpleMultiAssay)
+    
+  }
+  else{
+     stop("all(row.names(assay(sobject))==row_data$ID_REF)==FALSE")
+  }
+  
+}
+
+## Create Multi-assay object
+Hiseq_set_Multi <-  lapply(Hiseq_set_RDS, function(x) get_expr_symbol(x))
+names(Hiseq_set_Multi) <- geo_set_hiseq
+```
+
+
+# Create summarized experiment object for TB signature profile
+```{r}
+get_sobject_TBSig <- function(multi_object){
+  col_info <- multi_object[[1]] %>% colData() %>% data.frame()
+  col_data <- data.frame(Sample=row.names(col_info) %>% as.factor(),Disease = col_info$TBStatus %>% as.factor())
+  row.names(col_data) <- row.names(col_info)
+  
+  sobject_TBSig <- SummarizedExperiment(assays = list(counts= as.matrix(multi_object[[2]])), colData = col_data)
+  
+  # subsetting latent and PTB
+   sobject_TBSig_filter <- sobject_TBSig[,sobject_TBSig$Disease %in% c("PTB","Latent")]
+  
+   return(sobject_TBSig_filter)
+  # return(sobject_TBSig)
+} 
+
+Hiseq_set_TBSig <- lapply(Hiseq_set_Multi, function(x) get_sobject_TBSig(x))
+# lapply(Hiseq_set_TBSig, function(x) colData(x)$Disease)
+# Check Disease Status
+# subseeting latent and PTB
+
+# Check the dataset that has latent information
+# TB_status <- lapply(Hiseq_set_TBSig, function(x) colData(x)$Disease);TB_status
+check <- sapply(lapply(Hiseq_set_TBSig, function(x) colData(x)$Disease), function(x) any(levels(x) %in% c("Latent")))
+names(which(check))
+
+# Get final sobject for TB signature analysis
+Hiseq_set_TBSig_final <- Hiseq_set_TBSig[names(which(check))]
+
+# Make the disease status as character variable
+for (i in 1:length(Hiseq_set_TBSig_final)){
+  colData(Hiseq_set_TBSig_final[[i]])$Disease <- colData(Hiseq_set_TBSig_final[[i]])$Disease %>% as.character() %>% as.factor()
+}
+
+lapply(Hiseq_set_TBSig_final, function(x) colData(x)$Disease)
+
+Hiseq_set_TBSig_final[["GSE107993"]] <- NULL 
+
+```
+
+# START TB Signature Profile
+```{r}
+names(TBsignatures)
+
+ssgsea_result_hiseq_list <- lapply(Hiseq_set_TBSig_final, 
+                                  function(x) runTBsigProfiler(input = x, 
+                               useAssay = "counts",
+                               signatures = TBsignatures,
+                               algorithm = "ssGSEA",
+                               combineSigAndAlgorithm = TRUE,
+                               parallel.sz = 1))
+```
+
+## Boxplot for all signatures
+```{r Boxplots all, message = FALSE, results = 'hide', fig.height = 9, fig.width=15}
+lapply(ssgsea_result_hiseq_list, 
+       function(x) signatureBoxplot(inputData = x, 
+                 name = "Boxplots of Signatures, ssGSEA", 
+                 signatureColNames = names(TBsignatures),
+                 annotationColName = "Disease", rotateLabels = FALSE,fill_colors = c("#00AFBB", "#E7B800"))
+)
+```
+
+## Boxplot for Sweeney_OD_3 and the signatures where it comes from
+### GSE107991, GSE107992, GSE107994
+```{r,message = FALSE, results = 'hide', fig.height = 5, fig.width=15}
+lapply(ssgsea_result_hiseq_list, function(x)
+  signatureBoxplot(inputData = x, 
+                 name = "Boxplots of Signatures, ssGSEA", 
+                 signatureColNames = names(TBsignatures)[grep("Singhania|Sweeney_OD_3",names(TBsignatures))],
+                 annotationColName = "Disease", rotateLabels = FALSE,fill_colors = c("#00AFBB", "#E7B800"))
+  
+  )
+```
+
+# Get AUC for all the signatures
+```{r AUC table, message = FALSE}
+# Some problems with bootstrap, when the sample size is small, we could sample data with the same outcome,
+# cannot calculate AUC in such cases
+get_pvalue_auc <- function(SE_scored, annotationColName, signatureColNames){
+  pvals <- aucs <- aucs_boot <- NULL
+  annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][,1]
+  for (i in signatureColNames) {
+    score <- SummarizedExperiment::colData(SE_scored)[i][, 
+                                                         1]
+    pvals <- c(pvals, stats::t.test(score ~ annotationData)$p.value)
+    pred <- ROCit::rocit(score, annotationData)
+    auc <- pred$AUC
+    aucs <- c(aucs, max(auc, 1 - auc))
+  }
+  return(data.frame(Signature=signatureColNames,P.value=pvals,AUC=aucs))
+  
+}
+
+auc_pval_result_hiseq <- lapply(ssgsea_result_hiseq_list, function(x)
+  get_pvalue_auc(x, 
+         annotationColName = "Disease", 
+         signatureColNames = names(TBsignatures))
+  )
+```
+
+
+
+
+
