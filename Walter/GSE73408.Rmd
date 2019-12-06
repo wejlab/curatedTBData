@@ -163,9 +163,25 @@ new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
 
-saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
-
 ```
+
+# Edit rowData
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+SYMBOL_ori <- as.character(row_data$gene_assignment)
+SYMBOL_ori <- ifelse(SYMBOL_ori == "---","NA",SYMBOL_ori)
+index <- which(SYMBOL_ori!="NA")
+SYMBOL <- strsplit(SYMBOL_ori[index], "///")
+
+SYMBOL_new <- lapply(1:length(SYMBOL), function(i) lapply(strsplit(SYMBOL[[i]],'//'),'[[',2) %>% unlist() %>% unique())
+SYMBOL_collapse <- sapply(SYMBOL_new, function(x) gsub(" ","",paste(x,collapse="///")))
+SYMBOL_ori[index] <- SYMBOL_collapse
+row_data$SYMBOL_NEW <- SYMBOL_ori
+rowData(sobject) <- row_data %>% DataFrame()
+
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+```
+
 
 
 

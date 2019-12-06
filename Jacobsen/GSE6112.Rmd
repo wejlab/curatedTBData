@@ -128,7 +128,7 @@ GSE6112_experimentData <- new('MIAME',
                       other=list(Platform = 'MPIIB custom human (AMADID 011412): GPL4475
 '))
 
-GSE6112_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE6112_Non_normalized_counts= as.matrix(GSE6112_raw_value)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE6112_experimentData)); GSE6112_summarizedExperiemnt
+GSE6112_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE6112_Non_normalized_counts= as.matrix(GSE6112_raw_value)), colData = characteristic_data_frame, rowData = row_data_final, metadata = list(GSE6112_experimentData)); GSE6112_summarizedExperiemnt
 
 ```
 
@@ -220,9 +220,10 @@ new_col_info <- new_coldata(sobject)
 ```{r}
 new_col_info$Tissue <- 'PBMC'
 new_col_info$Notes <- new_col_info$TBStatus
-unique(TBStatus_temp)
 
 TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
+unique(TBStatus_temp)
+
 TBStatus[grep('LTBI',TBStatus_temp)] <- 'Latent'
 TBStatus[grep('Healthy',TBStatus_temp)] <- 'Latent'
 TBStatus[grep('_TB_',TBStatus_temp)] <- 'PTB'
@@ -236,11 +237,16 @@ new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
 
+```
+
+# Edit Row information
+```{r}
+row_info <- rowData(sobject) %>% data.frame()
+View(row_info)
+
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 
 ```
-
-
 
 
 

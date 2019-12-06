@@ -164,8 +164,21 @@ new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
 
-saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+```
 
+# Edit Row Data
+
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+View(row_data)
+
+row_data$SYMBOL_NEW <- row_data$GENE_SYMBOL
+row_data$SYMBOL_NEW <- ifelse(row_data$SYMBOL_NEW %in% "", "NA", row_data$SYMBOL_NEW)
+
+View(row_data)
+rowData(sobject) <- row_data %>% DataFrame()
+
+saveRDS(sobject,ascii=FALSE,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 ```
 
 

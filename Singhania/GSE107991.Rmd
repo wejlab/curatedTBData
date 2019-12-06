@@ -136,11 +136,13 @@ new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
 
+row_data <- rowData(sobject) %>% data.frame()
+row_data$SYMBOL_NEW <- row_data$Gene_name
+
+row_data %>% View()
+rowData(sobject) <- row_data %>% DataFrame()
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
-
 ```
-
-
 
 
 

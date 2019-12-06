@@ -1,0 +1,49 @@
+---
+title: "GSE54992_multi"
+author: "Xutao Wang"
+date: "11/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Function for creating multiassay object for Affymetrix Human Genome U133 Plus 2.0 Array
+```{r}
+# geo_access='GSE54992'
+get_expr_symbol <- function(geo_access){
+  # Read in data and get expression matrix
+  sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+  sobject_exprs <- assay(sobject)
+  
+  # merge two types of symbol and make them into one column, use the platform information as    refernce
+  Symbol_R <- rowData(sobject)@listData$SYMBOL 
+  Symbol_plat <- rowData(sobject)@listData$Gene.Symbol
+  Symbol_plat_new <- Symbol_plat
+  for (i in 1:length(Symbol_R)){
+  if (Symbol_plat_new[i]==''){
+    Symbol_plat_new[i] = Symbol_R[i]
+    }
+  }
+  # Add new column into the expression matrix
+  sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=Symbol_plat_new) %>%    filter(SYMBOL!='NA')
+
+  # Create expression matrix with gene symbol
+  sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
+  row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
+  
+  sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')]
+  
+  # Create Map
+  probe_map <- data.frame(primary =  row.names(colData(sobject)),
+    colname = row.names(colData(sobject)), stringsAsFactors = FALSE)
+  symbol_map <- probe_map
+  
+  result <- list(sobject_exprs_symbol=sobject_exprs_symbol,symbol_map=symbol_map,probe_map=probe_map)
+  
+  return(result)
+  
+}
+
+```

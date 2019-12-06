@@ -183,9 +183,32 @@ new_col_info$TBStatus <- TBStatus
 new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
+```
+
+# Edit Row Data
+
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+create_gene_symbol <- function(sobject){
+  row_data <- rowData(sobject) %>% data.frame()
+  Symbol_R <- row_data$SYMBOL 
+  Symbol_plat <- row_data$Symbol
+  
+  # Use platform annotation as reference 
+  Symbol_plat_new <- Symbol_plat
+  for (i in 1:length(Symbol_R)){
+    if (Symbol_plat_new[i]==""){
+    Symbol_plat_new[i] = Symbol_R[i]
+    }
+  }
+  row_data$SYMBOL_NEW <- Symbol_plat_new
+  
+  return(row_data)
+}
+
+create_gene_symbol(sobject) %>% View()
+rowData(sobject) <- create_gene_symbol(sobject) %>% DataFrame()
 
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 
 ```
-
-

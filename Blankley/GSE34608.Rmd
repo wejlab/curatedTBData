@@ -186,16 +186,9 @@ new_col_info$TBStatus <- TBStatus
 new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
-
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject_micro.RDS'))
+# Nor gene_symbol information, because it measures mircoRNA
 ```
-
-
-
-
-
-
-
 
 
 
@@ -291,7 +284,6 @@ new_coldata <- function(sobject){
 }
 
 new_col_info <- new_coldata(sobject)
-
 ```
 
 # Rename TBstatus
@@ -315,18 +307,26 @@ for(i in 1:length(TBStatus)){
 }
 TBStatus
 
-
 new_col_info$TBStatus <- TBStatus
 
 new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
-
-saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject_RNA.RDS'))
-
 ```
 
+# Edit Row data
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+View(row_data)
 
+row_data$SYMBOL_NEW <- row_data$GENE_SYMBOL
+row_data$SYMBOL_NEW <- ifelse(row_data$SYMBOL_NEW %in% "", "NA", row_data$SYMBOL_NEW)
+
+View(row_data)
+rowData(sobject) <- row_data %>% DataFrame()
+
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject_RNA.RDS'))
+```
 
 
 

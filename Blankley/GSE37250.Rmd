@@ -43,7 +43,7 @@ dim(GSE37250_Non_pvalue)
 gse <- getGEO("GSE37250", GSEMatrix =  F)
 description_id_raw <- sapply(1:length(names(GSMList(gse))), 
                              function(x) GSMList(gse)[[x]]@dataTable@columns$Column[3])
-# Demo: Convert 6116725094_J.Detection Pval to 6116725094_J
+
 description_id <- sapply(1:length(description_id_raw), 
                          function(x) gsub("\\..*", "", description_id_raw[x]))
 ID_table <- data.frame(SampleID = names(GSMList(gse)), DescriptionID = description_id)
@@ -64,9 +64,34 @@ indx <- sapply(1:length(colnames(GSE37250_Non_pvalue)), function(i) which(colnam
 
 GSE37250_Non_pvalue_reorgan <- GSE37250_Non_pvalue[,indx]
 colnames(GSE37250_Non_pvalue_reorgan) <- ID_table$SampleID
+row.names(GSE37250_Non_pvalue_reorgan) <- row.names(GSE37250_Non_normalized)
+
+# Create Expression Matrix
 GSE37250_Non_normalized_counts <- GSE37250_Non_pvalue_reorgan
 colnames(GSE37250_Non_normalized_counts)[1:10]
 ```
+
+```{r convert ProbeID to Gene Symbol, cache=TURE}
+# Read in data from vendor's information
+GPL10558_HumanHT <- getGEO('GPL10558', GSEMatrix = F)
+GPL10558_HumanHT_dat <- GPL10558_HumanHT@dataTable@table
+
+# Annotation
+PROBES <- row.names(GSE37250_Non_pvalue_reorgan) 
+OUT <- AnnotationDbi::select(illuminaHumanv4.db, PROBES, "SYMBOL")
+OUT[is.na(OUT)] <- NA
+
+# Map ProbeID to Gene Symbol 
+OUT_collapse <- OUT %>% group_by(PROBEID) %>%  # Multiple gene symbols map to the same ProbeID
+  summarise(SYMBOL = paste(SYMBOL, collapse="///"), times = length(unlist(strsplit(SYMBOL, "///")))) 
+
+GSE37250_Non_pvalue_reorgan$ID_REF <- row.names(GSE37250_Non_pvalue_reorgan)
+GSE37250_final <- GSE37250_Non_pvalue_reorgan %>% left_join(OUT_collapse, by=c('ID_REF'="PROBEID")) %>% left_join(GPL10558_HumanHT_dat, by = c('ID_REF'='ID')) 
+
+# Create Row data annotation
+row_data <- GSE37250_final %>% dplyr::select(-grep('GSM',colnames(GSE37250_final))) %>% DataFrame()
+```
+
 
 ```{r}
 # Create Column Data
@@ -76,7 +101,7 @@ characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
   sapply(data_characteristic, '[[',x)) 
 ## Demo convert geographical region: Kenya to Kenya
 characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble() %>% mutate(ID_table$DescriptionID) %>% DataFrame()
-#colnames(characteristic_data_frame) <- gsub(':.*','',data_characteristic[[1]])
+
 colnames(characteristic_data_frame) <- c('TBStatus','HIVStatus','GeographicalRegion','Tissue','DescriptionID')
 row.names(characteristic_data_frame) <- names(GSMList(gse))
 head(characteristic_data_frame)
@@ -84,10 +109,6 @@ head(characteristic_data_frame)
 
 
 ```{r}
-# Create Row Data
-row_data <- DataFrame(GSE37250_col_name)
-row.names(row_data) <- row.names(GSE37250_Non_normalized)
-
 # Create Metadata
 GSE37250_experimentData <- new('MIAME',
                       name="Victoria Wright",
@@ -109,8 +130,6 @@ saveRDS(GSE37250_summarizedExperiemnt, ascii=FALSE, file='~/Desktop/RA work/buil
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
-
-colData(GSE37250_summarizedExperiemnt) %>% data.frame()
 ```
 
 ### Make a matrix contain the NA's for the TB status cariter
@@ -170,11 +189,39 @@ TBStatus
 new_col_info$TBStatus <- TBStatus
 
 new_col_info %>% View()
-
 colData(sobject) <- new_col_info %>% DataFrame()
+
+```
+
+# Edit Row Data
+
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+
+create_gene_symbol <- function(sobject){
+  row_data <- rowData(sobject) %>% data.frame()
+  Symbol_R <- row_data$SYMBOL 
+  Symbol_plat <- row_data$Symbol
+  
+  # Use platform annotation as reference 
+  Symbol_plat_new <- Symbol_plat
+  for (i in 1:length(Symbol_R)){
+    if (Symbol_plat_new[i]==""){
+    Symbol_plat_new[i] = Symbol_R[i]
+    }
+  }
+  row_data$SYMBOL_NEW <- Symbol_plat_new
+  
+  return(row_data)
+}
+
+create_gene_symbol(sobject) %>% View()
+rowData(sobject) <- create_gene_symbol(sobject) %>% DataFrame()
 
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 
 ```
+
+
 
 
