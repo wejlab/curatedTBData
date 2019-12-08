@@ -24,15 +24,19 @@ library(limma)
 gse <- getGEO('GSE28623', GSEMatrix =  F)
 data_characteristic <- lapply(1:length(GSMList(gse)), function(x)  
   GSMList(gse)[[x]]@header$characteristics_ch1)
+Title <- sapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$title)
 characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x) 
   sapply(data_characteristic, '[[',x)) 
-characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
-colnames(characteristic_data_frame) <- c('TBStatus','Gender')
+characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble() %>%  mutate(Title=Title) %>% DataFrame()
+colnames(characteristic_data_frame) <- c('TBStatus','Gender','Title')
 row.names(characteristic_data_frame) <- names(GSMList(gse))
 ```
 
 ```{r Read in AgiMicroRna, cache = TRUE}
+
 # Create Target file for AgiMicroRna
+################## No need to re-run ################
 characteristic_data_frame$TBStatus
 Treatment_RNA <- as.character(characteristic_data_frame$TBStatus)
 
@@ -56,6 +60,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Read in files
 ```{r}
+# Reading Single-Channel Agilent Intensity Data
 targetinfo <- read.delim("target_RNA.txt")
 GSE28623_RNA <- read.maimages(targetinfo,source="agilent",green.only = TRUE)
 GSE28623_raw <- GSE28623_RNA$E
@@ -64,23 +69,17 @@ colnames(GSE28623_raw) <- names(GSMList(gse))
 ```
 
 ```{r convert ProbeID to Gene Symbol, cache=TURE}
-Agi_annotate <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Blankley/GSE28623/GPL4133-12599.txt", comment.char="#",stringsAsFactors = FALSE)
+gpl4133 <- getGEO('GPL4133',GSEMatrix = F) 
 
 # Reorganize the reference files, remove redundant ID_REF (make each ID unique)
 ### Need to have ont-to-one mapping, cannot use merge b/c probe names are no unique?
-Agi_probe <- Agi_annotate %>% as_tibble() %>% distinct(NAME, .keep_all = TRUE)
+gpl4133_annotate <- gpl4133@dataTable@table %>% distinct(NAME, .keep_all = TRUE)
 
-# Probe Name is not unique
-data.frame((table(GSE28623_RNA$genes$ProbeName)))
-data.frame((table(Agi_probe$NAME)))
 
 # Creare Row Data
 GSE28623_probe <- data.frame(GSE28623_RNA$genes$ProbeName)
 colnames(GSE28623_probe) <- "ID_REF"
-row_data <- GSE28623_probe %>% left_join(Agi_probe,by=c('ID_REF'='NAME'))
-row_data$GENE_SYMBOL[row_data$GENE_SYMBOL==""] <- "Unmapped"
-row_data <- DataFrame(row_data)
-row.names(row_data) <- GSE28623_RNA$genes$ProbeName
+row_data <- GSE28623_probe %>% left_join(gpl4133_annotate,by=c('ID_REF'='NAME')) %>% DataFrame
 ```
 
 ```{r create SummarizedExperimentObject, cache=TRUE}
@@ -92,7 +91,7 @@ GSE28623_experimentData_RNA <- new('MIAME',
                       abstract="A total of 46 sputum smear and chest x-ray positive TB patients (TB), 25 latently infected healthy donors (LTBI, TB case contacts with Mantoux test induration >= 10mm) and 37 uninfected donors (NID, Mantoux test induration = 0mm) were included from a cohort in The Gambia.",
                       url="10.1371/journal.pone.0026938",
                       pubMedIds = '22046420',
-                      other=list(Platform = 'Agilent-014850 Whole Human Genome Microarray 4x44K G4112F (Feature Number version)'))
+                      other=list(Platform = 'Agilent-014850 Whole Human Genome Microarray 4x44K G4112F (Feature Number version): GPL4133'))
 
 GSE28623_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE28623_non_normalized_RNA= as.matrix(GSE28623_raw)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE28623_experimentData_RNA)); GSE28623_summarizedExperiemnt
 ```
@@ -105,3 +104,82 @@ saveRDS(GSE28623_summarizedExperiemnt, ascii=FALSE, file='/Users/xutaowang/Deskt
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
 ```
+
+### Make a matrix contain the NA's for the TB status cariter
+#### Standard column names come from Berry GSE19443
+```{r}
+getwd()
+geo_access <- 'GSE28623'
+sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+```
+
+```{r create new column information data}
+standard_name_seq <- colData(readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/GSE19443_summarizedExperiemnt.RDS')) %>% data.frame() %>% colnames
+new_coldata <- function(sobject){
+  col_info <- colData(sobject) %>% data.frame()
+  dat_NA_new <- matrix(c(rep('n.a.',length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
+                             byrow=T,dimnames=list(row.names(col_info),
+                                                   standard_name_seq)) %>% data.frame()
+  
+  # fill in with existing data
+  overlap_name <- standard_name_seq[which(colnames(dat_NA_new) %in% colnames(col_info))]
+  for (i in overlap_name){
+    dat_NA_new[i] <- col_info[i]
+  }
+  
+  # Append the rest of cloumns to the dataframe
+  col_info_rest <- col_info %>% dplyr::select(-overlap_name)
+  dat_final <- cbind(dat_NA_new,col_info_rest)
+  
+  return(dat_final)
+}
+
+new_col_info <- new_coldata(sobject)
+
+```
+
+# Rename TBstatus
+### PTB: active TB
+### Latent
+### Control
+### OD: other disease
+```{r}
+TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
+unique(TBStatus_temp)
+for(i in 1:length(TBStatus)){
+  if(TBStatus_temp[i]=="healthy non-infected donors"){
+    TBStatus[i] = 'Control'
+  }
+    if(TBStatus_temp[i]=="healthy donors latently infected with M. tuberculosis"){
+    TBStatus[i] = 'Latent'
+    }
+      if(TBStatus_temp[i]=="tuberculosis patients"){
+    TBStatus[i] = 'PTB'
+  }
+}
+TBStatus
+new_col_info$TBStatus <- TBStatus
+
+new_col_info %>% View()
+
+colData(sobject) <- new_col_info %>% DataFrame()
+
+```
+
+# Edit Row Data
+
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+View(row_data)
+
+row_data$SYMBOL_NEW <- row_data$GENE_SYMBOL
+row_data$SYMBOL_NEW <- ifelse(row_data$SYMBOL_NEW %in% "", "NA", row_data$SYMBOL_NEW)
+
+View(row_data)
+rowData(sobject) <- row_data %>% DataFrame()
+
+saveRDS(sobject,ascii=FALSE,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+```
+
+
+

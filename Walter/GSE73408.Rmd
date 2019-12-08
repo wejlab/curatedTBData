@@ -35,7 +35,7 @@ untar(temp,exdir = tempd)
 
 # Use oligo to read in the cel files
 
-celFiles <- list.celfiles(path = tempd, full.names=TRUE);celFiles
+celFiles <- list.files(path = tempd, pattern='*.CEL',full.names=TRUE);celFiles
 GSE73408_data.oligo <- read.celfiles(celFiles)
 
 GSE73408_normalized_rma <- exprs(rma(GSE73408_data.oligo)) # A matrix
@@ -53,18 +53,17 @@ GSE73408_normalized_counts[1:5,1:5]
 
 ```{r convert transcript ID to gene symbol}
 # Annotation provided by the platform
-GPL11532 <- read.delim("~/Desktop/RA work/build_TB_data/Signatures/Walter/GSE73408/GPL11532-32230.txt", comment.char="#", stringsAsFactors = FALSE)
+GPL11532 <- getGEO('GPL11532',GSEMatrix = F)
+GPL11532_annotate <- GPL11532@dataTable@table
 
-GPL11532$ID <- as.character(GPL11532$ID)
 # Reorganize the reference files, remove redundant ID_REF (make each ID unique)
-View(data.frame((table(GPL11532$ID))))
+View(data.frame((table(GPL11532_annotate$ID))))
 # Checked, they are unique
-GSE73408_normalized_rma <- GSE73408_normalized_rma %>% as_tibble() %>% mutate(ID_REF=row.names(GSE73408_normalized_rma))
-row_data <- GSE73408_normalized_rma %>% left_join(GPL11532, by=c('ID_REF' = 'ID'))
-row_data <- row_data[,-grep('GSM',colnames(row_data))]
+GSE73408_normalized_rma <- GSE73408_normalized_rma %>% as_tibble() %>% mutate(ID_REF=as.numeric(row.names(GSE73408_normalized_rma)))
 
-row_data <- DataFrame(row_data)
-row.names(row_data) <- GSE73408_normalized_rma$ID_REF
+#### Run these two together if need re-run!
+row_data <- GSE73408_normalized_rma %>% left_join(GPL11532_annotate, by=c('ID_REF' = 'ID'))
+row_data <- row_data[,-grep('GSM',colnames(row_data))] %>% DataFrame()
 ```
 
 ```{r create column data}
@@ -78,8 +77,8 @@ head(characteristic_table)
 characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% DataFrame()
 head(characteristic_data_frame)
 
-colnames(characteristic_data_frame) <- c('Tissue','Gender','TBStatus','Ethnicity', 'Age', 'GeographicalRegion', 'DiabetesStatus','SmokingStatus','BCG')
-row.names(characteristic_data_frame) <- colnames(GSE73408_normalized_counts)
+colnames(characteristic_data_frame) <- c('Tissue','Gender','TBStatus','Ethnicity', 'Age', 'BithCountry', 'DiabetesStatus','SmokingStatus','BCG')
+row.names(characteristic_data_frame) <- names(GSMList(gse))
 head(characteristic_data_frame)
 ```
 
@@ -92,7 +91,7 @@ GSE73408_experimentData <- new('MIAME',
                       abstract="Whole blood from US patients was collected to accurately diagnose active TB in racially and ethnically diverse populations for RNA extraction and hybridization on Affymetrix microarrays.",
                       url="10.1128/JCM.01990-15",
                       pubMedIds = '26582831',
-                      other=list(Platform = 'Affymetrix Human Gene 1.1 ST Array'))
+                      other=list(Platform = 'Affymetrix Human Gene 1.1 ST Array: GPL11532'))
 
 GSE73408_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE73408_normalized_counts= as.matrix(GSE73408_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE73408_experimentData)); GSE73408_summarizedExperiemnt
 ```
@@ -100,11 +99,90 @@ GSE73408_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE73408_nor
 ```{r}
 saveRDS(GSE73408_summarizedExperiemnt, ascii=FALSE, file='GSE73408/GSE73408_summarizedExperiemnt.RDS')
 
-
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 dir(tempdir()) # check the temporary directory is empty
 ```
+
+
+### Make a matrix contain the NA's for the TB status cariter
+#### Standard column names come from Berry GSE19443
+```{r}
+getwd()
+geo_access <- 'GSE73408'
+sobject <- readRDS(paste0(geo_access,'/',geo_access,'_summarizedExperiemnt.RDS'))
+```
+
+```{r create new column information data}
+standard_name_seq <- colData(readRDS('~/Desktop/RA work/build_TB_data/Signatures/Berry/GSE19443/GSE19443_summarizedExperiemnt.RDS')) %>% data.frame() %>% colnames
+new_coldata <- function(sobject){
+  col_info <- colData(sobject) %>% data.frame()
+  dat_NA_new <- matrix(c(rep('n.a.',length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
+                             byrow=T,dimnames=list(row.names(col_info),
+                                                   standard_name_seq)) %>% data.frame()
+  
+  # fill in with existing data
+  overlap_name <- standard_name_seq[which(colnames(dat_NA_new) %in% colnames(col_info))]
+  for (i in overlap_name){
+    dat_NA_new[i] <- col_info[i]
+  }
+  
+  # Append the rest of cloumns to the dataframe
+  col_info_rest <- col_info %>% dplyr::select(-overlap_name)
+  dat_final <- cbind(dat_NA_new,col_info_rest)
+  
+  return(dat_final)
+}
+
+new_col_info <- new_coldata(sobject)
+
+```
+
+# Rename TBstatus
+### PTB: active TB
+### Latent
+### Control
+### OD: other disease
+```{r}
+new_col_info$Notes <- new_col_info$TBStatus
+new_col_info$BirthRegion <- new_col_info$BithCountry
+new_col_info <- new_col_info[,-grep("Country",colnames(new_col_info))]
+
+TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
+unique(TBStatus_temp)
+
+TBStatus[grep("TB",TBStatus_temp)] <- "PTB"
+TBStatus[grep("LTBI",TBStatus_temp)] <- "Latent"
+TBStatus[grep("PNA",TBStatus_temp)] <- "OD"
+
+TBStatus
+
+new_col_info$TBStatus <- TBStatus
+
+new_col_info %>% View()
+
+colData(sobject) <- new_col_info %>% DataFrame()
+
+```
+
+# Edit rowData
+```{r}
+row_data <- rowData(sobject) %>% data.frame()
+SYMBOL_ori <- as.character(row_data$gene_assignment)
+SYMBOL_ori <- ifelse(SYMBOL_ori == "---","NA",SYMBOL_ori)
+index <- which(SYMBOL_ori!="NA")
+SYMBOL <- strsplit(SYMBOL_ori[index], "///")
+
+SYMBOL_new <- lapply(1:length(SYMBOL), function(i) lapply(strsplit(SYMBOL[[i]],'//'),'[[',2) %>% unlist() %>% unique())
+SYMBOL_collapse <- sapply(SYMBOL_new, function(x) gsub(" ","",paste(x,collapse="///")))
+SYMBOL_ori[index] <- SYMBOL_collapse
+row_data$SYMBOL_NEW <- SYMBOL_ori
+rowData(sobject) <- row_data %>% DataFrame()
+
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
+```
+
+
 
 
 
