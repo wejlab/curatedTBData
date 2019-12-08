@@ -238,13 +238,17 @@ new_col_info <- new_coldata(sobject)
 ### Control
 ### OD: other disease
 ```{r}
-TBStatus <- TBStatus_temp <- as.character(new_col_info$TBStatus)
-unique(TBStatus_temp)
-#TBStatus <- ifelse(TBStatus_temp=="Control (BCG+)"|TBStatus_temp=="Control (BCG-)","Control",TBStatus_temp)
-#new_col_info$TBStatus <- TBStatus
+gse <- getGEO("GSE22098", GSEMatrix =  F)
+data_title <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$title) %>% unlist
+Notes <- sapply(strsplit(data_title,"-"),function(x) x[2])
 
+new_col_info$Notes <- ifelse(Notes=="H","Control",Notes)
+
+new_col_info$TBStatus <-  ifelse(Notes=="H","Control","OD")
+
+new_col_info <- new_col_info[,-which(names(new_col_info) %in% "HealthControl")]
 new_col_info %>% View()
-
 colData(sobject) <- new_col_info %>% DataFrame()
 
 ```

@@ -156,6 +156,9 @@ TBStatus
 new_col_info$TBStatus <- TBStatus
 new_col_info$Notes <- TBStatus_temp
 new_col_info$Gender <- ifelse(new_col_info$Gender=="M","Male","Female")
+new_col_info$GeographicalRegion <- "Germany"
+new_col_info$Notes <- ifelse(new_col_info$Notes=="Baseline","Pneumonia",new_col_info$Notes)
+
 new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()

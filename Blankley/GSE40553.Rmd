@@ -187,6 +187,7 @@ TBStatus <- ifelse(TBStatus_temp=='LTB','Latent',TBStatus_temp)
 TBStatus
 
 new_col_info$TBStatus <- TBStatus
+new_col_info$GeographicalRegion <- gsub(" patient.*","",new_col_info$GeographicalRegion)
 
 new_col_info %>% View()
 
@@ -220,6 +221,13 @@ rowData(sobject) <- create_gene_symbol(sobject) %>% DataFrame()
 
 saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 
+
+# See unique sample size
+tt <- colData(sobject) %>% as_tibble() %>%  filter(TBStatus != "Latent")
+colData(sobject)$TBStatus %>% table()
+
+tt$Barcode
+gsub("\\..*$","",tt$Barcode) %>% unique() %>% length()
 ```
 
 

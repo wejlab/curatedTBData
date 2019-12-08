@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r libraries}
+```{r libraries, message = FALSE}
 library(GEOquery)
 library(preprocessCore)
 library(SummarizedExperiment)
@@ -21,7 +21,7 @@ library(methods)
 # MPIIB custom human (AMADID 011412)
 ```
 
-
+# Use raw counts
 ```{r}
 urls <-  getGEOSuppFiles("GSE6112",fetch_files = FALSE)
 url_xml <- as.character(urls$url[1])
@@ -35,6 +35,7 @@ xmlFiles <- list.files(path = tempd, pattern = '*.xml',full.names=TRUE);xmlFiles
 library(xml2)
 library(tidyverse)
 GSE6112_xml <- lapply(xmlFiles, function(x) read_xml(x))
+View(GSE6112_xml)
 ```
 
 ## Create Row Data
@@ -48,15 +49,16 @@ sum(sapply(1:length(row_data_list), function(x) all(row_data_list[[1]][,1] != ro
 # Yes they are the same
 
 row_data <- row_data_list[[1]]
-
+View(row_data)
 # Annotation for the probe
 GPL4475_raw <- getGEO("GPL4475", GSEMatrix =  F)
-
+# ID is unique
 # Remove duplicated Sequence Name
 GPL4475_annotate <- GPL4475_raw@dataTable@table %>% distinct(`Primary Sequence Name`, .keep_all = TRUE) %>% filter(`Primary Sequence Name`!='')
 row_data_final <- row_data %>% left_join(GPL4475_annotate, by=c('systematic_name' = 'Primary Sequence Name')) %>% DataFrame()
 head(row_data_final)
 ```
+
 
 ## Create Column Data
 ```{r}
@@ -96,7 +98,7 @@ row.names(characteristic_data_frame) <- character_row_name
 characteristic_data_frame
 ```
 
-# Create Expression Matrix (raw and normalized) for channel 1 and channel 2
+## Create Expression Matrix (raw and normalized) for channel 1 and channel 2
 ```{r}
 GSE6112_raw_counts <- lapply(GSE6112_xml, function(x) xml_find_all(x, "//signal") %>% map(xml_attrs) %>% 
         map_df(~as.list(.)))
@@ -114,7 +116,7 @@ colnames(GSE6112_raw_value_ch2) <- character_row_name_2
 GSE6112_raw_value <- cbind(GSE6112_raw_value_ch1,GSE6112_raw_value_ch2)
 ```
 
-# Create SummarizedExperiment Object
+## Create SummarizedExperiment Object
 ```{r}
 # Create Metadata
 GSE6112_experimentData <- new('MIAME',
@@ -158,28 +160,132 @@ dir(tempdir()) # check the temporary directory is empty
 ```
 
 
+###############################################
+
+
+——————————————————————————————————- Use normalized reads instead ---------------------------
 
 
 
 
-
+# Use normalized reads
+## Create Column Data
 ```{r}
-### Demo, DO NOT include in the summarized experiment###########
-nrows <- 20; ncols <- 6
-counts <- matrix(runif(nrows * ncols, 1, 1e4), nrows)
-rowRanges <- GRanges(rep(c("chr1", "chr2"), c(5, 15)),
-                         IRanges(sample(1000L, 20), width=100),
-                         strand=Rle(c("+", "-"), c(12, 8)))
-colData <- DataFrame(Treatment=rep(c("ChIP", "Input"), 3),
-                         row.names=LETTERS[1:6])
-rse0 <- SummarizedExperiment(assays=SimpleList(counts=counts),
-                                 rowRanges=rowRanges, colData=colData)
-assay(rse0, "logs") <- log(counts)
-assays(rse0)$counts
+gse <- getGEO("GSE6112", GSEMatrix =  F)
+
+# Create Column Data
+# Two characteristics from each sample, because this study is about comparison
+data_characteristic_1 <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch1)
+data_characteristic_2 <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@header$characteristics_ch2)
+
+characteristic_table_1 <- sapply(1:length(data_characteristic_1[[1]]), function(x) 
+  sapply(data_characteristic_1, '[[',x)) 
+head(characteristic_table_1)
+
+characteristic_table_2 <- sapply(1:length(data_characteristic_2[[1]]), function(x) 
+  sapply(data_characteristic_2, '[[',x)) 
+head(characteristic_table_2)
+
+characteristic_data_frame <- rbind(characteristic_table_1,characteristic_table_2) %>% DataFrame()
+
+colnames(characteristic_data_frame) <- c('TBStatus')
+character_row_name <- rep(names(GSMList(gse)),2)
+
+character_row_name_1 <- paste0(character_row_name[1:36],'_ch1')
+character_row_name_2 <- paste0(character_row_name[37:72],'_ch2')
+character_row_name <- c(character_row_name_1,character_row_name_2)
+row.names(characteristic_data_frame) <- character_row_name
+characteristic_data_frame$Tissue <- "PBMC"
+
+TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
+unique(TBStatus_temp)
+
+TBStatus[grep('LTBI',TBStatus_temp)] <- 'Latent'
+TBStatus[grep('Healthy',TBStatus_temp)] <- 'Latent'
+TBStatus[grep('_TB_',TBStatus_temp)] <- 'PTB'
+TBStatus[grep('Pool',TBStatus_temp)] <- 'Control'
+TBStatus
+
+characteristic_data_frame$TBStatus <- TBStatus
+```
+
+## Create Expression matrix
+```{r}
+data_exprs <- lapply(1:length(GSMList(gse)), function(x)  
+  GSMList(gse)[[x]]@dataTable@table)
+
+# check whether they have the same ID_REF
+# Expect each data is identical, check!
+sapply(1:length(data_exprs), function(x) all(data_exprs[[1]]$ID_REF == data_exprs[[x]]$ID_REF))
+# No they are not the same
+
+data_exprs_reduce <- lapply(data_exprs, function(x) x %>% dplyr::select(ID_REF,Intensity1,Intensity2))
+
+for (i in 2:length(data_exprs_reduce)){
+  data_exprs_reduce[[1]] <- data_exprs_reduce[[1]] %>% left_join(data_exprs_reduce[[i]], by=c('ID_REF'='ID_REF'))
+}
+
+# Rename column names
+col_names <- paste0(rep(names(GSMList(gse)),each=2),rep(c("_ch1","_ch2"),36))
+
+GSE6112_normalized <- data_exprs_reduce[[1]]
+colnames(GSE6112_normalized)[-1] <- col_names
+
+row.names(GSE6112_normalized) <- GSE6112_normalized$ID_REF
+
+# Remove ID_REF
+GSE6112_normalized <- GSE6112_normalized[,-1]
+
+# Re-order dataframe, make it compatible with column Data
+index <-sapply(1:ncol(GSE6112_normalized), function(i) which(colnames(GSE6112_normalized) %in% rownames(characteristic_data_frame)[i]))
+
+GSE6112_normalized_counts <- GSE6112_normalized[,index]
+
+```
+
+## Create row data
+```{r}
+# Annotation for the probe
+GPL4475_raw <- getGEO("GPL4475", GSEMatrix =  F)
+# ID is unique
+GPL4475_annotate <- GPL4475_raw@dataTable@table
+
+row_data <- data_exprs_reduce[[1]] %>% left_join(GPL4475_annotate, by=c("ID_REF"="ID")) 
+
+row_data <- row_data[,-grep("Intensity",colnames(row_data))]
+row_data$SYMBOL_NEW <- row_data$`Primary Sequence Name`
+
+row_data <- row_data %>% DataFrame()
+```
+
+## Create SummarizedExperiment Object
+```{r}
+# Create Metadata
+GSE6112_experimentData <- new('MIAME',
+                      name="Marc Jacobsen",
+                      lab="Max-Planck-Institute for Infection Biology",
+                      contact="jacobsen@mpiib-berlin.mpg.de",
+                      title="Candidate biomarkers for discrimination between infection and disease caused by Mycobacterium tuberculosis.",
+                      abstract="Comparison of PBMC tuberculosis patients and healthy infected control donors via an reference RNA pool from non-infected controls",
+                      url="10.1007/s00109-007-0157-6",
+                      pubMedIds = '17318616',
+                      other=list(Platform = 'MPIIB custom human (AMADID 011412): GPL4475
+'))
+
+GSE6112_summarizedExperiemnt <- SummarizedExperiment(assays = list(GSE6112_normalized_counts= as.matrix(GSE6112_normalized_counts)), colData = characteristic_data_frame, rowData = row_data, metadata = list(GSE6112_experimentData)); GSE6112_summarizedExperiemnt
+
+saveRDS(GSE6112_summarizedExperiemnt, ascii=FALSE, file='GSE6112/GSE6112_summarizedExperiemnt.RDS')
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+dir(tempdir()) # check the temporary directory is empty
 ```
 
 
-### Make a matrix contain the NA's for the TB status cariter
+
+# Make a matrix contain the NA's for the TB status cariter
 #### Standard column names come from Berry GSE19443
 ```{r}
 getwd()
@@ -209,7 +315,10 @@ new_coldata <- function(sobject){
 }
 
 new_col_info <- new_coldata(sobject)
+View(new_col_info)
+colData(sobject) <- new_col_info %>% DataFrame()
 
+saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
 ```
 
 # Rename TBstatus
@@ -239,14 +348,7 @@ colData(sobject) <- new_col_info %>% DataFrame()
 
 ```
 
-# Edit Row information
-```{r}
-row_info <- rowData(sobject) %>% data.frame()
-View(row_info)
 
-saveRDS(sobject,paste0(geo_access,'/',geo_access,'_sobject.RDS'))
-
-```
 
 
 

@@ -21,7 +21,7 @@ library(TBSignatureProfiler)
 
 # Import dataset from Hiseq, 5 in total
 ```{r}
-geo_set_hiseq <- c('GSE79362','GSE107991','GSE107992',"GSE107993","GSE107994")
+geo_set_hiseq <- c('GSE79362','GSE107991','GSE107992',"GSE107993","GSE107994","GSE944438")
 Hiseq_set_RDS <- lapply(geo_set_hiseq, function(x) readRDS(paste0(x,'_sobject.RDS')))
 names(Hiseq_set_RDS) <- geo_set_hiseq
 

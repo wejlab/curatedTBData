@@ -173,9 +173,6 @@ for(i in 1:length(TBStatus)){
   if(TBStatus_temp[i]=="Active"){
     TBStatus[i] = 'PTB'
   }
-    if(TBStatus_temp[i]=="Subclinical"){
-    TBStatus[i] = 'OD'
-    }
   
 }
 TBStatus
@@ -183,6 +180,7 @@ TBStatus
 new_col_info$TBStatus <- TBStatus
 new_col_info$HIVStatus <- "HIV positive"
 
+new_col_info$GeographicalRegion <- "South Africa"
 new_col_info %>% View()
 
 colData(sobject) <- new_col_info %>% DataFrame()
