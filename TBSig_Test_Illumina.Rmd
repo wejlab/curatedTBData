@@ -24,7 +24,13 @@ library(TBSignatureProfiler)
 geo_set_illumina <- c('GSE19435','GSE19439','GSE19442',"GSE19443","GSE19444","GSE22098","GSE37250","GSE39939","GSE39940","GSE40553","GSE42825","GSE42826","GSE42827","GSE42830","GSE42831","GSE42832","GSE50834","GSE56153","GSE69581")
 Illumina_set_RDS <- lapply(geo_set_illumina, function(x) readRDS(paste0(x,'_sobject.RDS')))
 names(Illumina_set_RDS) <- geo_set_illumina
-colData(Illumina_set_RDS$GSE22098)$HealthControl %>% table()
+
+x <- Illumina_set_RDS$GSE42832
+colData(x)
+colData(x)$TBStatus %>% table()
+data.frame(tb=colData(x)$TBStatus,notes=colData(x)$Notes) %>% View()
+colData(x)$Notes %>% table()
+
 ```
 
 # Create expression matrix with gene symbol. Output is a multi-assay experiment object

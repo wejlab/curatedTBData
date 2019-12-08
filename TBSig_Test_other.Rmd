@@ -21,12 +21,10 @@ library(TBSignatureProfiler)
 
 # Import dataset from Other Platform, 4 in total
 ```{r}
-geo_set_other <- c('GSE28623','GSE34608','GSE62525')
+geo_set_other <- c('GSE28623','GSE34608','GSE62525',"GSE74092","GSE6112")
 Other_set_RDS <- lapply(geo_set_other, function(x) readRDS(paste0(x,'_sobject.RDS')))
 names(Other_set_RDS) <- geo_set_other
 
-colData(Other_set_RDS$GSE62525)$TBStatus %>% table()
-# Special handling for GSE74092, do it later...
 ```
 
 # Create expression matrix with gene symbol. Output is a multi-assay experiment object
@@ -70,6 +68,7 @@ get_expr_symbol <- function(sobject){
 }
 
 ## Create Multi-assay object
+get_expr_symbol(Other_set_RDS$GSE6112)
 Other_set_Multi <-  lapply(Other_set_RDS, function(x) get_expr_symbol(x))
 names(Other_set_Multi) <- geo_set_other
 ```
