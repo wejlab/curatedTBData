@@ -3,13 +3,13 @@
 #'
 #' @param multi_object an multi-assay summarized experiment
 #' @param disease1  A character chooses from "Control", "Latent", "PTB", "OD"
-#' @param disease2  A character chooses from "Control", Latent, "PTB", "OD".
+#' @param disease2  A character chooses from "Control", "Latent", "PTB", "OD".
 #' TBStatus1 and TBStatus2 should be different from each other
 #' @return A summarized experiment object for TB signature profiling
 #'
 #' @examples
 #' sobject <- dat("GSE39939_sobject")
-#' mobject <- get_expr_symbol(sobject)
+#' mobject <- Create_MultiAssay_object(sobject)
 #' sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
 #' @export
 get_sobject_TBSig <- function(multi_object,disease1,disease2){
@@ -42,8 +42,6 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2){
   }
 
 }
-################################
-
 
 ########################
 #' Get boxplot plot comparison across all signatures
