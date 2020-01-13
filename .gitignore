@@ -41,6 +41,8 @@ vignettes/*.pdf
 
 # List RData
 *.rds
+data-raw/*.RDS
+data-raw/*.RData
 
 # Ignore different types of figures
 *.pdf
