@@ -1,0 +1,270 @@
+---
+title: "vignette-TBSignature"
+author: "Xutao Wang"
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{vignette-TBSignature}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (! "SummarizedExperiment" %in% installed.packages()) BiocManager::install("SummarizedExperiment")
+if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
+if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
+if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
+if (! "plyr" %in% installed.packages()) install.packages("plyr")
+if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github("aubreyodom/TBSignatureProfiler")
+```
+
+```{r libraries, message = FALSE}
+library(GEOquery)
+library(SummarizedExperiment)
+
+#library(limma)
+library(dplyr)
+library(plyr)
+devtools::load_all(".")
+library(curatedTBData)
+library(TBSignatureProfiler)
+library(ggplot2)
+library(gridExtra)
+library(ggridges)
+# library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+```
+
+# Load lists of summarized experiment objects
+
+```{r load list of sobject, message=FALSE}
+# Load data
+list_files <- data(package="curatedTBData")[[3]][,3]
+data(list=list_files)
+strSobject <- ls(pattern="*_sobject$")
+
+# Get a list of Summarized Experiment Object
+sobjects_list <- lapply(strSobject, function(x) get(x))
+names(sobjects_list) <- strSobject
+
+# Create Multi-Assay Experiment object
+multi_data_all <- lapply(sobjects_list, function(x) Create_MultiAssay_object(x))
+
+# "GSE107991_sobject" "GSE107992_sobject" "GSE107993_sobject" "GSE107994_sobject" "GSE62525_sobject"  "GSE79362_sobject" 
+```
+
+# Visualization with TBsignatures: Comparison across TB Status {.tabset}
+
+## Positive TB (PTB) vs. Latent TB (Latent){.tabset}
+
+```{r calculate ssgsea for PTB vs Latent, message = FALSE, results = "hide"}
+multi_set_PTB_Latent <- lapply(multi_data_all, function(x) get_sobject_TBSig(x,"PTB","Latent")) %>% plyr::compact()
+
+ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
+                                 function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                                              useAssay = "counts",
+                                                              signatures = TBsignatures,
+                                                              algorithm = "ssGSEA",
+                                                              combineSigAndAlgorithm = TRUE,
+                                                              parallel.sz = 1))
+
+# No Sloot_HIV_2, Suliman_RISK_4 in some datasets
+TBsig_PTB_Latent <- names(TBsignatures)[-grep("Sloot_HIV_2|Suliman_RISK_4",names(TBsignatures))]
+
+index_Sloot <- which(!sapply(ssgsea_PTB_Latent, function(x) "Sloot_HIV_2" %in% names(colData(x))))
+index_Suliman <- which(!sapply(ssgsea_PTB_Latent, function(x) "Suliman_RISK_4" %in% names(colData(x))))
+# Define new function for box plot display
+get_boxplot <- function(result_list,sig_name){
+  
+  p_boxplot <- lapply(1:length(result_list), function(x)
+    TBSignatureProfiler::signatureBoxplot(inputData = result_list[[x]],
+                                      name = names(result_list)[x],
+                                      signatureColNames = sig_name,
+                                      annotationColName = "Disease", rotateLabels = FALSE,fill_colors = c("#00AFBB", "#E7B800")))
+
+    library(gridExtra)
+    library(ggplot2)
+    p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+    return(p_combine)
+
+}
+```
+
+### Heatmap with all signatures
+
+```{r Heatmap with all signatures PTB vs. Latent, message = FALSE, fig.height = 9}
+# Colors for gradient
+#colors <- RColorBrewer::brewer.pal(6, "Spectral")
+#col.me <- circlize::colorRamp2(seq(from = -2, to = 2, 
+#                                   length.out = 6), colors)
+#library(ComplexHeatmap)
+#signatureHeatmap(ssgsea_PTB_Latent[[1]], name = "Heatmap of Signatures, ssGSEA Algorithm", 
+#                 signatureColNames = names(TBsignatures),
+#                 annotationColNames = "Disease",
+#                 scale = TRUE,
+#                 showColumnNames = TRUE,
+#                 choose_color = col.me)
+# kk
+```
+
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. Latent,results = "asis", message = FALSE, fig.height = 16, fig.width=24}
+for (i in TBsig_PTB_Latent){
+
+  cat("####", i, "\n")
+  
+  get_boxplot(ssgsea_PTB_Latent, sig_name = i)
+  #print(signatureBoxplot(ssgsea_result, name = i, signatureColNames = i,
+  #               annotationColName = c("Disease")))
+  
+  cat("\n\n")
+}
+```
+
+#### Sloot_HIV_2
+
+```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Latent[-index_Sloot], sig_name = "Sloot_HIV_2")
+```
+
+#### Suliman_RISK_4
+
+```{r boxplot for Suliman_RISK_4 PTB vs. Latent, results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Latent[-index_Suliman], sig_name = "Suliman_RISK_4")
+
+```
+
+## Positive TB (PTB) vs. Health Control (Control){.tabset}
+
+```{r calculate ssgsea for PTB vs Control, message = FALSE, results = "hide"}
+multi_set_PTB_Control <- lapply(multi_data_all, function(x) get_sobject_TBSig(x,"PTB","Control")) %>% plyr::compact()
+
+ssgsea_PTB_Control <- lapply(multi_set_PTB_Control,
+                                 function(x) runTBsigProfiler(input = x,
+                                                              useAssay = "counts",
+                                                              signatures = TBsignatures,
+                                                              algorithm = "ssGSEA",
+                                                              combineSigAndAlgorithm = TRUE,
+                                                              parallel.sz = 1))
+
+TBsig_PTB_Control <- names(TBsignatures)[-which(names(TBsignatures)%in% c("Lee_4","Rajan_HIV_5","Sloot_HIV_2","Thompson_FAIL_13","Suliman_RISK_4"))]
+
+index_Lee <- which(!sapply(ssgsea_PTB_Control, function(x) "Lee_4" %in% names(colData(x))))
+index_Suliman <- which(!sapply(ssgsea_PTB_Control, function(x) "Suliman_RISK_4" %in% names(colData(x))))
+```
+
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. Control,results = "asis", message = FALSE, fig.height = 16, fig.width=24}
+for (i in TBsig_PTB_Control){
+
+  cat("####", i, "\n")
+  
+  get_boxplot(ssgsea_PTB_Control, sig_name = i)
+  #print(signatureBoxplot(ssgsea_result, name = i, signatureColNames = i,
+  #               annotationColName = c("Disease")))
+  
+  cat("\n\n")
+}
+```
+
+#### Lee_4
+
+```{r,results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Lee_4")
+```
+
+#### Rajan_HIV_5
+
+```{r,results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Rajan_HIV_5")
+```
+
+#### Sloot_HIV_2
+
+```{r,results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Sloot_HIV_2")
+```
+
+#### Thompson_FAIL_13
+
+```{r,results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Thompson_FAIL_13")
+```
+
+#### Suliman_RISK_4
+
+```{r,results="hide",fig.height = 9, fig.width=15}
+get_boxplot(ssgsea_PTB_Control[-index_Suliman], sig_name = "Suliman_RISK_4")
+```
+
+## Positive TB (PTB) vs. Other Disease (OD){.tabset}
+```{r calculate ssgsea for PTB vs OD, message = FALSE, results = "hide"}
+multi_set_PTB_OD <- lapply(multi_data_all, function(x) get_sobject_TBSig(x,"PTB","OD")) %>% plyr::compact()
+
+ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
+                                 function(x) runTBsigProfiler(input = x,
+                                                              useAssay = "counts",
+                                                              signatures = TBsignatures,
+                                                              algorithm = "ssGSEA",
+                                                              combineSigAndAlgorithm = TRUE,
+                                                              parallel.sz = 1))
+
+```
+
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. OD,results = "asis", message = FALSE, fig.height = 16, fig.width=24}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  get_boxplot(ssgsea_PTB_OD, sig_name = i)
+  #print(signatureBoxplot(ssgsea_result, name = i, signatureColNames = i,
+  #               annotationColName = c("Disease")))
+  
+  cat("\n\n")
+}
+```
+
+# Comparing Signature Scores via AUCs {.tabset}
+
+## Positive TB (PTB) vs. Latent TB (Latent)
+
+```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8}
+combine_auc <- function(result_list){
+    aucs_result <- lapply(result_list, function(x)
+    get_pvalue_auc(x,
+                   annotationColName = "Disease",
+                   signatureColNames = names(colData(x))[-c(1:2)]))
+  aucs_result_dat <- do.call(rbind,aucs_result)
+  return(aucs_result_dat)
+}
+
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. Latent
+
+get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
+
+```
+
+## Positive TB (PTB) vs. Health Control (Control)
+
+```{r AUC ridge plot for PTB vs Control,fig.height = 15, fig.width=8}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. Health Control
+get_auc_distribution(combine_auc(ssgsea_PTB_Control)) + ggtitle("Ridge plot of AUC for PTB vs. Control")
+
+```
+
+## Positive TB (PTB) vs. Other Disease (OD)
+
+```{r AUC ridge plot for PTB vs OD,fig.height = 15, fig.width=8}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. OD
+
+get_auc_distribution(combine_auc(ssgsea_PTB_OD)) + ggtitle("Ridge plot of AUC for PTB vs. OD")
+
+```
