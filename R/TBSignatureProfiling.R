@@ -41,8 +41,6 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2){
     return(sobject_TBSig_filter)
   }
 
-
-
 }
 ################################
 
@@ -51,7 +49,7 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2){
 #' Get boxplot plot comparison across all signatures
 #' @name get_boxplot
 #' @param result_list A list that contains TB signature scores for each dataset
-#' @param name A string for signature name
+#' @param sig_name Character(s) stands for signature name(s)
 #' @return Combined boxplot that shows specific signature across all dataset
 #' @examples
 #' p_boxplot <- get_boxplot(TB_sobject,"Sloot_HIV_2")
@@ -122,7 +120,7 @@ get_pvalue_auc <- function(SE_scored, annotationColName = "Disease", signatureCo
 ###########################
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution
-#' @param aucs_result_dat A dataframe contains AUC and p-value for certain TB signatures across different data
+#' @param aucs_result_dat A dataframe contains AUC and p-value for certain TB signatures across different datasets
 #' @return Ridge plot with median line
 #'
 #' @examples
