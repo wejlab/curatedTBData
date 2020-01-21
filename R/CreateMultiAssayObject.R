@@ -17,6 +17,7 @@ Create_MultiAssay_object <- function(sobject){
     stop(paste("Invalid input data type. Only supported for SummarizedExperiment objects. Your input:,", typeof(sobject)))
   }
   library(MultiAssayExperiment)
+  library(dplyr)
   # Read in Data
   sobject_exprs <- assay(sobject)
   row_data <- rowData(sobject) %>% data.frame()
