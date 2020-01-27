@@ -62,12 +62,12 @@ multi_data_all <- lapply(sobjects_list, function(x) Create_MultiAssay_object(x))
 multi_set_PTB_Latent <- lapply(multi_data_all, function(x) get_sobject_TBSig(x,"PTB","Latent")) %>% plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
-                                 function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
-                                                              useAssay = "counts",
-                                                              signatures = TBsignatures,
-                                                              algorithm = "ssGSEA",
-                                                              combineSigAndAlgorithm = TRUE,
-                                                              parallel.sz = 1))
+                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                  useAssay = "counts",
+                                  signatures = TBsignatures,
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE,
+                                  parallel.sz = 1))
 
 # No Sloot_HIV_2, Suliman_RISK_4 in some datasets
 TBsig_PTB_Latent <- names(TBsignatures)[-grep("Sloot_HIV_2|Suliman_RISK_4",names(TBsignatures))]

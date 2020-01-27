@@ -115,6 +115,7 @@ get_pvalue_auc <- function(SE_scored, annotationColName = "Disease", signatureCo
   return(data.frame(Signature=signatureColNames,P.value=round(pvals,4),AUC=round(aucs,4)))
 
 }
+
 ###########################
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution
