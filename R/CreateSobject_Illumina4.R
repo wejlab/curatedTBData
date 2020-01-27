@@ -187,6 +187,8 @@ create_new_ColData <- function(col_data){
   col_info_rest <- col_info %>% dplyr::select(-overlap_name)
   dat_final <- cbind(dat_NA_new,col_info_rest)
 
+  dat_final <- DataFrame(dat_final)
+
   return(dat_final)
 }
 
