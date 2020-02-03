@@ -4,12 +4,12 @@
 \alias{get_boxplot}
 \title{Get boxplot plot comparison across all signatures}
 \usage{
-get_boxplot(result_list, name)
+get_boxplot(result_list, sig_name)
 }
 \arguments{
 \item{result_list}{A list that contains TB signature scores for each dataset}
 
-\item{name}{A string for signature name}
+\item{sig_name}{Character(s) stands for signature name(s)}
 }
 \value{
 Combined boxplot that shows specific signature across all dataset

@@ -4,7 +4,10 @@
 \alias{get_auc_distribution}
 \title{Obtain ridge plots for emprirical AUC distribution for signature scores.}
 \usage{
-get_auc_distribution(result_list)
+get_auc_distribution(aucs_result_dat)
+}
+\arguments{
+\item{aucs_result_dat}{A dataframe contains AUC and p-value for certain TB signatures across different datasets}
 }
 \value{
 Ridge plot with median line
@@ -13,6 +16,6 @@ Ridge plot with median line
 Obtain ridge plots for emprirical AUC distribution for signature scores.
 }
 \examples{
-mobject <- get_expr_symbol(sobject)
-p_ridge <- get_auc_distribution(result_list,"Disease",signatureColNames)
+aucs_result_dat <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=rnorm(3))
+p_ridge <- get_auc_distribution(aucs_result_dat)
 }
