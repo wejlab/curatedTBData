@@ -11,7 +11,7 @@ get_sobject_TBSig(multi_object, disease1, disease2)
 
 \item{disease1}{A character chooses from "Control", "Latent", "PTB", "OD"}
 
-\item{disease2}{A character chooses from "Control", Latent, "PTB", "OD."
+\item{disease2}{A character chooses from "Control", "Latent", "PTB", "OD".
 TBStatus1 and TBStatus2 should be different from each other}
 }
 \value{
@@ -22,6 +22,6 @@ Create sobjects for TB signature profiling based on specific TB status.
 }
 \examples{
 sobject <- dat("GSE39939_sobject")
-mobject <- get_expr_symbol(sobject)
+mobject <- Create_MultiAssay_object(sobject)
 sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
 }

@@ -9,12 +9,12 @@ get_pvalue_auc(SE_scored, annotationColName = "Disease", signatureColNames)
 \arguments{
 \item{SE_scored}{A summarized experiment from TB signature profiling}
 
-\item{annotationColName}{A character usually the column name of for TB status (default is "Disease")}
+\item{annotationColName}{A character, column name for TB status (default is "Disease")}
 
-\item{signatureColNames}{A character vector that contains gene signature name}
+\item{signatureColNames}{A character or vector that contains gene signature name}
 }
 \value{
-A data contains p-value from two-sample t-test and AUC value for each signature
+A data frame contains p-value from two-sample t-test and AUC value for each signature
 }
 \description{
 Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
@@ -23,6 +23,6 @@ Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
 sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
 SE_scored <- runTBsigProfiler(input = sobject_TBSig, useAssay = "counts", signatures = TBsignatures, algorithm = "ssGSEA", combineSigAndAlgorithm = TRUE, parallel.sz = 1)
 annotationColName <- "Disease"
-signatureColNames <- names(colData(SE_scored))[-c(1:2)]
+signatureColNames <- c("Anderson_42","Anderson_OD_51" )
 results <- get_pvalue_auc(SE_scored,"Disease",signatureColNames)
 }
