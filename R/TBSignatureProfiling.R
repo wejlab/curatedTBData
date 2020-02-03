@@ -131,6 +131,7 @@ get_auc_distribution <- function(aucs_result_dat){
   library(gridExtra)
   library(ggridges)
 
+  # add 50% AUC line
   aucs_result_dat_lines <- data.frame(Signature = aucs_result_dat$Signature,x0=0.5)
 
   p_ridge <- ggplot(aucs_result_dat,aes(x=AUC,y=Signature)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) +

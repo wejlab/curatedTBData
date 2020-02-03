@@ -218,13 +218,24 @@ for (i in names(TBsignatures)){
 
 ## Positive TB (PTB) vs. Latent TB (Latent)
 
-```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8}
+```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, message=FALSE}
 combine_auc <- function(result_list){
     aucs_result <- lapply(result_list, function(x)
     get_pvalue_auc(x,
                    annotationColName = "Disease",
                    signatureColNames = names(colData(x))[-c(1:2)]))
   aucs_result_dat <- do.call(rbind,aucs_result)
+  
+  # re-order data based on their median AUC
+  aucs_result_dat_median <- aucs_result_dat %>% group_by(Signature) %>% summarise_all(median) %>% arrange(desc(AUC))
+  
+  ##########################
+  
+  Signature_order <- as.character(aucs_result_dat_median$Signature)
+  # Re-order gene siganture, re-level
+  aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+  
+
   return(aucs_result_dat)
 }
 
@@ -233,6 +244,10 @@ combine_auc <- function(result_list){
 
 get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
 
+# p = get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
+# ggsave("~/Desktop/auc.pdf",p,width = 8, height = 15, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ## Positive TB (PTB) vs. Health Control (Control)
