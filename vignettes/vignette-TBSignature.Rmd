@@ -90,6 +90,14 @@ get_boxplot <- function(result_list,sig_name){
     return(p_combine)
 
 }
+#p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Sweeney_OD_3")
+#ggsave("~/Desktop/PresentationFigure/Sweeney_Latent.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
+p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Anderson_42")
+ggsave("~/Desktop/PresentationFigure/Anderson_Latent.pdf",p, width = 24, height = 24, 
+       units = "in", # other options are "in", "cm", "mm" 
+       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -111,6 +119,7 @@ for (i in TBsig_PTB_Latent){
 
 ```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Latent[-index_Sloot], sig_name = "Sloot_HIV_2")
+
 ```
 
 #### Suliman_RISK_4
@@ -138,6 +147,17 @@ TBsig_PTB_Control <- names(TBsignatures)[-which(names(TBsignatures)%in% c("Lee_4
 #  "Lee_4","Rajan_HIV_5","Sloot_HIV_2","Thompson_FAIL_13" are in the same gene set
 index_Lee <- which(!sapply(ssgsea_PTB_Control, function(x) "Lee_4" %in% names(colData(x))))
 index_Suliman <- which(!sapply(ssgsea_PTB_Control, function(x) "Suliman_RISK_4" %in% names(colData(x))))
+
+
+p = get_boxplot(ssgsea_PTB_Control, sig_name = "Sweeney_OD_3")
+ggsave("~/Desktop/PresentationFigure/Sweeney_Control.pdf",p, width = 24, height = 24, 
+       units = "in", # other options are "in", "cm", "mm" 
+       dpi = 200)
+
+p = get_boxplot(ssgsea_PTB_Control, sig_name = "Anderson_42")
+ggsave("~/Desktop/PresentationFigure/Anderson_Control.pdf",p, width = 24, height = 24, 
+       units = "in", # other options are "in", "cm", "mm" 
+       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
