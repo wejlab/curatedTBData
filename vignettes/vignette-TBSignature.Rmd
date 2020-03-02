@@ -44,7 +44,7 @@ library(magick)
 # Load data
 list_files <- data(package="curatedTBData")[[3]][,3]
 data(list=list_files) # Takes some time...
-strSobject <- ls(pattern="*_sobject$")
+strSobject <- ls(pattern="*object$")
 
 # Get a list of Summarized Experiment Object
 sobjects_list <- lapply(strSobject, function(x) get(x))
@@ -94,10 +94,10 @@ get_boxplot <- function(result_list,sig_name){
 #ggsave("~/Desktop/PresentationFigure/Sweeney_Latent.pdf",p, width = 24, height = 24, 
 #       units = "in", # other options are "in", "cm", "mm" 
 #       dpi = 200)
-p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Anderson_42")
-ggsave("~/Desktop/PresentationFigure/Anderson_Latent.pdf",p, width = 24, height = 24, 
-       units = "in", # other options are "in", "cm", "mm" 
-       dpi = 200)
+#p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Anderson_42")
+#ggsave("~/Desktop/PresentationFigure/Anderson_Latent.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -149,15 +149,15 @@ index_Lee <- which(!sapply(ssgsea_PTB_Control, function(x) "Lee_4" %in% names(co
 index_Suliman <- which(!sapply(ssgsea_PTB_Control, function(x) "Suliman_RISK_4" %in% names(colData(x))))
 
 
-p = get_boxplot(ssgsea_PTB_Control, sig_name = "Sweeney_OD_3")
-ggsave("~/Desktop/PresentationFigure/Sweeney_Control.pdf",p, width = 24, height = 24, 
-       units = "in", # other options are "in", "cm", "mm" 
-       dpi = 200)
+#p = get_boxplot(ssgsea_PTB_Control, sig_name = "Sweeney_OD_3")
+#ggsave("~/Desktop/PresentationFigure/Sweeney_Control.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 
-p = get_boxplot(ssgsea_PTB_Control, sig_name = "Anderson_42")
-ggsave("~/Desktop/PresentationFigure/Anderson_Control.pdf",p, width = 24, height = 24, 
-       units = "in", # other options are "in", "cm", "mm" 
-       dpi = 200)
+#p = get_boxplot(ssgsea_PTB_Control, sig_name = "Anderson_42")
+#ggsave("~/Desktop/PresentationFigure/Anderson_Control.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
