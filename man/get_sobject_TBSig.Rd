@@ -4,7 +4,12 @@
 \alias{get_sobject_TBSig}
 \title{Create sobjects for TB signature profiling based on specific TB status.}
 \usage{
-get_sobject_TBSig(multi_object, disease1, disease2)
+get_sobject_TBSig(
+  multi_object,
+  disease1,
+  disease2,
+  assay_type = "assay_reduce"
+)
 }
 \arguments{
 \item{multi_object}{an multi-assay summarized experiment}
