@@ -33,6 +33,8 @@ library(TBSignatureProfiler)
 library(ggplot2)
 library(gridExtra)
 library(ggridges)
+
+library(magick)
 # library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
 ```
 
@@ -41,17 +43,16 @@ library(ggridges)
 ```{r load list of sobject, message=FALSE}
 # Load data
 list_files <- data(package="curatedTBData")[[3]][,3]
-data(list=list_files)
-strSobject <- ls(pattern="*_sobject$")
+data(list=list_files) # Takes some time...
+strSobject <- ls(pattern="*object$")
 
 # Get a list of Summarized Experiment Object
 sobjects_list <- lapply(strSobject, function(x) get(x))
-names(sobjects_list) <- strSobject
+names(sobjects_list) <- gsub("_.*","",strSobject)
 
-# Create Multi-Assay Experiment object
+# Create Multi-Assay Experiment object Take SOME TIME
 multi_data_all <- lapply(sobjects_list, function(x) Create_MultiAssay_object(x))
 
-# "GSE107991_sobject" "GSE107992_sobject" "GSE107993_sobject" "GSE107994_sobject" "GSE62525_sobject"  "GSE79362_sobject" 
 ```
 
 # Visualization with TBsignatures: Comparison across TB Status {.tabset}
@@ -67,7 +68,7 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   signatures = TBsignatures,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 1))
+                                  parallel.sz = 10))
 
 # No Sloot_HIV_2, Suliman_RISK_4 in some datasets
 TBsig_PTB_Latent <- names(TBsignatures)[-grep("Sloot_HIV_2|Suliman_RISK_4",names(TBsignatures))]
@@ -89,28 +90,19 @@ get_boxplot <- function(result_list,sig_name){
     return(p_combine)
 
 }
-```
-
-### Heatmap with all signatures
-
-```{r Heatmap with all signatures PTB vs. Latent, message = FALSE, fig.height = 9}
-# Colors for gradient
-#colors <- RColorBrewer::brewer.pal(6, "Spectral")
-#col.me <- circlize::colorRamp2(seq(from = -2, to = 2, 
-#                                   length.out = 6), colors)
-#library(ComplexHeatmap)
-#signatureHeatmap(ssgsea_PTB_Latent[[1]], name = "Heatmap of Signatures, ssGSEA Algorithm", 
-#                 signatureColNames = names(TBsignatures),
-#                 annotationColNames = "Disease",
-#                 scale = TRUE,
-#                 showColumnNames = TRUE,
-#                 choose_color = col.me)
-# kk
+#p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Sweeney_OD_3")
+#ggsave("~/Desktop/PresentationFigure/Sweeney_Latent.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
+#p = get_boxplot(ssgsea_PTB_Latent, sig_name = "Anderson_42")
+#ggsave("~/Desktop/PresentationFigure/Anderson_Latent.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
 
-```{r Boxplot for each signature PTB vs. Latent,results = "asis", message = FALSE, fig.height = 16, fig.width=24}
+```{r Boxplot for each signature PTB vs. Latent,results = "asis", message = FALSE, fig.height = 20, fig.width=28}
 for (i in TBsig_PTB_Latent){
 
   cat("####", i, "\n")
@@ -125,13 +117,14 @@ for (i in TBsig_PTB_Latent){
 
 #### Sloot_HIV_2
 
-```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 9, fig.width=15}
+```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Latent[-index_Sloot], sig_name = "Sloot_HIV_2")
+
 ```
 
 #### Suliman_RISK_4
 
-```{r boxplot for Suliman_RISK_4 PTB vs. Latent, results="hide",fig.height = 9, fig.width=15}
+```{r boxplot for Suliman_RISK_4 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Latent[-index_Suliman], sig_name = "Suliman_RISK_4")
 
 ```
@@ -147,12 +140,24 @@ ssgsea_PTB_Control <- lapply(multi_set_PTB_Control,
                                                               signatures = TBsignatures,
                                                               algorithm = "ssGSEA",
                                                               combineSigAndAlgorithm = TRUE,
-                                                              parallel.sz = 1))
+                                                              parallel.sz = 10))
 
 TBsig_PTB_Control <- names(TBsignatures)[-which(names(TBsignatures)%in% c("Lee_4","Rajan_HIV_5","Sloot_HIV_2","Thompson_FAIL_13","Suliman_RISK_4"))]
 
+#  "Lee_4","Rajan_HIV_5","Sloot_HIV_2","Thompson_FAIL_13" are in the same gene set
 index_Lee <- which(!sapply(ssgsea_PTB_Control, function(x) "Lee_4" %in% names(colData(x))))
 index_Suliman <- which(!sapply(ssgsea_PTB_Control, function(x) "Suliman_RISK_4" %in% names(colData(x))))
+
+
+#p = get_boxplot(ssgsea_PTB_Control, sig_name = "Sweeney_OD_3")
+#ggsave("~/Desktop/PresentationFigure/Sweeney_Control.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
+
+#p = get_boxplot(ssgsea_PTB_Control, sig_name = "Anderson_42")
+#ggsave("~/Desktop/PresentationFigure/Anderson_Control.pdf",p, width = 24, height = 24, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -172,31 +177,31 @@ for (i in TBsig_PTB_Control){
 
 #### Lee_4
 
-```{r,results="hide",fig.height = 9, fig.width=15}
+```{r,results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Lee_4")
 ```
 
 #### Rajan_HIV_5
 
-```{r,results="hide",fig.height = 9, fig.width=15}
+```{r,results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Rajan_HIV_5")
 ```
 
 #### Sloot_HIV_2
 
-```{r,results="hide",fig.height = 9, fig.width=15}
+```{r,results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Sloot_HIV_2")
 ```
 
 #### Thompson_FAIL_13
 
-```{r,results="hide",fig.height = 9, fig.width=15}
+```{r,results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Control[-index_Lee], sig_name = "Thompson_FAIL_13")
 ```
 
 #### Suliman_RISK_4
 
-```{r,results="hide",fig.height = 9, fig.width=15}
+```{r,results="hide",fig.height = 16, fig.width=24}
 get_boxplot(ssgsea_PTB_Control[-index_Suliman], sig_name = "Suliman_RISK_4")
 ```
 
@@ -210,7 +215,7 @@ ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
                                                               signatures = TBsignatures,
                                                               algorithm = "ssGSEA",
                                                               combineSigAndAlgorithm = TRUE,
-                                                              parallel.sz = 1))
+                                                              parallel.sz = 10))
 
 ```
 
@@ -233,13 +238,24 @@ for (i in names(TBsignatures)){
 
 ## Positive TB (PTB) vs. Latent TB (Latent)
 
-```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8}
+```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, message=FALSE}
 combine_auc <- function(result_list){
     aucs_result <- lapply(result_list, function(x)
     get_pvalue_auc(x,
                    annotationColName = "Disease",
                    signatureColNames = names(colData(x))[-c(1:2)]))
   aucs_result_dat <- do.call(rbind,aucs_result)
+  
+  # re-order data based on their median AUC
+  aucs_result_dat_median <- aucs_result_dat %>% group_by(Signature) %>% summarise_all(median) %>% arrange(desc(AUC))
+  
+  ##########################
+  
+  Signature_order <- as.character(aucs_result_dat_median$Signature)
+  # Re-order gene siganture, re-level
+  aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+  
+
   return(aucs_result_dat)
 }
 
@@ -248,6 +264,10 @@ combine_auc <- function(result_list){
 
 get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
 
+# p = get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
+# ggsave("~/Desktop/auc.pdf",p,width = 8, height = 15, 
+#       units = "in", # other options are "in", "cm", "mm" 
+#       dpi = 200)
 ```
 
 ## Positive TB (PTB) vs. Health Control (Control)
