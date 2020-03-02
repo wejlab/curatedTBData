@@ -4,20 +4,7 @@ usethis::use_data("DATASET")
 
 library(purrr)
 library(devtools)
-
-sobject_files <- list.files(path = "data-raw",pattern = "*.RDS")
-
-sobject_total <- lapply(sobject_files, function(x) readRDS(paste0("data-raw/",x)))
-sobject_total_name_ori <- lapply(sobject_total, function(x) names(assays(x)))
-sobject_total_name <- lapply(sobject_total_name_ori, function(x) gsub("(.+?)(\\_.*)", "\\1", x)) %>% unlist()
-sobject_total_name
-names(sobject_total) <- sobject_total_name
-
-purrr::walk2(sobject_total, paste0(names(sobject_total), "_sobject"), function(obj, name) {
-  assign(name, obj)
-  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
-})
-################################### Function to add new data #######################
+############ Function to adgere a list of summarized experiment data ############
 add_new_data <- function(edit_files){
   library(purrr)
   library(devtools)
@@ -53,6 +40,7 @@ add_new_data(edit_files)
 # tt <- lapply(add_files, function(x) readRDS(paste0("~/Desktop/curatedTBData/data-raw/",x)))
 # tt_multi <- lapply(tt, function(x) Create_MultiAssay_object(x))
 
+#----------------------------------------------------
 # Modify RNA-seq data on Feb. 22th
 add_new_data_mobject <- function(edit_files){
   library(purrr)
@@ -74,3 +62,8 @@ edit_files <- paste0(c("GSE101705_mobject", "GSE107104_mobject", "GSE89403_mobje
                       "GSE79362_mobject","GSE94438_mobject", "GSE107991_mobject",
                       "GSE107992_mobject","GSE107993_mobject","GSE107994_mobject"),".RDS")
 add_new_data_mobject(edit_files)
+
+#----------------------------------------------------.
+# Add 1 data on Mar. 1st
+GSEXXXXX_sobject <- readRDS("data-raw/GSEXXXXX_sobject.RDS")
+usethis::use_data(GSEXXXXX_sobject)

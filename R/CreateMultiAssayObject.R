@@ -19,9 +19,20 @@ Create_MultiAssay_object <- function(sobject){
   library(SummarizedExperiment)
   library(MultiAssayExperiment)
   library(dplyr)
+  ## For SummarizedExperiment object
   if (class(sobject) == "SummarizedExperiment"){
     # read in data
     sobject_exprs <- assay(sobject)
+    if (ncol(rowData(sobject)) == 0){
+      # row data is NULL, special case for those normalized data with unique gene symbol as row names
+
+      mobject1 <- new("Mobject", assay_reprocess = sobject@assays[[1]], assay_raw = sobject@assays[[1]],
+                      row_data = data.frame(sobject@elementMetadata), primary = data.frame(sobject@colData),
+                      meta_data = sobject@metadata[[1]])
+      simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
+      return(simpleMultiAssay)
+
+    }
     row_data <- rowData(sobject) %>% data.frame()
     if (!any(colnames(row_data)=="SYMBOL_NEW")){
       stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
@@ -56,6 +67,7 @@ Create_MultiAssay_object <- function(sobject){
     return(simpleMultiAssay)
   }
 
+  ## For MultiAssayExperiment object
   if (class(sobject) == "MultiAssayExperiment"){
     sobject_ori <- MultiAssayExperiment::experiments(sobject)[["assay_raw"]]
     sobject_exprs <- assay(sobject_ori)
@@ -89,7 +101,6 @@ Create_MultiAssay_object <- function(sobject){
     simpleMultiAssay <- c(sobject,assay_reduce=sobject_exprs_symbol)
     return(simpleMultiAssay)
   }
-
 
 }
 
