@@ -2,7 +2,7 @@
 % Please edit documentation in R/CreateMultiAssayObject.R
 \name{Create_MultiAssay_object}
 \alias{Create_MultiAssay_object}
-\title{Create MultiAssay Experiment Object from Summarized Experiment Object.}
+\title{Expand MultiAssay Experiment Object from SummarizedExperiment/MultiAssayExperiment Object.}
 \usage{
 Create_MultiAssay_object(sobject)
 }
@@ -13,7 +13,7 @@ Create_MultiAssay_object(sobject)
 A MultiAssay Experiment Object contains 1. Input Summarized Experiment Object. 2. read count matrix collapse by gene symbol
 }
 \description{
-Create MultiAssay Experiment Object from Summarized Experiment Object.
+Expand MultiAssay Experiment Object from SummarizedExperiment/MultiAssayExperiment Object.
 }
 \examples{
 dat("GSE39939_sobject")
