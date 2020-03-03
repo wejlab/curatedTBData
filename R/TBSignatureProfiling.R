@@ -32,9 +32,17 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay
                          Disease = col_info$TBStatus %>% as.factor())
   row.names(col_data) <- row.names(col_info)
 
+  # when not all samples are included in the expression matrix
+  if (ncol(multi_object[[assay_type]]) != nrow(col_info)){
+    index <- sapply(1:length(colnames(multi_object[[assay_type]])), function (i)
+      which(row.names(col_data) %in% colnames(multi_object[[assay_type]])[i]))
+
+    col_data <- col_data[index,]
+  }
+
   sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(multi_object[[assay_type]])), colData = col_data)
 
-  # subseeting disease1 and disease2
+  # subsetting disease1 and disease2
   sobject_TBSig_filter <- sobject_TBSig[,sobject_TBSig$Disease %in% c(disease1,disease2)]
   TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)$Disease
   # check if both status are in the column data

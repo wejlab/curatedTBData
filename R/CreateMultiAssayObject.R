@@ -13,7 +13,7 @@ Create_MultiAssay_object <- function(sobject){
   if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
   if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
-  if(!any(class(sobject1) == c("SummarizedExperiment","MultiAssayExperiment"))){
+  if(!any(class(sobject) == c("SummarizedExperiment","MultiAssayExperiment"))){
     stop(paste("Invalid input data type. Only supported for SummarizedExperiment/MultiAssayExperiment objects. Your input:,", typeof(sobject)))
   }
   library(SummarizedExperiment)
@@ -56,7 +56,7 @@ Create_MultiAssay_object <- function(sobject){
     sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
     row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
-    sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix
+    sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
 
     ## Create MultiAssayExperiment object Use methods from CreateSobject
     mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = sobject@assays[[1]],
