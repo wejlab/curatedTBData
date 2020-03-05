@@ -2,7 +2,6 @@
 title: "curatedTBData"
 author: "Xutao Wang"
 output: BiocStyle::html_document
-bibliography: bibliography.bib
 vignette: >
   %\VignetteIndexEntry{curatedTBData}
   %\VignetteEngine{knitr::rmarkdown}
@@ -27,6 +26,7 @@ library(GEOquery)
 library(SummarizedExperiment)
 library(MultiAssayExperiment)
 library(limma)
+library(edgeR)
 library(dplyr)
 library(plyr)
 
@@ -45,6 +45,10 @@ library(curatedTBData)
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Cancer Transcriptome
 Insert introduction/background infrmation about this data package
 # Using SummarizedExperiment/MultiAssayExperiment Object
+Insert how you get these objects from the beginnig 
+```{r}
+
+```
 
 # Load list of existing SummarizedExperiment/MultiAssayExperiment Objects
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
@@ -60,7 +64,38 @@ strobject <- ls(pattern="*object$")
 objects_list <- lapply(strobject, function(x) get(x))
 names(objects_list) <- gsub("_.*","",strobject)
 
+rna_seq_name <- which(sapply(objects_list, function(x) class(x)) == "MultiAssayExperiment") %>% names()
+microarray_name <- which(sapply(objects_list, function(x) class(x)) != "MultiAssayExperiment") %>% names()
+data_type <- data.frame(GSE = c(rna_seq_name,microarray_name), Type = c(rep("RNA-seq",length(rna_seq_name)),rep("Microarray",length(microarray_name))))
+
 ```
+# Subsetting data with specfic instruction
+
+# Normalization (Before match probeID to Gene symbol)
+For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package.
+
+## Between-sample normalization for Illumina microarray
+should create function for this??
+```{r}
+# add the normalized data as a new experiment in the SummarizedExperiment 
+# set all counts less than 0 to be 1
+assays(GSE39939_sobject)[["GSE39939_Normalized_counts"]] <- limma::normalizeBetweenArrays (assays(GSE39939_sobject)[[1]],method="quantile")
+```
+
+## Betwwen-sample normalization for RNA-seq
+Should create a function for this ??
+```{r}
+counts <- experiments(GSE107991_mobject)[["assay_raw"]] %>% assay() 
+TMM <- calcNormFactors(counts, method="RLE")
+tmmScaleFactors <- colSums(counts) * TMM
+tmmExp <- round(t(t(counts)/tmmScaleFactors) * mean(tmmScaleFactors)) 
+# add the normalized data as a new experiment in the MultiAssay 
+k=paste0("a","aaaas")
+
+GSE107991_mobject_norm <- c(GSE107991_mobject,k = tmmExp) 
+
+```
+
 
 # Match ProbeID to Gene symbol
 For objects that contain probe information, we match them to gene symbol. We collapse probe information by taking their mean values if they mapped to the same gene, and expand probe information for non-uniqueness mapping. In such cases, we use MultiAssayExperiment Objects to store information for each data.
@@ -72,8 +107,6 @@ GSE39939_mobject <- Create_MultiAssay_object(GSE39939_sobject)
 GSE107991_mobject_new <- Create_MultiAssay_object(GSE107991_mobject)
 ```
 
-# Normalization and Batch Correction
-For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we use normalize microarray data using `RMA` , and normalize RNA-seq data using `DESeq` as suggested by @evans2018selecting.
 ```{r}
 # Match ProbeID to Gene symbol for all existing datasets
 multi_data_all <- lapply(objects_list, function(x) Create_MultiAssay_object(x))
@@ -147,4 +180,7 @@ get_boxplot(ssgsea_PTB_Latent[-index_Sloot], sig_name = "Sloot_HIV_2")
 get_boxplot(ssgsea_PTB_Latent[-index_Suliman], sig_name = "Suliman_RISK_4")
 
 ```
+
+# Train predictors using ensemble 
+## Batch Correction
 
