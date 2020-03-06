@@ -1,32 +1,33 @@
-#' Expand MultiAssay Experiment Object from SummarizedExperiment/MultiAssayExperiment Object.
-#' @name Create_MultiAssay_object
+#' Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.
+#' @name MatchProbe
 #'
 #' @param sobject A summarized experiment object
 #' @return A MultiAssay Experiment Object contains 1. Input Summarized Experiment Object. 2. read count matrix collapse by gene symbol
 #' @examples
 #' dat("GSE39939_sobject")
-#' Create_MultiAssay_object(GSE39939_sobject)
+#' MatchProbe(GSE39939_sobject)
 #' @export
-Create_MultiAssay_object <- function(sobject){
+MatchProbe <- function(sobject, experiment_type = "raw"){
 
-  # check input type
-  if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-  if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
-  if(!any(class(sobject) == c("SummarizedExperiment","MultiAssayExperiment"))){
-    stop(paste("Invalid input data type. Only supported for SummarizedExperiment/MultiAssayExperiment objects. Your input:,", typeof(sobject)))
+  experiment_type <- match.arg(experiment_type)
+  if (experiment_type == "raw"){
+     experiment_type = 1
   }
-  library(SummarizedExperiment)
-  library(MultiAssayExperiment)
-  library(dplyr)
+  if (experiment_type != "raw"){
+    # execute normalized reaads
+    experiment_type_sobject = "NormalizedReads"
+    experiment_type_mobject1 = "assay_reprocess_norm"
+    experiment_type_mobject2 = "assay_raw_norm"
+  }
   ## For SummarizedExperiment object
   if (class(sobject) == "SummarizedExperiment"){
     # read in data
-    sobject_exprs <- assay(sobject)
+    sobject_exprs <- assays(sobject)[[experiment_type]]
+    #### row data is NULL, special case for those normalized data with unique gene symbol as row names
     if (ncol(rowData(sobject)) == 0){
-      # row data is NULL, special case for those normalized data with unique gene symbol as row names
+      #### row data is NULL, special case for those normalized data with unique gene symbol as row names
 
-      mobject1 <- new("Mobject", assay_reprocess = sobject@assays[[1]], assay_raw = sobject@assays[[1]],
+      mobject1 <- new("Mobject", assay_reprocess = sobject@assays[[experiemnt_type]], assay_raw = sobject@assays[[experiment_type]],
                       row_data = data.frame(sobject@elementMetadata), primary = data.frame(sobject@colData),
                       meta_data = sobject@metadata[[1]])
       simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
@@ -59,7 +60,7 @@ Create_MultiAssay_object <- function(sobject){
     sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
 
     ## Create MultiAssayExperiment object Use methods from CreateSobject
-    mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = sobject@assays[[1]],
+    mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = sobject@assays[[experiment_type]],
                     row_data = data.frame(sobject@elementMetadata), primary = data.frame(sobject@colData),
                     meta_data = sobject@metadata[[1]])
 

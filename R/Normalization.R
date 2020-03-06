@@ -1,17 +1,4 @@
-#' Normalization for microarray and RNA-seq.
-#' @name norm_reads
-#'
-#' @param object A SummarizedExperiment/MultiAssayExperiment object
-#' @param method
-#' @param
-
-#' @return A summarized experiment object for TB signature profiling
-#'
-#' @examples
-#' sobject <- dat("GSE39939_sobject")
-#' mobject <- Create_MultiAssay_object(sobject)
-#' sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
-#' @export
+#' Normalization for microarray and RNA-seq transcriptome data.
 
 setGeneric(name="NormalizeReads", function(theObject,...){
   standardGeneric("NormalizeReads")
@@ -19,10 +6,16 @@ setGeneric(name="NormalizeReads", function(theObject,...){
 
 setMethod("NormalizeReads",
           signature="SummarizedExperiment",
+
           function(theObject, method = "quantile"){
-            norm_counts <- limma::normalizeBetweenArrays (assays(theObject)[[1]],
+            # set counts less than 1 to be 1.
+            counts <- assays(theObject)[[1]]
+            counts[counts<1] <- 1
+
+            # Normalize between arrays
+            norm_counts <- limma::normalizeBetweenArrays (counts,
                                                           method = method)
-            assays(theObject)[["NormalizedReads"]] <- norm_counts
+            assays(theObject)[["NormalizedData"]] <- norm_counts
             return(theObject)
           }
 )
@@ -31,21 +24,30 @@ setMethod("NormalizeReads",
           signature = "MultiAssayExperiment",
           function(theObject, experiment_type = "assay_raw",method = "TMM"){
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
-            counts <- assay(experiments(theObject)[[experiment_type]])
-            NormFactor <- calcNormFactors(counts, method = method)
-            ScaleFactors <- colSums(counts) * NormFactor
+            if (experiment_type == "assay_raw"){
+              counts <- assays(experiments(theObject)[[experiment_type]])[[1]]
+              NormFactor <- calcNormFactors(counts, method = method)
+              ScaleFactors <- colSums(counts) * NormFactor
 
-            Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))
-            # add the normalized data as a new experiment in the MultiAssay
+              Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))
+              assays(experiments(theObject)[[experiment_type]])[["NormalizedData"]] <- Exp
+              return(theObject)
 
-            norm <- paste0(experiment_type,"_norm")
+            }
+            if (experiment_type == "assay_reprocess"){
+              counts <- experiments(theObject)[[experiment_type]]
 
-            theObject_norm <- c(theObject, norm = Exp)
+              NormFactor <- calcNormFactors(counts, method = method)
+              ScaleFactors <- colSums(counts) * NormFactor
 
-            # rename the normalized experiment
-            names(theObject_norm)[which(names(theObject_norm) == "norm")] <- norm
+              Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))
+              # add the normalized data as a new experiment in the MultiAssay
 
-            return(theObject_norm)
+              theObject_norm <- c(theObject, assay_reprocess_norm = Exp)
+
+              return(theObject_norm)
+            }
+
 
           }
 )

@@ -60,7 +60,7 @@ list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 data(list=list_files) # Takes some time...
 strobject <- ls(pattern="*object$")
 
-# Create a list for loaded data
+# Create a list for loaded data for metadata analysis
 objects_list <- lapply(strobject, function(x) get(x))
 names(objects_list) <- gsub("_.*","",strobject)
 
@@ -69,33 +69,88 @@ microarray_name <- which(sapply(objects_list, function(x) class(x)) != "MultiAss
 data_type <- data.frame(GSE = c(rna_seq_name,microarray_name), Type = c(rep("RNA-seq",length(rna_seq_name)),rep("Microarray",length(microarray_name))))
 
 ```
-# Subsetting data with specfic instruction
+
+# Subsetting objects
+The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` is the coordination of the meta-data and assays when subsetting.
+
+## Subsetting for single objects
+Both objects have similar method used for subsetting column information. 
+```{r}
+# subsetting samples from objects with TBStatus: PTB
+GSE39939_sobject[, GSE39939_sobject$TBStatus == "PTB"]
+```
+```{r}
+# subsetting samples from objects with TBStatus: PTB
+GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
+```
+
+## Subsetting for multiple objects 
+Since not all datasets contain information about each TB status. Next we would like to select out all the samples with TBStatus=OD.
+```{r}
+# objects_list: a list that contains all the input data
+objects_list_OD <-  lapply(objects_list, function(x) x[,x$TBStatus == "OD"])
+
+# Define function removing empty objects
+# should assign empty list with NA NOT NULL, because assigning NULL to list items, removes them...
+remove_empty_object <- function(k){
+  x <- k
+  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
+    if(nrow(colData(x[[i]]))==0){
+      x[[i]] <- NA
+    }
+  }
+  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
+    if(length(experiments(x[[j]]))==0){
+      x[[j]] <- NA
+    }
+  }
+  x <- x[!is.na(x)]
+  return(x)
+}
+
+# Get a list of objects with TBStatus==OD
+objects_list_OD <- remove_empty_object(objects_list_OD) 
+```
+
 
 # Normalization (Before match probeID to Gene symbol)
 For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package.
 
 ## Between-sample normalization for Illumina microarray
-should create function for this??
 ```{r}
-# add the normalized data as a new experiment in the SummarizedExperiment 
+# add the normalized data as a new assay in the SummarizedExperiment 
 # set all counts less than 0 to be 1
-assays(GSE39939_sobject)[["GSE39939_Normalized_counts"]] <- limma::normalizeBetweenArrays (assays(GSE39939_sobject)[[1]],method="quantile")
+GSE39939_sobject_norm <- NormalizeReads(GSE39939_sobject, method = "quantile")
+```
+Boxplot for non-normalized microarray data
+```{r, fig.height = 8, fig.width = 8}
+boxplot(log(assays(GSE39939_sobject_norm)[["GSE39939_Non_normalized_counts"]][,1:20], base = 2))
+# display the boxplot in log2
+```
+Boxplot for microarray data after quantile normalization
+```{r, fig.height = 8, fig.width = 8}
+boxplot(log(assays(GSE39939_sobject_norm)[["NormalizedReads"]][,1:20], base = 2))
+# display the boxplot in log2
 ```
 
 ## Betwwen-sample normalization for RNA-seq
-Should create a function for this ??
+
 ```{r}
-counts <- experiments(GSE107991_mobject)[["assay_raw"]] %>% assay() 
-TMM <- calcNormFactors(counts, method="RLE")
-tmmScaleFactors <- colSums(counts) * TMM
-tmmExp <- round(t(t(counts)/tmmScaleFactors) * mean(tmmScaleFactors)) 
-# add the normalized data as a new experiment in the MultiAssay 
-k=paste0("a","aaaas")
-
-GSE107991_mobject_norm <- c(GSE107991_mobject,k = tmmExp) 
-
+# add the normalized data as a new assay in the MultiAssayExperiment 
+GSE107991_mobject_norm <- NormalizeReads(GSE107991_mobject,experiment_type = "assay_reprocess",method = "TMM")
 ```
 
+Boxplot for non-normalized RNA-seq data
+```{r, fig.height = 8, fig.width = 8}
+boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20], base = 2))
+# display the boxplot in log2
+```
+
+Boxplot for TMM normalized RNA-seq data
+```{r, fig.height = 8, fig.width = 8}
+boxplot(log(experiments(GSE107991_mobject_norm)[["assay_raw_norm"]][,1:20], base = 2))
+# display the boxplot in log2
+```
 
 # Match ProbeID to Gene symbol
 For objects that contain probe information, we match them to gene symbol. We collapse probe information by taking their mean values if they mapped to the same gene, and expand probe information for non-uniqueness mapping. In such cases, we use MultiAssayExperiment Objects to store information for each data.

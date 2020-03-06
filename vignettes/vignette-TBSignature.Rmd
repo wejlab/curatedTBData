@@ -51,7 +51,7 @@ sobjects_list <- lapply(strSobject, function(x) get(x))
 names(sobjects_list) <- gsub("_.*","",strSobject)
 
 # Create Multi-Assay Experiment object Take SOME TIME
-multi_data_all <- lapply(sobjects_list, function(x) Create_MultiAssay_object(x))
+multi_data_all <- lapply(sobjects_list, function(x) MatchProb(x))
 
 ```
 
