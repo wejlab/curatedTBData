@@ -137,7 +137,7 @@ boxplot(log(assays(GSE39939_sobject_norm)[["NormalizedReads"]][,1:20], base = 2)
 
 ```{r}
 # add the normalized data as a new assay in the MultiAssayExperiment 
-GSE107991_mobject_norm <- NormalizeReads(GSE107991_mobject,experiment_type = "assay_reprocess",method = "TMM")
+GSE107991_mobject_norm <- NormalizeReads(GSE107991_mobject, experiment_type = "assay_raw", method = "TMM")
 ```
 
 Boxplot for non-normalized RNA-seq data
@@ -154,22 +154,34 @@ boxplot(log(experiments(GSE107991_mobject_norm)[["assay_raw_norm"]][,1:20], base
 
 # Match ProbeID to Gene symbol
 For objects that contain probe information, we match them to gene symbol. We collapse probe information by taking their mean values if they mapped to the same gene, and expand probe information for non-uniqueness mapping. In such cases, we use MultiAssayExperiment Objects to store information for each data.
-```{r}
-# Create MultiAssayExperiment Object from SummarizedExperiment Object
-GSE39939_mobject <- Create_MultiAssay_object(GSE39939_sobject)
 
-# Create MultiAssayExperiment Object from MultiAssayExperiment Object
-GSE107991_mobject_new <- Create_MultiAssay_object(GSE107991_mobject)
+## Create MultiAssayExperiment Object from SummarizedExperiment Object
+```{r}
+# Match Probe ID using raw data
+MatchProbe(GSE39939_sobject, experiment_type = "assay_raw")
 ```
 
 ```{r}
-# Match ProbeID to Gene symbol for all existing datasets
-multi_data_all <- lapply(objects_list, function(x) Create_MultiAssay_object(x))
+# Match Probe ID using normalized data (if applicable)
+MatchProbe(GSE39939_sobject_norm, experiment_type = "assay_raw_norm")
 ```
+
+## Create MultiAssayExperiment Object from MultiAssayExperiment Object
+```{r}
+# Match Probe ID using raw data
+MatchProbe(GSE107991_mobject, experiment_type = "assay_raw")
+```
+
+```{r}
+# Match Probe ID using normalized data (if applicable)
+MatchProbe(GSE107991_mobject_norm, experiment_type = "assay_raw_norm")
+```
+
 
 # TBSignature Analysis Using `TBSignatureProfiler`{.tabset}
 ```{r}
-
+# Match ProbeID to Gene symbol for all existing datasets
+multi_data_all <- lapply(objects_list, function(x) Create_MultiAssay_object(x))
 ```
 
 ## Positive TB (PTB) vs. Latent TB (Latent){.tabset}
