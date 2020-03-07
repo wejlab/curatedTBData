@@ -1,3 +1,25 @@
+#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects
+#' @name remove_empty_object
+#' @param multi_object A list contains both SummariexExperiment/MultiAssayExpriment objects
+#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object
+#' @export
+remove_empty_object <- function(k){
+  # should assign empty list with NA NOT NULL, because assigning NULL to list items, removes them...
+  x <- k
+  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
+    if(nrow(colData(x[[i]]))==0){
+      x[[i]] <- NA
+    }
+  }
+  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
+    if(length(experiments(x[[j]]))==0){
+      x[[j]] <- NA
+    }
+  }
+  x <- x[!is.na(x)]
+  return(x)
+}
+#######################
 #' Create sobjects for TB signature profiling based on specific TB status.
 #' @name get_sobject_TBSig
 #'
@@ -9,7 +31,7 @@
 #'
 #' @examples
 #' sobject <- dat("GSE39939_sobject")
-#' mobject <- Create_MultiAssay_object(sobject)
+#' mobject <- MatchProbe(sobject)
 #' sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
 #' @export
 get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay_reduce"){
@@ -51,7 +73,6 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay
   }
 
 }
-
 ########################
 #' Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
 #' @name get_pvalue_auc
