@@ -4,18 +4,8 @@
 \alias{MatchProbe}
 \title{Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.}
 \usage{
-MatchProbe(sobject)
-}
-\arguments{
-\item{sobject}{A summarized experiment object}
-}
-\value{
-A MultiAssay Experiment Object contains 1. Input Summarized Experiment Object. 2. read count matrix collapse by gene symbol
+MatchProbe(theObject, ...)
 }
 \description{
 Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.
-}
-\examples{
-dat("GSE39939_sobject")
-MatchProbe(GSE39939_sobject)
 }

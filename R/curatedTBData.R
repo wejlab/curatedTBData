@@ -241,7 +241,7 @@ setGeneric(name="CreateObject", function(theObject,...){
 setMethod("CreateObject",
           signature="Sobject",
           function(theObject){
-            results <- SummarizedExperiment::SummarizedExperiment(assays = list(RawData = as.matrix(theObject@assay)),
+            results <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(theObject@assay)),
                                                                   colData = theObject@column_data,
                                                                   rowData = theObject@row_data,
                                                                   metadata = list(theObject@meta_data))
