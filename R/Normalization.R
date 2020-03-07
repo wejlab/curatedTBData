@@ -7,7 +7,7 @@ setGeneric(name="NormalizeReads", function(theObject,...){
 setMethod("NormalizeReads",
           signature="SummarizedExperiment",
 
-          function(theObject, method = "quantile"){
+          function(theObject,experiment_type = "assay_raw",method = "quantile"){
             # set counts less than 1 to be 1.
             counts <- assays(theObject)[[1]]
             counts[counts<1] <- 1
@@ -47,7 +47,6 @@ setMethod("NormalizeReads",
 
               return(theObject_norm)
             }
-
 
           }
 )

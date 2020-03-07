@@ -27,6 +27,6 @@ Create sobjects for TB signature profiling based on specific TB status.
 }
 \examples{
 sobject <- dat("GSE39939_sobject")
-mobject <- Create_MultiAssay_object(sobject)
+mobject <- MatchProbe(sobject)
 sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
 }
