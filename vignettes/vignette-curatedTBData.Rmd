@@ -47,15 +47,47 @@ devtools::load_all(".")
 library(curatedTBData)
 ```
 
-# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Cancer Transcriptome
+# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 Insert introduction/background infrmation about this data package
 # Using SummarizedExperiment/MultiAssayExperiment Object
-## Retrieve data from Affymetrix Microarray
+## Create SummarizedExperiment Object from Affymetrix 2.0 Microarray
 ```{r}
-# GSE54992
+# GSE36238
 
 ```
-## Retrieve data from Illumina 4.0 Micoraray
+
+## Create SummarizedExperiment Object from Illumina 3.0 Micoraray
+```{r}
+# GSE19442
+GSE19442_raw <- curatedTBData("GSE19442","GPL6947")
+
+# Manually rename clinical information...
+colnames(GSE19442_raw$col_data)  <- c('Age','Gender','Ethnicity','TBStatus','GeographicalRegion','BcgVaccinated','BirthRegion','TST', 'SputumSmearStatus','sputum_culture')
+
+# Rename TB Status
+TBStatus <- TBStatus_temp <- as.character(GSE19442_raw$col_data$TBStatus)
+unique(TBStatus_temp)
+TBStatus <- ifelse(TBStatus_temp=="LATENT TB","Latent",TBStatus_temp)
+GSE19442_raw$col_data$TBStatus <- TBStatus
+
+# Convert to standard column information 
+col_data <- create_standard_ColData(GSE19442_raw$col_data)
+
+# Obtain Metadata
+GSE19442_experimentData <- new('MIAME',
+                      name="Damien Chaussabel",
+                      lab="Baylor Institute for Immunology Research",
+                      contact="DChaussabel@benaroyaresearch.org",
+                      title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
+                      abstract="Whole blood collected in tempus tubes from patients with different spectra of TB disease. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
+                      url="10.1038/nature09247",
+                      pubMedIds = '20725040',
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
+
+GSE19442 <- SummarizedExperiment(assays = list(GSE19442_Non_normalized_counts= as.matrix(GSE19442_raw$counts)), colData = col_data, rowData = GSE19442_raw$row_data, metadata = list(GSE19442_experimentData)); GSE19442
+```
+
+## Create SummarizedExperiment Object from Illumina 4.0 Micoraray
 ```{r}
 # GSE39939
 
@@ -289,12 +321,12 @@ combat_edata1 <- sva::ComBat(dat=assays(result)[[1]], batch=batch1, mod=mod1)
 
 ```
 Boxplot before Batch correction
-```{r, fig.width=6, fig.height=6, warning=FALSE}
+```{r, fig.width=8, fig.height=6, warning=FALSE}
 boxplot(log(assays(result)[[1]],base=2))
 ```
 
 Boxplot after Batch correction
-```{r, fig.width=6, fig.height=6, warning=FALSE}
+```{r, fig.width=8, fig.height=6, warning=FALSE}
 boxplot(log(combat_edata1,base=2))
 ```
 

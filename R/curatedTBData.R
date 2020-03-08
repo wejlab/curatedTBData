@@ -1,3 +1,87 @@
+#' Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570
+setGeneric("curatedTBData", function(geo_access, ...) standardGeneric("curatedTBData"))
+
+setMethod("curatedTBData", signature = "character",
+          function(geo_access,plat_access = c("GPL6947", "GPL10558", "GPL570")){
+            plat_access <- match.arg(plat_access)
+
+            if (plat_access == "GPL6947"){
+              sobject <- .illumina3(geo_access, plat_access)
+              return(sobject)
+            }
+
+            if (plat_access == "GPL10558"){
+              sobject <- .illumina4(geo_access, plat_access)
+              return(sobject)
+            }
+            if (plat_access == "GPL570"){
+              sobject <- .affy2(geo_access, plat_access)
+              return(sobject)
+            }
+
+          })
+
+.illumina4 <- function(geo_access, plat_access){
+
+  gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
+  dat_download <- download_data_Illumina4(geo_access)
+  row_data <- create_RowData(data_download,plat_access)
+  col_data <- create_ColData(geo_access, gse)
+
+  # check validity
+  if (all(colnames(dat_download) == row.names(col_data))){
+    result <- list(counts = dat_download, row_data = row_data, col_data = col_data)
+    return(result)
+
+
+  }
+  else{
+    # Do Match Desscription ID to Sample ID
+    stop("gonna work....")
+  }
+
+}
+
+.illumina3 <- function(geo_access, plat_access){
+
+  gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
+  dat_download <- download_data_Illumina3(geo_access)
+  dat_non_normalized <- modify_data_Illumina3(dat_download)
+  row_data <- create_RowData(dat_non_normalized,plat_access)
+  col_data <- create_ColData(geo_access, gse)
+
+  # check validity
+  if (all(colnames(dat_non_normalized) == row.names(col_data))){
+    result <- list(counts = dat_non_normalized, row_data = row_data, col_data = col_data)
+    return(result)
+  }
+  else{
+    stop("gonna work....")
+  }
+
+
+}
+
+.affy2 <- function(geo_access, plat_access){
+
+  gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
+  normalized_rma <- download_data_Affy2(geo_access)
+  row_data <- create_RowData(normalized_rma,plat_access)
+  col_data <- create_ColData(geo_access,gse)
+  if (all(colnames(normalized_rma) == row.names(col_data))){
+    result <- list(counts = normalized_rma, row_data = row_data, col_data = col_data)
+    return(result)
+
+  }
+  else{
+    # Do Match Desscription ID to Sample ID
+    stop("gonna work....")
+  }
+
+}
+
+##################################################
+
 #' Download data from Illumina HumanHT-12 V4.0 expression beadchip.
 #' @name download_data_Illumina4
 #'
@@ -14,6 +98,8 @@ download_data_Illumina4<- function(geo_access){
   library(dplyr)
   library(GEOquery)
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
+
+  # only one txt file
   url_non_normalized <- as.character(urls$url[grep(".txt",urls$url)])
   if(!is.null(url_non_normalized)){
     temp <- tempfile()
@@ -31,7 +117,101 @@ download_data_Illumina4<- function(geo_access){
   else{stop(paste0("No valid url for ",geo_access))}
 
 }
-#####################################
+
+################################################
+
+#' Download data from Illumina HumanHT-12 V3.0 expression beadchip.
+#' @name download_data_Illumina3
+#'
+#' @param geo_access A character that contains GEO accession number.
+#' @return A list that contains non-normalized read counts.
+#' @examples
+#' download_data_Illumina3("GSE19442")
+#' @export
+download_data_Illumina3<- function(geo_access){
+  # if (!requireNamespace("BiocManager", quietly = TRUE))
+  #  install.packages("BiocManager")
+  # if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
+  #if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
+  #library(dplyr)
+  #library(GEOquery)
+  urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
+  url_temp <- as.character(urls$url[grep(".tar",urls$url)])
+  # After untar, there are several txt files
+  if(!is.null(url_temp)){
+    temp <- tempfile()
+    tempd <- tempdir()
+    download.file(url_temp,temp)
+    untar(temp,exdir = tempd)
+    files <- list.files(tempd, pattern = "txt.*")
+    # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+    Non_normalized_list <- lapply(files, function(x)
+      read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
+    return(Non_normalized_list)
+
+  }
+  else{stop(paste0("No valid url for ",geo_access))}
+
+}
+
+#####################################################
+
+#' Download data from Affymetrix Microarray.
+#' @name download_data_Affy2
+#'
+#' @param geo_access A character that contains GEO accession number.
+#' @return A dataframe that contains non-normalized read counts.
+#' @examples
+#' download_data_Affy("GSE36238")
+#' @export
+download_data_Affy2<- function(geo_access){
+  urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
+  url_temp <- as.character(urls$url[grep(".tar",urls$url)])
+  if(!is.null(url_temp)){
+    temp <- tempfile()
+    tempd <- tempdir()
+    download.file(url_temp,temp)
+    untar(temp,exdir = tempd)
+    celFiles <- list.files(path = tempd, pattern = '*.CEL',full.names=TRUE)
+    # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+    # Conducr RMA
+    data_affy <- affy::ReadAffy(filenames = celFiles)
+    normalized_rma <- exprs(affy::rma(data_affy))
+    colnames(normalized_rma) <- sapply(1:ncol(normalized_rma),
+                                       function(x) gsub('\\..*','',colnames(normalized_rma)[x]))
+
+    return(normalized_rma)
+
+  }
+  else{stop(paste0("No valid url for ",geo_access))}
+
+}
+
+#########################################
+
+#' Create non-normalized data from Illumina HumanHT-12 V3.0 expression beadchip
+#' @name modify_data_Illumina3
+#' @param Non_normalized_list A list that contains non_normalized reads from each sample.
+#' @return A dataframe that contains non-normalized read counts.
+#' @examples
+#' Non_normalized_list <- download_data_Illumina3("GSE19442")
+#' Non_normalized_data <- create_data_Illumina3(Non_normalized_lists)
+#' @export
+modify_data_Illumina3 <- function(Non_normalized_list){
+  # each data within Non_normalized_list is data.frame
+  # use merge to combine sample with common probesets
+  Non_normalized <- Reduce(
+    function(x, y) merge(x, y, by = "ID_REF", all = F),
+    lapply(Non_normalized_list, function(x) { x }))
+
+  row.names(Non_normalized) <- Non_normalized$ID_REF
+  Non_pvalue <- Non_normalized[,-c(1,grep('.Pval',colnames(Non_normalized)))]
+
+  return(Non_pvalue)
+
+}
+
+#####################################################
 
 #' Create row data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 #' @name create_RowData
@@ -124,7 +304,8 @@ create_RowData <- function(dat_download, plat_access){
   return(row_data)
 
 }
-###################################
+
+#################################################
 
 #' Create Column data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 #' @name create_ColData
@@ -146,17 +327,18 @@ create_ColData <- function(geo_access,gse){
     sapply(data_characteristic, '[[',x))
 
   # get string after :
-  characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble()
+  characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% data.frame()
   colnames(characteristic_data_frame) <- sub(':.*','',characteristic_table)[1,]
   row.names(characteristic_data_frame) <- names(GSMList(gse))
-  return(DataFrame(characteristic_data_frame))
+  return(characteristic_data_frame)
 
 }
 
 ##############################################
+
 #' Make column information consitent across dataset
-#' @name create_new_ColData
-#' @inheritParams create_ColData
+#' @name create_standard_ColData
+#' @param col_data Column data information created from `create_ColData`
 #'
 #' @return A DataFrame object contains the patient information for each sample
 #'
@@ -165,7 +347,7 @@ create_ColData <- function(geo_access,gse){
 #' col_data <- create_ColData("GSE39939",gse)
 #' col_data_new <- create_new_ColData(col_data)
 #' @export
-create_new_ColData <- function(col_data){
+create_standard_ColData <- function(col_data){
   ## Import standard name sequence
   standard_name_seq <- c("Age","Gender","Ethnicity","TBStatus","GeographicalRegion","BcgVaccinated",
                          "BirthRegion","TST","exposure_latent", "index_case_disease_site","smear_of_index_case",
@@ -192,7 +374,15 @@ create_new_ColData <- function(col_data){
   return(dat_final)
 }
 
+#################################################
+
+#' Match Description ID to Sample ID in some Illumina 4.0 datasets
+MatchSample <- function(){
+
+}
+
 #########################################################
+
 #' Create Summarized Experiment object
 Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame",
                                          column_data  = "data.frame", meta_data = "MIAME"),
@@ -216,6 +406,7 @@ Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame
                     })
 
 #########################################################
+
 #' Create MultiAssay Experiment object
 Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix", row_data = "data.frame",primary = "data.frame",meta_data = "MIAME"),
                     prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3, byrow = TRUE, dimnames = list(c("AZA","BBD","CCS"),
