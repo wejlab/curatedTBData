@@ -51,3 +51,39 @@ setMethod("NormalizeReads",
           }
 )
 
+#' Combine samples with common genes from selected objects
+#' @name CombineObjects
+#' @param object_list A list contains expression data with mapped gene symbol
+#' @param gse_name A vector contains the name of the objects that you want to combine
+#' @return A SummarizedExperiment Object contains combined data from several objects
+#'
+#'
+#' @export
+CombineObjects <- function(object_list,gse_name){
+  dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+
+  # Combine sample with common genes from selected objects.
+  # Input data type should be data.frame
+  dat_exprs_combine <- Reduce(
+    function(x, y) merge(x, y, by = "id", all = F),
+    lapply(dat_exprs_match, function(x) { x$id <- rownames(x); x }))
+  row.names(dat_exprs_combine) <- dat_exprs_combine$id
+  dat_exprs_count <- dat_exprs_combine[,-1]
+  # Create combined column data information
+  Sample1 <- lapply(object_list[gse_name], function(x) MultiAssayExperiment::colData(x) %>% row.names())
+  Sample <- unlist(Sample1, use.names=FALSE)
+  col_data <- lapply(1:length(object_list[gse_name]), function(x) {
+    col_data <- MultiAssayExperiment::colData(object_list[gse_name][[x]])
+    col_data$GSE <-names(object_list[gse_name][x])
+    col_data
+    })
+
+  # Combine list into dataframe with unequal columns
+  col_info <- plyr:::rbind.fill(lapply(col_data,function(x){as.data.frame(x)}))
+  row.names(col_info) <- Sample
+
+  result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(dat_exprs_count)),
+                                                       colData = col_info)
+  return(result)
+
+  }
