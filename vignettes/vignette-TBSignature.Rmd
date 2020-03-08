@@ -51,7 +51,7 @@ sobjects_list <- lapply(strSobject, function(x) get(x))
 names(sobjects_list) <- gsub("_.*","",strSobject)
 
 # Create Multi-Assay Experiment object Take SOME TIME
-multi_data_all <- lapply(sobjects_list, function(x) Create_MultiAssay_object(x))
+multi_data_all <- lapply(sobjects_list, function(x) MatchProb(x))
 
 ```
 
@@ -249,12 +249,11 @@ combine_auc <- function(result_list){
   # re-order data based on their median AUC
   aucs_result_dat_median <- aucs_result_dat %>% group_by(Signature) %>% summarise_all(median) %>% arrange(desc(AUC))
   
-  ##########################
+  # New addition: order signatures based on median AUC values
   
   Signature_order <- as.character(aucs_result_dat_median$Signature)
   # Re-order gene siganture, re-level
   aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
-  
 
   return(aucs_result_dat)
 }
