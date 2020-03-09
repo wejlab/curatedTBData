@@ -16,5 +16,5 @@ A dataframe that contains non-normalized read counts.
 Download data from Affymetrix Microarray.
 }
 \examples{
-download_data_Affy("GSE36238")
+download_data_Affy2("GSE36238")
 }

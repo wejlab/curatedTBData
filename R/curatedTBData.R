@@ -1,4 +1,5 @@
 #' Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570
+
 setGeneric("curatedTBData", function(geo_access, ...) standardGeneric("curatedTBData"))
 
 setMethod("curatedTBData", signature = "character",
@@ -46,13 +47,13 @@ setMethod("curatedTBData", signature = "character",
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
   dat_download <- download_data_Illumina3(geo_access)
-  dat_non_normalized <- modify_data_Illumina3(dat_download)
-  row_data <- create_RowData(dat_non_normalized,plat_access)
+
+  row_data <- create_RowData(dat_download,plat_access)
   col_data <- create_ColData(geo_access, gse)
 
   # check validity
-  if (all(colnames(dat_non_normalized) == row.names(col_data))){
-    result <- list(counts = dat_non_normalized, row_data = row_data, col_data = col_data)
+  if (all(colnames(dat_download) == row.names(col_data))){
+    result <- list(counts = dat_download, row_data = row_data, col_data = col_data)
     return(result)
   }
   else{
@@ -74,7 +75,7 @@ setMethod("curatedTBData", signature = "character",
 
   }
   else{
-    # Do Match Desscription ID to Sample ID
+
     stop("gonna work....")
   }
 
@@ -100,8 +101,10 @@ download_data_Illumina4<- function(geo_access){
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
 
   # only one txt file
+  # GSEXXXX_RAW.tar does not contain raw file
   url_non_normalized <- as.character(urls$url[grep(".txt",urls$url)])
   if(!is.null(url_non_normalized)){
+
     temp <- tempfile()
     download.file(url_non_normalized,temp)
     Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE) %>% dplyr::select_if(~sum(!is.na(.)) > 0)
@@ -136,7 +139,7 @@ download_data_Illumina3<- function(geo_access){
   #library(dplyr)
   #library(GEOquery)
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
-  url_temp <- as.character(urls$url[grep(".tar",urls$url)])
+  url_temp <- as.character(urls$url[grep(paste0(geo_access,"_RAW.tar"),urls$url)])
   # After untar, there are several txt files
   if(!is.null(url_temp)){
     temp <- tempfile()
@@ -147,8 +150,15 @@ download_data_Illumina3<- function(geo_access){
     # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
     Non_normalized_list <- lapply(files, function(x)
       read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
-    return(Non_normalized_list)
+    # return(Non_normalized_list)
+    Non_normalized <- Reduce(
+      function(x, y) merge(x, y, by = "ID_REF", all = F),
+      lapply(Non_normalized_list, function(x) { x }))
 
+    row.names(Non_normalized) <- Non_normalized$ID_REF
+    Non_pvalue <- Non_normalized[,-c(1,grep('.Pval',colnames(Non_normalized)))]
+
+    return(Non_pvalue)
   }
   else{stop(paste0("No valid url for ",geo_access))}
 
@@ -162,11 +172,11 @@ download_data_Illumina3<- function(geo_access){
 #' @param geo_access A character that contains GEO accession number.
 #' @return A dataframe that contains non-normalized read counts.
 #' @examples
-#' download_data_Affy("GSE36238")
+#' download_data_Affy2("GSE36238")
 #' @export
 download_data_Affy2<- function(geo_access){
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
-  url_temp <- as.character(urls$url[grep(".tar",urls$url)])
+  url_temp <- as.character(urls$url[grep(paste0(geo_access,"_RAW.tar"),urls$url)])
   if(!is.null(url_temp)){
     temp <- tempfile()
     tempd <- tempdir()
@@ -174,7 +184,7 @@ download_data_Affy2<- function(geo_access){
     untar(temp,exdir = tempd)
     celFiles <- list.files(path = tempd, pattern = '*.CEL',full.names=TRUE)
     # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-    # Conducr RMA
+    # Conduct RMA
     data_affy <- affy::ReadAffy(filenames = celFiles)
     normalized_rma <- exprs(affy::rma(data_affy))
     colnames(normalized_rma) <- sapply(1:ncol(normalized_rma),
@@ -184,30 +194,6 @@ download_data_Affy2<- function(geo_access){
 
   }
   else{stop(paste0("No valid url for ",geo_access))}
-
-}
-
-#########################################
-
-#' Create non-normalized data from Illumina HumanHT-12 V3.0 expression beadchip
-#' @name modify_data_Illumina3
-#' @param Non_normalized_list A list that contains non_normalized reads from each sample.
-#' @return A dataframe that contains non-normalized read counts.
-#' @examples
-#' Non_normalized_list <- download_data_Illumina3("GSE19442")
-#' Non_normalized_data <- create_data_Illumina3(Non_normalized_lists)
-#' @export
-modify_data_Illumina3 <- function(Non_normalized_list){
-  # each data within Non_normalized_list is data.frame
-  # use merge to combine sample with common probesets
-  Non_normalized <- Reduce(
-    function(x, y) merge(x, y, by = "ID_REF", all = F),
-    lapply(Non_normalized_list, function(x) { x }))
-
-  row.names(Non_normalized) <- Non_normalized$ID_REF
-  Non_pvalue <- Non_normalized[,-c(1,grep('.Pval',colnames(Non_normalized)))]
-
-  return(Non_pvalue)
 
 }
 

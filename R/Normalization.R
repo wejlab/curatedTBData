@@ -26,6 +26,7 @@ setMethod("NormalizeReads",
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
             if (experiment_type == "assay_raw"){
               counts <- assays(experiments(theObject)[[experiment_type]])[[1]]
+              counts[counts<1] <- 1
               NormFactor <- calcNormFactors(counts, method = method)
               ScaleFactors <- colSums(counts) * NormFactor
 
@@ -36,7 +37,7 @@ setMethod("NormalizeReads",
             }
             if (experiment_type == "assay_reprocess"){
               counts <- experiments(theObject)[[experiment_type]]
-
+              counts[counts<1] <- 1
               NormFactor <- calcNormFactors(counts, method = method)
               ScaleFactors <- colSums(counts) * NormFactor
 
