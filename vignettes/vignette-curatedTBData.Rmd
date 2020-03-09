@@ -47,21 +47,73 @@ devtools::load_all(".")
 library(curatedTBData)
 ```
 
-# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Cancer Transcriptome
+# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 Insert introduction/background infrmation about this data package
 # Using SummarizedExperiment/MultiAssayExperiment Object
-## Retrieve data from Affymetrix Microarray
-```{r}
-# GSE54992
+## Create SummarizedExperiment Object from Affymetrix 2.0 Microarray
+```{r create Affy2.0, message=FALSE, warning=FALSE}
+# GSE36238
+GSE36238_raw <- curatedTBData(geo_access = "GSE36238", plat_access = "GPL570")
 
+# Enter clinical information...
+colnames(GSE36238_raw$col_data) <- c('TimePoint','Tissue','Pateient_id','SampleTime')
+GSE36238_raw$col_data$TBStatus <- "PTB"
+
+# Convert to standard column feature
+GSE36238_raw$col_data_new <- create_standard_ColData(GSE36238_raw$col_data)
+
+# Obtain Metadata
+GSE36238_experimentData <- new('MIAME',
+                      name="Jackie Cliff",
+                      lab="London School of Hygiene & Tropical Medicine",
+                      contact="jackie.cliff@lshtm.ac.uk",
+                      title="Distinct phases of blood gene expression pattern through tuberculosis treatment reflect modulation of the humoral immune response.",
+                      abstract="An example SummarizedExperimentObject",
+                      url="10.1093/infdis/jis499",
+                      pubMedIds = '22872737',
+                      other=list(Platform = 'Affymetrix Human Genome U133 Plus 2.0 Array: GPL570'))
+
+GSE36238 <- SummarizedExperiment(assays = list(GSE36238_normalized_counts= as.matrix(GSE36238_raw$counts)), colData = GSE36238_raw$col_data_new, rowData = GSE36238_raw$row_data, metadata = list(GSE36238_experimentData)); GSE36238
 ```
-## Retrieve data from Illumina 4.0 Micoraray
+
+## Create SummarizedExperiment Object from Illumina 3.0 Micoraray
+```{r create Illumina 3.0, message=FALSE, warning=FALSE}
+# GSE19442
+GSE19442_raw <- curatedTBData("GSE19442","GPL6947")
+
+# Enter clinical information...
+colnames(GSE19442_raw$col_data)  <- c('Age','Gender','Ethnicity','TBStatus','GeographicalRegion','BcgVaccinated','BirthRegion','TST', 'SputumSmearStatus','sputum_culture')
+
+# Rename TB Status
+TBStatus <- TBStatus_temp <- as.character(GSE19442_raw$col_data$TBStatus)
+unique(TBStatus_temp)
+TBStatus <- ifelse(TBStatus_temp=="LATENT TB","Latent",TBStatus_temp)
+GSE19442_raw$col_data$TBStatus <- TBStatus
+
+# Convert to standard column feature
+GSE19442_raw$col_data_new <- create_standard_ColData(GSE19442_raw$col_data)
+
+# Obtain Metadata
+GSE19442_experimentData <- new('MIAME',
+                      name="Damien Chaussabel",
+                      lab="Baylor Institute for Immunology Research",
+                      contact="DChaussabel@benaroyaresearch.org",
+                      title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
+                      abstract="Whole blood collected in tempus tubes from patients with different spectra of TB disease. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
+                      url="10.1038/nature09247",
+                      pubMedIds = '20725040',
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
+
+# Create SummarizedExperiment Object for GSE19442
+GSE19442 <- SummarizedExperiment(assays = list(GSE19442_Non_normalized_counts= as.matrix(GSE19442_raw$counts)), colData = GSE19442_raw$col_data_new, rowData = GSE19442_raw$row_data, metadata = list(GSE19442_experimentData)); GSE19442
+```
+
+## Create SummarizedExperiment Object from Illumina 4.0 Micoraray
 ```{r}
 # GSE39939
-
 ```
 
-# Load list of existing SummarizedExperiment/MultiAssayExperiment Objects
+# Load a list of available SummarizedExperiment/MultiAssayExperiment Objects
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
 ```{r load list of sobject, message=FALSE}
@@ -82,7 +134,7 @@ names(objects_list) <- gsub("_.*","",strobject)
 
 ```
 
-# Subsetting objects
+# Subsetting Objects
 The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` is the coordination of the meta-data and assays when subsetting.
 
 ## Subsetting for single objects
@@ -91,16 +143,16 @@ Both objects have similar method used for subsetting column information.
 # subsetting samples from objects with TBStatus: PTB
 GSE39939_sobject[, GSE39939_sobject$TBStatus == "PTB"]
 ```
+
 ```{r}
 # subsetting samples from objects with TBStatus: PTB
 GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
 ```
 
 ## Subsetting for multiple objects based on multiple conditions
-Since not all datasets contain information about each TB status. Next we would like to select out objects that contain samples with both TBStatus=PTB and TBStatus=Latent.
-```{r}
-# objects_list: a list that contains all the input data
-objects_list_OD <-  lapply(objects_list, function(x,disease1,disease2) {
+Since not all datasets contain information for each TB status. Next we want to select out objects that contain samples with only positive TB (PTB) and latent TB (Latent).
+```{r, warning=FALSE}
+objects_list1 <-  lapply(objects_list, function(x,disease1,disease2) {
   x_filter <- x[,x$TBStatus %in% c(disease1,disease2)]
   TB_status <- SummarizedExperiment::colData(x_filter)["TBStatus"][,1]
   if(length(unique(TB_status)) == 2){
@@ -108,13 +160,14 @@ objects_list_OD <-  lapply(objects_list, function(x,disease1,disease2) {
   }
 },"PTB","Latent") %>% plyr::compact()
 
-# Get a list of objects with TBStatus==OD
-length(objects_list_OD) # 21/42 objects contain samples from both TBStatus=PTB and TBStatus=OD
+# 21/42 objects contain samples from PTB and Latent
+length(objects_list1) 
+
 ```
 
 
-# Normalization (Before match probeID to Gene symbol)
-For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package.
+# Normalization
+For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package before matching probesets to gen symbol.
 
 ## Between-sample normalization for Illumina microarray
 ```{r}
@@ -144,12 +197,13 @@ GSE107991_mobject_norm <- NormalizeReads(GSE107991_mobject, experiment_type = "a
 Boxplot for non-normalized RNA-seq data
 ```{r, fig.height = 8, fig.width = 8}
 # display the boxplot in log2
-boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20], base = 2))
+boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20]+0.0001, base = 2))
 ```
 
 Boxplot for non-normalized RNA-seq data
 ```{r, fig.height = 8, fig.width = 8}
 # display the boxplot in log2
+# TMM reduces maximum value
 boxplot(log(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])[["NormalizedData"]][,1:20], base = 2))
 ```
 # Match ProbeID to Gene symbol
@@ -199,7 +253,7 @@ TBsig_PTB_Latent <- names(TBsignatures)[-grep("Sloot_HIV_2|Suliman_RISK_4",names
 index_Sloot <- which(!sapply(ssgsea_PTB_Latent, function(x) "Sloot_HIV_2" %in% names(colData(x))))
 index_Suliman <- which(!sapply(ssgsea_PTB_Latent, function(x) "Suliman_RISK_4" %in% names(colData(x))))
 
-# Define new function for showing boxplot across signatures
+# Define new function to show boxplot across signatures
 get_boxplot <- function(result_list,sig_name){
   
   p_boxplot <- lapply(1:length(result_list), function(x)
@@ -276,25 +330,25 @@ get_auc_distribution(combine_auc(ssgsea_PTB_Latent)) + ggtitle("Ridge plot of AU
 # Integration of RNA-Seq data with microarray data for TB profiling
 ## Batch Correction with ComBat
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object.
-```{r}
+```{r, message=FALSE}
 # Select the objects you want to combine
 # Randomly pick 2 from RNA-seq,2 from microaray
-
 result <- CombineObjects(object_match, c("GSE101705","GSE107104", "GSE54992", "GSE19444"))
 
 # Batch Correction
 mod1 <- model.matrix(~as.factor(TBStatus), data=colData(result))
 batch1 <- colData(result)$GSE
 combat_edata1 <- sva::ComBat(dat=assays(result)[[1]], batch=batch1, mod=mod1)
-
 ```
 Boxplot before Batch correction
-```{r, fig.width=6, fig.height=6, warning=FALSE}
+```{r, fig.width=8, fig.height=6, warning=FALSE}
+# log 2
 boxplot(log(assays(result)[[1]],base=2))
 ```
 
 Boxplot after Batch correction
-```{r, fig.width=6, fig.height=6, warning=FALSE}
+```{r, fig.width=8, fig.height=6, warning=FALSE}
+# log 2
 boxplot(log(combat_edata1,base=2))
 ```
 
