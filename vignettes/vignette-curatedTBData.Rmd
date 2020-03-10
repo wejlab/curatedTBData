@@ -269,10 +269,14 @@ multi_set_PTB_Latent <- lapply(object_match, function(x)
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                     function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
                                   useAssay = assayNames(x),
-                                  signatures = TBsignatures, # list of Signatures from 
+                                  signatures = TBsignatures, # list of Signatures from TBSignatureProfiler
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 12))
+
+# Get signatures with only scores and disease status
+# TBSignature, a list of desired signarure signature 
+ssgsea_PTB_Latent1 <- SignatureFilter(ssgsea_PTB_Latent, TBsignatures)
 
 # No Sloot_HIV_2, Suliman_RISK_4 in some datasets
 TBsig_PTB_Latent <- names(TBsignatures)[-grep("Sloot_HIV_2|Suliman_RISK_4",names(TBsignatures))]
@@ -283,12 +287,12 @@ index_Suliman <- which(!sapply(ssgsea_PTB_Latent, function(x) "Suliman_RISK_4" %
 
 ### Boxplot of all scores signatures{.tabset}
 
-```{r Boxplot for each signature PTB vs. Latent,results = "asis", message = FALSE, fig.height = 20, fig.width=28}
-for (i in TBsig_PTB_Latent){
+```{r Boxplot for each signature PTB vs. Latent,results = "asis", message = FALSE, fig.height = 25, fig.width=28}
+for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
   
-  Boxplot_TBSig(ssgsea_PTB_Latent, sig_name = i)
+  Boxplot_TBSig(ssgsea_PTB_Latent1, sig_name = i)
   #print(signatureBoxplot(ssgsea_result, name = i, signatureColNames = i,
   #               annotationColName = c("Disease")))
   
@@ -296,35 +300,15 @@ for (i in TBsig_PTB_Latent){
 }
 ```
 
-#### Sloot_HIV_2
-```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
-Boxplot_TBSig(ssgsea_PTB_Latent[-index_Sloot], sig_name = "Sloot_HIV_2")
-
-```
-
-```{r boxplot for Sloot_HIV_2 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
-
-Boxplot_TBSig1(ssgsea_PTB_Latent,gset=TBsignatures, sig_name = "Sloot_HIV_2")
-
-```
-
-#### Suliman_RISK_4
-
-```{r boxplot for Suliman_RISK_4 PTB vs. Latent, results="hide",fig.height = 16, fig.width=24}
-Boxplot_TBSig(ssgsea_PTB_Latent[-index_Suliman], sig_name = "Suliman_RISK_4")
-
-```
-
 ### Comparing Signature Scores via AUCs
 
 ```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, message=FALSE}
 # Combine results from ssgsea_PTB_Latent
-ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent)
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, TBsignatures)
 
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
 get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
-
 ```
 
 ## Molecular Degree of Perturbation Analysis
@@ -334,17 +318,25 @@ MDP_control_name <- lapply(object_match, function(x)
   x[,x$TBStatus == "Control"]) %>% remove_empty_object() %>% names()
 MDP_control<-  object_match[MDP_control_name] # study includes control samples
 
--c(9,19,21)
+# -c(9,19,21)
 
-MDP_result <- lapply(MDP_control[1:8], function(x) MDP(x, gset = TBsignatures, experiment_type = "assay_reduce", assay_name = 1))
+# Temporary result
+MDP_result <- lapply(1:8, function(x) MDP(MDP_control[[x]], gset = TBsignatures, experiment_type = "assay_reduce", assay_name = 1, GSE = names(MDP_control)[x]))
+```
 
-p_boxplot <- lapply(1:length(MDP_result), function(x)
-    TBSignatureProfiler::signatureBoxplot(inputData = MDP_result[[x]],
-                                          name = names(MDP_result)[x],
-                                          signatureColNames = sig_name,
-                                          annotationColName = "TBStatus", rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07")))
+### Boxplot for MDP{.tabset}
 
+```{r, results = "asis", message = FALSE, fig.height = 20, fig.width=28}
+for (i in names(TBsignatures)){
 
+  cat("####", i, "\n")
+  
+  Boxplot_TBSig(MDP_result, sig_name = i)
+  #print(signatureBoxplot(ssgsea_result, name = i, signatureColNames = i,
+  #               annotationColName = c("Disease")))
+  
+  cat("\n\n")
+}
 ```
 
 

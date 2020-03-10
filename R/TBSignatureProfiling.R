@@ -74,36 +74,17 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay
 
 }
 
-#####################################
-#' A function to show boxplot across signatures from a list of SummarizedExperiment Object
-#' @name Boxplot_TBSig
-#' @param result_list A list of SummarizedExperiment Object from `runTBsigProfiler`
-#' @param sig_name Name of the TB Signatures
-#' @return Boxplot
+#######################################
+#' Get signatures with only siganture scores and disease status
+#' @name SignatureFilter
+#' @param result_list A list of SummarizedExperiment Object from `runTBSignatureProfiler`
+#' @param gset A list of signatures want to select
+#' @return A list of DataFrame
+#'
 #'
 #' @export
-Boxplot_TBSig <- function(result_list,sig_name){
 
-  p_boxplot <- lapply(1:length(result_list), function(x)
-    TBSignatureProfiler::signatureBoxplot(inputData = result_list[[x]],
-                                          name = names(result_list)[x],
-                                          signatureColNames = sig_name,
-                                          annotationColName = "TBStatus", rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07")))
-
-  library(gridExtra)
-  library(ggplot2)
-  p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
-  return(p_combine)
-
-}
-
-#######################################
-#' Get signatures with only scores and disease status
-
-
-#' Boxplot functions for list with inconsistent Signatures matched for each object
-#' Also applies to consistent sigantures column names
-Boxplot_TBSig1 <- function(result_list, gset, sig_name, annotationName = "TBStatus"){
+SignatureFilter <- function(result_list, gset){
   sig_list <- lapply(1:length(result_list), function(y,gset){
 
     x <- result_list[[y]]
@@ -113,6 +94,22 @@ Boxplot_TBSig1 <- function(result_list, gset, sig_name, annotationName = "TBStat
     cbind(TBStatus,colData(x)[,index],GSE)
 
   }, gset)
+  return(sig_list)
+}
+
+
+#####################################
+
+#' Boxplot functions for list with inconsistent Signatures matched for each object
+#' Also applies to consistent sigantures column names
+#' @name Boxplot_TBSig
+#' @param sig_list A list of data frame contains information with signature scores and Disease status
+#' @param sig_name Name of the TB Signatures
+#' @param annotationName Name of the disease column
+#' @return Boxplots
+#'
+#' @export
+Boxplot_TBSig <- function(sig_list, sig_name, annotationName = "TBStatus"){
 
   # Merge them into one large dataset
   sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
@@ -128,7 +125,7 @@ Boxplot_TBSig1 <- function(result_list, gset, sig_name, annotationName = "TBStat
                                                   name = x,
                                                   signatureColNames = sig_name,
                                                   annotationColName = annotationName,
-                                                  rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07"))
+                                                  rotateLabels = FALSE,fill_colors = c("#999999", "#E69F00"))
       return(p)
     }
     if(length(unique(colData(sig_data1)$TBStatus)) ==3){
@@ -136,7 +133,7 @@ Boxplot_TBSig1 <- function(result_list, gset, sig_name, annotationName = "TBStat
                                                   name = x,
                                                   signatureColNames = sig_name,
                                                   annotationColName = annotationName,
-                                                  rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07","#999999"))
+                                                  rotateLabels = FALSE,fill_colors = c("#999999", "#E69F00", "#56B4E9"))
 
       return(p)
     }
@@ -186,11 +183,11 @@ get_pvalue_auc <- function(SE_scored, annotationColName = "TBStaus", signatureCo
 #' @param result_list A list of SummarizedExperiment Object from `runTBsigProfiler`
 #' @return A data frame with signatures, p-value, and AUC
 #' @export
-combine_auc <- function(result_list){
+combine_auc <- function(result_list, gset, annotationName = "TBStatus"){
   aucs_result <- lapply(result_list, function(x){
-    index <- na.omit(match(names(TBsignatures),names(colData(x))))
+    index <- na.omit(match(names(gset),names(colData(x))))
     get_pvalue_auc(x,
-                   annotationColName = "TBStatus",
+                   annotationColName = annotationName,
                    signatureColNames = names(colData(x))[index])
   }
     )
