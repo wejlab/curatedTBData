@@ -73,7 +73,88 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay
   }
 
 }
-########################
+
+#####################################
+#' A function to show boxplot across signatures from a list of SummarizedExperiment Object
+#' @name Boxplot_TBSig
+#' @param result_list A list of SummarizedExperiment Object from `runTBsigProfiler`
+#' @param sig_name Name of the TB Signatures
+#' @return Boxplot
+#'
+#' @export
+Boxplot_TBSig <- function(result_list,sig_name){
+
+  p_boxplot <- lapply(1:length(result_list), function(x)
+    TBSignatureProfiler::signatureBoxplot(inputData = result_list[[x]],
+                                          name = names(result_list)[x],
+                                          signatureColNames = sig_name,
+                                          annotationColName = "TBStatus", rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07")))
+
+  library(gridExtra)
+  library(ggplot2)
+  p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+  return(p_combine)
+
+}
+
+#######################################
+#' Get signatures with only scores and disease status
+
+
+#' Boxplot functions for list with inconsistent Signatures matched for each object
+#' Also applies to consistent sigantures column names
+Boxplot_TBSig1 <- function(result_list, gset, sig_name, annotationName = "TBStatus"){
+  sig_list <- lapply(1:length(result_list), function(y,gset){
+
+    x <- result_list[[y]]
+    GSE <- rep(names(result_list[y]), nrow(colData(x)))
+    TBStatus <- colData(x)[,"TBStatus"]
+    index <- na.omit(match(names(gset),names(colData(x))))
+    cbind(TBStatus,colData(x)[,index],GSE)
+
+  }, gset)
+
+  # Merge them into one large dataset
+  sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
+
+  p_boxplot <- lapply(unique(sig_data$GSE), function(x,sig_name){
+    sig_data_gse <- sig_data %>% filter(GSE == x)
+    if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
+    sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
+
+
+    if(length(unique(colData(sig_data1)$TBStatus)) == 2){
+      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
+                                                  name = x,
+                                                  signatureColNames = sig_name,
+                                                  annotationColName = annotationName,
+                                                  rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07"))
+      return(p)
+    }
+    if(length(unique(colData(sig_data1)$TBStatus)) ==3){
+      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
+                                                  name = x,
+                                                  signatureColNames = sig_name,
+                                                  annotationColName = annotationName,
+                                                  rotateLabels = FALSE,fill_colors = c("#4E84C4", "#FC4E07","#999999"))
+
+      return(p)
+    }
+
+  },sig_name)
+
+  p_boxplot <- plyr::compact(p_boxplot)
+
+  library(gridExtra)
+  library(ggplot2)
+  p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+  return(p_combine)
+
+
+}
+
+###############################################
+
 #' Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
 #' @name get_pvalue_auc
 #' @param SE_scored A summarized experiment from TB signature profiling
@@ -81,25 +162,11 @@ get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay
 #' @param signatureColNames A character or vector that contains gene signature name
 #' @return A data frame contains p-value from two-sample t-test and AUC value for each signature
 #'
-#' @examples
-#' sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
-#' SE_scored <- runTBsigProfiler(input = sobject_TBSig, useAssay = "counts", signatures = TBsignatures, algorithm = "ssGSEA", combineSigAndAlgorithm = TRUE, parallel.sz = 1)
-#' annotationColName <- "Disease"
-#' signatureColNames <- c("Anderson_42","Anderson_OD_51" )
-#' results <- get_pvalue_auc(SE_scored,"Disease",signatureColNames)
 #' @export
-get_pvalue_auc <- function(SE_scored, annotationColName = "Disease", signatureColNames){
-
-  # check annotationColName
-  if (length(unique(colData(SE_scored)[annotationColName][,1]))!=2){
-    stop(cat("Invalid \"annotationColName\". Expect two-level factor"))
-  }
+get_pvalue_auc <- function(SE_scored, annotationColName = "TBStaus", signatureColNames){
 
   # check signatureColNames
-  if (!all(signatureColNames %in% colnames(colData(SE_scored)))){
-    stop(cat("Cannot find score information for",
-             signatureColNames[!signatureColNames %in% colnames(colData(SE_scored))]))
-  }
+
   pvals <- aucs <- NULL
   annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][,1] %>% as.character() %>% as.factor()
   for (i in signatureColNames) {
@@ -113,7 +180,36 @@ get_pvalue_auc <- function(SE_scored, annotationColName = "Disease", signatureCo
 
 }
 
+################################
+#' Combine results from list. Calculate p-value and AUC values
+#' @name combine_auc
+#' @param result_list A list of SummarizedExperiment Object from `runTBsigProfiler`
+#' @return A data frame with signatures, p-value, and AUC
+#' @export
+combine_auc <- function(result_list){
+  aucs_result <- lapply(result_list, function(x){
+    index <- na.omit(match(names(TBsignatures),names(colData(x))))
+    get_pvalue_auc(x,
+                   annotationColName = "TBStatus",
+                   signatureColNames = names(colData(x))[index])
+  }
+    )
+  aucs_result_dat <- do.call(rbind,aucs_result)
+
+  # re-order data based on their median AUC
+  aucs_result_dat_median <- aucs_result_dat %>% group_by(Signature) %>% summarise_all(median) %>% arrange(desc(AUC))
+
+  # New addition: order signatures based on median AUC values
+
+  Signature_order <- as.character(aucs_result_dat_median$Signature)
+  # Re-order gene siganture, re-level
+  aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+
+  return(aucs_result_dat)
+}
+
 ###########################
+
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution
 #' @param aucs_result_dat A dataframe contains AUC and p-value for certain TB signatures across different datasets
