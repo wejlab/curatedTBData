@@ -160,13 +160,8 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
 
           })
 
-theObject <- object_match[[9]]
-gset <- TBsignatures[1:2]
-experiment_type = "assay_reduce"
-assay_name = 1
-
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
-          function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1){
+          function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
             col_data <-  colData(theObject)
@@ -184,17 +179,21 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             counts <- assays(theObject)[[assay_name]]
             # select the reference group, calculate mean and sd
             theObject_ref <- assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
-            mean_ref <- apply(theObject_ref, 1, mean)
+            mean_ref <- apply(theObject_ref, 1, mean) # 1 is running row by row
             sd_ref <- apply(theObject_ref, 1, sd)
 
             # calculate gMDP for each gene i and sample s
-            gMDP <- apply(counts, 2, function(x){(x-mean_ref)/sd_ref})
+            # Get its absolute value
+            gMDP <- apply(counts, 2, function(x){(x-mean_ref)/sd_ref}) # 2 is runnig column by column. Column vector calculation
 
             # replace small gMDP values, set abs(gMDP) < 2 equals to 0
             gMDP[abs(gMDP)<2] <- 0
 
-            # set NaN value to 0
+            # set NaN value to 0, those with 0/0
             gMDP[is.nan(gMDP)] <- 0
+
+            # set Inf value to 2, those with x/0
+            gMDP[is.infinite(gMDP)] <- 2
 
             # Include the gMDP assays in the existing SummarizedExperiment Object
             assays(theObject)[["gMDP"]] <- gMDP
@@ -224,7 +223,8 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             TBStatus <- colData(theObject)[,"TBStatus"]
             names(TBStatus) <- row.names(colData(theObject))
 
-            sMDP_data <- cbind(sMDP_sig,TBStatus)
+            sMDP_data <- cbind(sMDP_sig,TBStatus, GSE)
+            sMDP_data
             return(sMDP_data)
 
           })
