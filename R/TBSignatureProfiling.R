@@ -107,7 +107,7 @@ SignatureFilter <- function(result_list, gset){
 #' @param sig_name Name of the TB Signatures
 #' @param annotationName Name of the disease column
 #' @return Boxplots
-#'
+#' Should develope an S$ method for Boxplot_TBSig????
 #' @export
 Boxplot_TBSig <- function(sig_list, sig_name, annotationName = "TBStatus"){
 
