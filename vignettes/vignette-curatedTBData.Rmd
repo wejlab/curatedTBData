@@ -316,12 +316,9 @@ Molecular Degree of Perturbation (MDP) is a method to standardized gene expressi
 ```{r MDP, message=FALSE}
 MDP_control_name <- lapply(object_match, function(x) 
   x[,x$TBStatus == "Control"]) %>% remove_empty_object() %>% names()
-MDP_control<-  object_match[MDP_control_name] # study includes control samples
+MDP_control <- object_match[MDP_control_name] # study includes control samples
 
-# -c(9,19,21)
-
-# Temporary result
-MDP_result <- lapply(1:8, function(x) MDP(MDP_control[[x]], gset = TBsignatures, experiment_type = "assay_reduce", assay_name = 1, GSE = names(MDP_control)[x]))
+MDP_result <- lapply(1:length(MDP_control), function(x) MDP(MDP_control[[x]], gset = TBsignatures, experiment_type = "assay_reduce", assay_name = 1, GSE = names(MDP_control)[x]))
 ```
 
 ### Boxplot for MDP{.tabset}
@@ -357,7 +354,7 @@ batch1 <- colData(result)$GSE
 combat_edata1 <- sva::ComBat(dat=assays(result)[[1]], batch=batch1, mod=mod1)
 
 # Add batch corrected data as a new assay to the orginal SummarizedExperiment
-assays(result)[["BacthCorrection"]] <- combat_edata1
+assays(result)[["BacthCorrect"]] <- combat_edata1
 ```
 Boxplot before Batch correction
 ```{r, fig.width=8, fig.height=6, warning=FALSE}
@@ -370,4 +367,36 @@ Boxplot after Batch correction
 boxplot(assays(result)[[2]])
 ```
 
-## Molecular Degree of Perturbation (MDP)
+## Molecular Degree of Perturbation (MDP) for Batch Corrected Data
+Recall the list of studies that have control samples. We could either pick up some data from the data for batch correction or use all of them. Next we will use all the available 21 studies
+```{r}
+# Batch correction
+# remove GSE74092 becuase it only has 200+ matched gene symbol
+MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name=="GSE74092")]) 
+
+# Batch Correction
+mod1 <- model.matrix(~as.factor(TBStatus), data=colData(MDP_batch))
+batch1 <- colData(MDP_batch)$GSE
+combat_edata1 <- sva::ComBat(dat=assays(MDP_batch)[[1]], batch=batch1, mod=mod1)
+
+# Add batch corrected data as a new assay to the orginal SummarizedExperiment
+assays(MDP_batch)[["BacthCorrect"]] <- combat_edata1
+
+# Calculate MDP for this object
+MDP_batch_result <- MDP(theObject = MDP_batch, gset = TBsignatures, assay_name = "BacthCorrect")
+
+```
+
+### Boxplot for Batch Corrected MDP
+
+```{r, results = "asis", message = FALSE, fig.height = 20, fig.width=28}
+# 5 levels of TBStatus: Control/Laent/NA/OD/PTB
+# Create SummarizedExperiment Object to make it compaticble with the function
+
+TBSignatureProfiler::signatureBoxplot(inputData = SummarizedExperiment(colData = MDP_batch_result),
+                                                  name = "Boxplot for Batch Corrected MDP",
+                                                  signatureColNames = colnames(MDP_batch_result)[-ncol(MDP_batch_result)],
+                                                  annotationColName = "TBStatus",
+                                                  rotateLabels = FALSE,
+                                                  fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07","#00AFBB"))
+```

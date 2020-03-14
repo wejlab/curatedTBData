@@ -118,6 +118,8 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 
 # Evaluate signatures using MDP score
 
+#theObject = MDP_batch; gset = TBsignatures; assay_name = "BacthCorrect"
+
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           function(theObject, gset = gset, assay_name = 1){
             # theObject data after normalization
@@ -133,6 +135,12 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             # replace small gMDP values, set abs(gMDP) < 2 equals to 0
             gMDP[abs(gMDP)<2] <- 0
 
+            # set NaN value to 0, those with 0/0
+            gMDP[is.nan(gMDP)] <- 0
+
+            # set Inf value to 2, those with x/0
+            gMDP[is.infinite(gMDP)] <- 2
+
             # Include the gMDP assays in the existing SummarizedExperiment Object
             assays(theObject)[["gMDP"]] <- gMDP
 
@@ -141,11 +149,18 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             # Great methods, copy from gsva
             mapped.gset <- lapply(gset,function(x, y) na.omit(match(x, y)),
                                            row.names(gMDP))
+            # remove gene sets from the analysis for which no features are available
+            index <- which(unlist(lapply(mapped.gset, function(x) length(x)!=0)))
+            mapped.gset <- mapped.gset[index]
 
             # claculate MDP of individual sample (sMDP)
             sMDP <- lapply(1:length(mapped.gset), function(x){
               # gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
               sMDP_class <- gMDP[mapped.gset[[x]],]
+              if (class(sMDP_class) == "numeric"){
+                 return(sMDP_class)
+              }
+
               sMDP_sample <- apply(sMDP_class, 2, mean)
               sMDP_sample
             })
@@ -159,6 +174,7 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             return(sMDP_data)
 
           })
+
 
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
           function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
@@ -204,16 +220,23 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             mapped.gset <- lapply(gset,function(x, y) na.omit(match(x, y)),
                                   row.names(gMDP))
 
-            ## remove gene sets from the analysis for which no features are available
-            #gSetsLen <- sapply(mapped.gset,length)
-            #gSet[gSetsLen >= 1 & gSetsLen <= Inf]
+            # remove gene sets from the analysis for which no features are available
+
+            index <- which(unlist(lapply(mapped.gset, function(x) length(x)!=0)))
+            mapped.gset <- mapped.gset[index]
 
             # claculate MDP of individual sample (sMDP)
+
             sMDP <- lapply(1:length(mapped.gset), function(x){
               # gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
               sMDP_class <- gMDP[mapped.gset[[x]],]
 
-              # Get mean value for each sample
+              # For those signatures only have one gene matched
+              if (class(sMDP_class) == "numeric"){
+                 return(sMDP_class)
+              }
+
+                  # Get mean value for each sample
               sMDP_sample <- apply(sMDP_class, 2, mean)
               sMDP_sample
             })
@@ -224,7 +247,6 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             names(TBStatus) <- row.names(colData(theObject))
 
             sMDP_data <- cbind(sMDP_sig,TBStatus, GSE)
-            sMDP_data
             return(sMDP_data)
 
           })

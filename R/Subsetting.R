@@ -90,8 +90,14 @@ remove_empty_object <- function(k){
 #'
 #'
 #' @export
-CombineObjects <- function(object_list,gse_name){
-  dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+CombineObjects <- function(object_list,gse_name=NULL){
+  if(is.null(gse_name)){
+    gse_name = names(object_list)
+    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+  }
+  else {
+    dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+  }
 
   # Combine sample with common genes from selected objects.
   # Input data type should be data.frame
@@ -113,6 +119,11 @@ CombineObjects <- function(object_list,gse_name){
   col_info <- plyr::rbind.fill(lapply(col_data,function(x){as.data.frame(x)}))
   row.names(col_info) <- Sample
 
+  # Remove samples that does not exist in the count
+  index <- na.omit(match(colnames(dat_exprs_count), Sample))
+  col_info <- col_info[index,]
+
+  # Create output in the format of SummarizedExperiment
   result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(dat_exprs_count)),
                                                        colData = col_info)
   return(result)

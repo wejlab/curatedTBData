@@ -4,7 +4,7 @@
 \alias{CombineObjects}
 \title{Combine samples with common genes from selected objects}
 \usage{
-CombineObjects(object_list, gse_name)
+CombineObjects(object_list, gse_name = NULL)
 }
 \arguments{
 \item{object_list}{A list contains expression data with mapped gene symbol}
