@@ -116,6 +116,11 @@ Boxplot_TBSig <- function(sig_list, sig_name, annotationName = "TBStatus"){
 
   p_boxplot <- lapply(unique(sig_data$GSE), function(x,sig_name){
     sig_data_gse <- sig_data %>% filter(GSE == x)
+
+    #sig_data_gse_order <- c("Conrol", "Latent","PTB", "OD","NA")
+    # Re-order gene siganture, re-level
+    #aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+
     if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
     sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
 
@@ -133,7 +138,19 @@ Boxplot_TBSig <- function(sig_list, sig_name, annotationName = "TBStatus"){
                                                   name = x,
                                                   signatureColNames = sig_name,
                                                   annotationColName = annotationName,
-                                                  rotateLabels = FALSE,fill_colors = c("#999999", "#E69F00", "#56B4E9"))
+                                                  rotateLabels = FALSE,
+                                                  fill_colors = c("#999999", "#E69F00", "#56B4E9"))
+
+      return(p)
+    }
+
+    if(length(unique(colData(sig_data1)$TBStatus)) ==4){
+      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
+                                                  name = x,
+                                                  signatureColNames = sig_name,
+                                                  annotationColName = annotationName,
+                                                  rotateLabels = FALSE,
+                                                  fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
 
       return(p)
     }
