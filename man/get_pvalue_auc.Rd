@@ -4,7 +4,7 @@
 \alias{get_pvalue_auc}
 \title{Obtain two-sample t-test pvalues and emprirical AUC for signature scores.}
 \usage{
-get_pvalue_auc(SE_scored, annotationColName = "Disease", signatureColNames)
+get_pvalue_auc(SE_scored, annotationColName = "TBStaus", signatureColNames)
 }
 \arguments{
 \item{SE_scored}{A summarized experiment from TB signature profiling}
@@ -18,11 +18,4 @@ A data frame contains p-value from two-sample t-test and AUC value for each sign
 }
 \description{
 Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
-}
-\examples{
-sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
-SE_scored <- runTBsigProfiler(input = sobject_TBSig, useAssay = "counts", signatures = TBsignatures, algorithm = "ssGSEA", combineSigAndAlgorithm = TRUE, parallel.sz = 1)
-annotationColName <- "Disease"
-signatureColNames <- c("Anderson_42","Anderson_OD_51" )
-results <- get_pvalue_auc(SE_scored,"Disease",signatureColNames)
 }
