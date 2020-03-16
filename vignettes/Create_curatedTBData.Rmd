@@ -1,0 +1,120 @@
+---
+title: "Create_curatedTBData"
+author: "Xutao Wang"
+output: BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{curatedTBData}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+if (! "BiocParallel" %in% installed.packages()) BiocManager::install("BiocParallel")
+if (! "SummarizedExperiment" %in% installed.packages()) BiocManager::install("SummarizedExperiment")
+if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
+if (! "limma" %in% installed.packages()) install.packages("plyr")
+if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
+if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
+if (! "plyr" %in% installed.packages()) install.packages("plyr")
+if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github("aubreyodom/TBSignatureProfiler")
+```
+
+```{r libraries, message=FALSE}
+# Alphabetic order
+library(BiocParallel)
+library(dplyr)
+library(edgeR)
+library(GEOquery)
+library(ggplot2)
+library(ggridges)
+library(gridExtra)
+library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
+library(limma)
+library(MultiAssayExperiment)
+library(plyr)
+library(SummarizedExperiment)
+library(sva)
+library(TBSignatureProfiler)
+
+
+# library(magick)
+# Load probe db
+
+devtools::load_all(".")
+library(curatedTBData)
+```
+
+# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
+
+Insert introduction/background infrmation about this data package
+
+# Using SummarizedExperiment/MultiAssayExperiment Object
+
+## Create SummarizedExperiment Object from Affymetrix 2.0 Microarray
+
+```{r create Affy2.0, message=FALSE, warning=FALSE}
+# GSE36238
+GSE36238_raw <- curatedTBData(geo_access = "GSE36238", plat_access = "GPL570")
+
+# Enter clinical information...
+colnames(GSE36238_raw$col_data) <- c('TimePoint','Tissue','Patient_id','SampleTime')
+GSE36238_raw$col_data$TBStatus <- "PTB"
+
+# Convert to standard column feature
+GSE36238_raw$col_data_new <- create_standard_ColData(GSE36238_raw$col_data)
+
+# Obtain Metadata
+GSE36238_experimentData <- new('MIAME',
+                      name="Jackie Cliff",
+                      lab="London School of Hygiene & Tropical Medicine",
+                      contact="jackie.cliff@lshtm.ac.uk",
+                      title="Distinct phases of blood gene expression pattern through tuberculosis treatment reflect modulation of the humoral immune response.",
+                      abstract="An example SummarizedExperimentObject",
+                      url="10.1093/infdis/jis499",
+                      pubMedIds = '22872737',
+                      other=list(Platform = 'Affymetrix Human Genome U133 Plus 2.0 Array: GPL570'))
+
+GSE36238 <- SummarizedExperiment(assays = list(GSE36238_normalized_counts= as.matrix(GSE36238_raw$counts)), colData = GSE36238_raw$col_data_new, rowData = GSE36238_raw$row_data, metadata = list(GSE36238_experimentData)); GSE36238
+```
+
+## Create SummarizedExperiment Object from Illumina 3.0 Micoraray
+
+```{r create Illumina 3.0, message=FALSE, warning=FALSE}
+# GSE19442
+GSE19442_raw <- curatedTBData("GSE19442","GPL6947")
+
+# Enter clinical information...
+colnames(GSE19442_raw$col_data)  <- c('Age','Gender','Ethnicity','TBStatus','GeographicalRegion','BcgVaccinated','BirthRegion','TST', 'SputumSmearStatus','sputum_culture')
+
+# Rename TB Status
+TBStatus <- TBStatus_temp <- as.character(GSE19442_raw$col_data$TBStatus)
+unique(TBStatus_temp)
+TBStatus <- ifelse(TBStatus_temp=="LATENT TB","Latent",TBStatus_temp)
+GSE19442_raw$col_data$TBStatus <- TBStatus
+
+# Convert to standard column feature
+GSE19442_raw$col_data_new <- create_standard_ColData(GSE19442_raw$col_data)
+
+# Obtain Metadata
+GSE19442_experimentData <- new('MIAME',
+                      name="Damien Chaussabel",
+                      lab="Baylor Institute for Immunology Research",
+                      contact="DChaussabel@benaroyaresearch.org",
+                      title="An interferon-inducible neutrophil-driven blood transcriptional signature in human tuberculosis",
+                      abstract="Whole blood collected in tempus tubes from patients with different spectra of TB disease. All patients were sampled prior to the initiation of any antimycobacterial therapy.",
+                      url="10.1038/nature09247",
+                      pubMedIds = '20725040',
+                      other=list(Platform = 'Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)'))
+
+# Create SummarizedExperiment Object for GSE19442
+GSE19442 <- SummarizedExperiment(assays = list(GSE19442_Non_normalized_counts= as.matrix(GSE19442_raw$counts)), colData = GSE19442_raw$col_data_new, rowData = GSE19442_raw$row_data, metadata = list(GSE19442_experimentData)); GSE19442
+```
+
+## Create SummarizedExperiment Object from Illumina 4.0 Micoraray
+
+```{r}
+# GSE39939 to be cotinued
+```

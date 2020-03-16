@@ -4,15 +4,7 @@
 \alias{SignatureFilter}
 \title{Get signatures with only siganture scores and disease status}
 \usage{
-SignatureFilter(result_list, gset)
-}
-\arguments{
-\item{result_list}{A list of SummarizedExperiment Object from `runTBSignatureProfiler`}
-
-\item{gset}{A list of signatures want to select}
-}
-\value{
-A list of DataFrame
+SignatureFilter(sig_list, gset, ...)
 }
 \description{
 Get signatures with only siganture scores and disease status
