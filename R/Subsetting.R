@@ -1,9 +1,9 @@
 #' Subsetting objects based on single/multiple conditions
-setGeneric(name="SubsetDisease", function(theObject,...){
-  standardGeneric("SubsetDisease")
+setGeneric(name="SubsetSample", function(theObject,...){
+  standardGeneric("SubsetSample")
 })
 
-setMethod("SubsetDisease",
+setMethod("SubsetSample",
           signature="SummarizedExperiment",
           function(theObject,diseases){
             n <- length(diseases)
@@ -16,7 +16,7 @@ setMethod("SubsetDisease",
     }
 )
 
-setMethod("SubsetDisease",
+setMethod("SubsetSample",
           signature="MultiAssayExperiment",
 
           function(theObject,diseases, experiment_type = NULL){
@@ -26,7 +26,7 @@ setMethod("SubsetDisease",
               #col_data <- data.frame(Sample=row.names(col_info) %>% as.factor(),
               #                       Disease = col_info$TBStatus %>% as.factor())
               #row.names(col_data) <- row.names(col_info)
-              col_data = colData(theObject)
+              col_data <-  colData(theObject)
 
               # when not all samples are included in the expression matrix
               # This is the cases with some RNA-seq data
@@ -59,10 +59,73 @@ setMethod("SubsetDisease",
           }
 )
 
-#' Remove empty objects after single subsetting
+#' Remove objects based on single/multiple conditions
+setGeneric(name="RemoveSample", function(theObject,...){
+  standardGeneric("RemoveSample")
+})
+
+setMethod("RemoveSample",
+          signature="SummarizedExperiment",
+          function(theObject,ColName, Con){
+
+            n <- length(Con)
+
+            theObject_filter <- theObject[,theObject[,colName] != Con]
+            result <- SummarizedExperiment::colData(theObject_filter)[ColName][,1]
+            if(length(unique(Con)) == n){
+              return(theObject_filter)
+            }
+
+          }
+)
+
+setMethod("SubsetSample",
+          signature="MultiAssayExperiment",
+
+          function(theObject,ColName, Con, experiment_type = NULL){
+            if(!is.null(experiment_type)){
+              n <- length(Con)
+              #col_info <- colData(theObject)
+              #col_data <- data.frame(Sample=row.names(col_info) %>% as.factor(),
+              #                       Disease = col_info$TBStatus %>% as.factor())
+              #row.names(col_data) <- row.names(col_info)
+              col_data <-  colData(theObject)
+
+              # when not all samples are included in the expression matrix
+              # This is the cases with some RNA-seq data
+              if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
+                index <- sapply(1:length(colnames(theObject[[experiment_type]])), function (i)
+                  which(row.names(col_data) %in% colnames(theObject[[experiment_type]])[i]))
+
+                col_data <- col_data[index,]
+              }
+
+
+              sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(theObject[[experiment_type]])), colData = col_data)
+
+              # subsetting disease1 and disease2
+              sobject_TBSig_filter <- sobject_TBSig[,sobject_TBSig[,ColName] != Con]
+              result <- SummarizedExperiment::colData(sobject_TBSig_filter)[ColName][,1]
+              # check if both status are in the column data
+              if(length(unique(result)) == n){
+                return(sobject_TBSig_filter)
+              }
+
+            }
+            n <- length(Con)
+            theObject_filter <- theObject[,theObject[,ColName] != Con]
+            result <- SummarizedExperiment::colData(theObject_filter)[ColName][,1]
+            if(length(unique(result)) == n){
+              return(theObject_filter)
+            }
+
+          }
+)
+
+#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects
 #' @name remove_empty_object
-#' @param k A list of objects after single subsetting
-#'
+#' @param k A list contains both SummariexExperiment/MultiAssayExpriment objects
+#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object
 #' @export
 remove_empty_object <- function(k){
   x <- k

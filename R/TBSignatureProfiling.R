@@ -1,173 +1,172 @@
-#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects
-#' @name remove_empty_object
-#' @param multi_object A list contains both SummariexExperiment/MultiAssayExpriment objects
-#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object
-#' @export
-remove_empty_object <- function(k){
-  # should assign empty list with NA NOT NULL, because assigning NULL to list items, removes them...
-  x <- k
-  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
-    if(nrow(colData(x[[i]]))==0){
-      x[[i]] <- NA
-    }
-  }
-  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
-    if(length(experiments(x[[j]]))==0){
-      x[[j]] <- NA
-    }
-  }
-  x <- x[!is.na(x)]
-  return(x)
-}
-#######################
-#' Create sobjects for TB signature profiling based on specific TB status.
-#' @name get_sobject_TBSig
-#'
-#' @param multi_object an multi-assay summarized experiment
-#' @param disease1  A character chooses from "Control", "Latent", "PTB", "OD"
-#' @param disease2  A character chooses from "Control", "Latent", "PTB", "OD".
-#' TBStatus1 and TBStatus2 should be different from each other
-#' @return A summarized experiment object for TB signature profiling
-#'
-#' @examples
-#' sobject <- dat("GSE39939_sobject")
-#' mobject <- MatchProbe(sobject)
-#' sobject_TBSig <- get_sobject_TBSig(mobject,"PTB","Latent")
-#' @export
-get_sobject_TBSig <- function(multi_object,disease1,disease2,assay_type = "assay_reduce"){
-
-  # check input type
-  if (!all(c(disease1,disease2) %in% c("Control", "Latent", "PTB", "OD"))){
-    stop(cat("Invalid disease type. Two disease must be diffrent and choose from", "\"Control\"", "\"Latent\"",
-             "\"PTB\"", "\"OD\""))
-  }
-  if (disease1==disease2){
-    stop(cat("Invalid disease type. Two diseases must be diffrent and choose from", "\"Control\"",
-             "\"Latent\"", "\"PTB\"", "\"OD\""))
-  }
-  if (class(multi_object) != "MultiAssayExperiment" ){
-    stop(cat("Invalid input data type. Only supported for MultiAssayExperiment objects generated from \"Create_MultiAssay_object()\".
-        Your input:", class(test_sobject)))
-  }
-  col_info <- colData(multi_object)
-  col_data <- data.frame(Sample=row.names(col_info) %>% as.factor(),
-                         Disease = col_info$TBStatus %>% as.factor())
-  row.names(col_data) <- row.names(col_info)
-
-  # when not all samples are included in the expression matrix
-  if (ncol(multi_object[[assay_type]]) != nrow(col_info)){
-    index <- sapply(1:length(colnames(multi_object[[assay_type]])), function (i)
-      which(row.names(col_data) %in% colnames(multi_object[[assay_type]])[i]))
-
-    col_data <- col_data[index,]
-  }
-
-  sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(multi_object[[assay_type]])), colData = col_data)
-
-  # subsetting disease1 and disease2
-  sobject_TBSig_filter <- sobject_TBSig[,sobject_TBSig$Disease %in% c(disease1,disease2)]
-  TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)$Disease
-  # check if both status are in the column data
-  if(length(unique(TB_status)) == 2){
-    return(sobject_TBSig_filter)
-  }
-
-}
-
 #######################################
 #' Get signatures with only siganture scores and disease status
-#' @name SignatureFilter
-#' @param result_list A list of SummarizedExperiment Object from `runTBSignatureProfiler`
-#' @param gset A list of signatures want to select
-#' @return A list of DataFrame
-#'
-#'
-#' @export
 
-SignatureFilter <- function(result_list, gset){
-  sig_list <- lapply(1:length(result_list), function(y,gset){
+setGeneric(name="SignatureFilter", function(sig_list, gset,...){
+  standardGeneric("SignatureFilter")
+})
 
-    x <- result_list[[y]]
-    GSE <- rep(names(result_list[y]), nrow(colData(x)))
-    TBStatus <- colData(x)[,"TBStatus"]
-    index <- na.omit(match(names(gset),names(colData(x))))
-    cbind(TBStatus,colData(x)[,index],GSE)
+setMethod("SignatureFilter",
+          signature (sig_list = "list", gset = "list"),
+          function(sig_list, gset){
+            sig_list <- lapply(1:length(sig_list), function(y,gset){
 
-  }, gset)
-  return(sig_list)
-}
+              x <- sig_list[[y]]
+              GSE <- rep(names(sig_list[y]), nrow(colData(x)))
+              TBStatus <- colData(x)[,"TBStatus"]
+              index <- na.omit(match(names(gset),names(colData(x))))
+              cbind(TBStatus,colData(x)[,index],GSE)
 
+            }, gset)
+            return(sig_list)
+
+          }
+)
+
+setMethod("SignatureFilter",
+          signature (sig_list = "list", gset = "character"),
+          function(sig_list, gset){
+            sig_list <- lapply(1:length(sig_list), function(i,gset){
+
+              x <- sig_list[[i]]
+              GSE <- rep(names(sig_list[i]), nrow(colData(x)))
+              TBStatus <- colData(x)[,"TBStatus"]
+              index <- na.omit(match(gset,names(colData(x))))
+              cbind(TBStatus,colData(x)[,index],GSE)
+
+            }, gset)
+            return(sig_list)
+
+          }
+)
+# tt = SignatureFilter(ssgsea_PTB_Latent,TBsignatures)
+
+setMethod("SignatureFilter",
+          signature (sig_list = "list", gset = "character"),
+          function(sig_list, gset){
+            sig_list <- lapply(1:length(sig_list), function(i,gset){
+
+              x <- sig_list[[i]]
+              GSE <- rep(names(sig_list[i]), nrow(colData(x)))
+              TBStatus <- colData(x)[,"TBStatus"]
+              index <- na.omit(match(gset,names(colData(x))))
+              result <- DataFrame(TBStatus,colData(x)[,index],GSE)
+              colnames(result)[2] <- gset
+              result
+
+            }, gset)
+            return(sig_list)
+
+          }
+)
+
+# k = SignatureFilter(ssgsea_PTB_Latent,"Anderson_42")
+
+setMethod("SignatureFilter",
+          signature (sig_list = "SummarizedExperiment", gset = "list"),
+          function(sig_list, gset, GSE){
+            index <- na.omit(match(names(gset),names(colData(sig_list))))
+            TBStatus <- colData(sig_list)[,"TBStatus"]
+            result <- DataFrame(cbind(TBStatus,colData(sig_list)[,index],GSE))
+
+          }
+)
+
+# kk = SignatureFilter(ssgsea_PTB_Latent[[1]],TBsignatures, GSE="test")
+
+setMethod("SignatureFilter",
+          signature(sig_list = "SummarizedExperiment", gset = "character"),
+          function(sig_list, gset, GSE){
+            index <- na.omit(match(gset,names(colData(sig_list))))
+            TBStatus <- colData(sig_list)[,"TBStatus"]
+            result <- DataFrame(TBStatus,colData(sig_list)[,index], GSE)
+            colnames(result)[2] <- gset
+            return(result)
+
+          }
+)
+
+# kkk = SignatureFilter(ssgsea_PTB_Latent[[1]],"Anderson_42", GSE="test")
 
 #####################################
 
-#' Boxplot functions for list with inconsistent Signatures matched for each object
+#' Boxplot functions for list with Signatures matched for each object (particularly, for inconsistent mattching)
 #' Also applies to consistent sigantures column names
-#' @name Boxplot_TBSig
-#' @param sig_list A list of data frame contains information with signature scores and Disease status
-#' @param sig_name Name of the TB Signatures
-#' @param annotationName Name of the disease column
-#' @return Boxplots
-#' Should develope an S$ method for Boxplot_TBSig????
-#' @export
-Boxplot_TBSig <- function(sig_list, sig_name, annotationName = "TBStatus"){
 
-  # Merge them into one large dataset
-  sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
+# sig_list <- MDP_result_NULL;x <- "GSE107993";annotationName = "TBStatus"
 
-  p_boxplot <- lapply(unique(sig_data$GSE), function(x,sig_name){
-    sig_data_gse <- sig_data %>% filter(GSE == x)
+setGeneric("BoxplotTBSig", function(sig_list, sig_name, ...) standardGeneric("BoxplotTBSig"))
 
-    #sig_data_gse_order <- c("Conrol", "Latent","PTB", "OD","NA")
-    # Re-order gene siganture, re-level
-    #aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "NULL"),
+          function(sig_list, sig_name = NULL, annotationName = "TBStatus"){
+            sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
+            sig_name <- "sMDP"
 
-    if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
-    sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
+            p_boxplot <- lapply(unique(sig_data$GSE), function(x, sig_name){
+              sig_data_gse <- sig_data %>% filter(GSE == x)
 
+              #sig_data_gse_order <- c("Conrol", "Latent","PTB", "OD","NA")
+              # Re-order gene siganture, re-level
+              #aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
 
-    if(length(unique(colData(sig_data1)$TBStatus)) == 2){
-      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
-                                                  name = x,
-                                                  signatureColNames = sig_name,
-                                                  annotationColName = annotationName,
-                                                  rotateLabels = FALSE,fill_colors = c("#999999", "#E69F00"))
-      return(p)
-    }
-    if(length(unique(colData(sig_data1)$TBStatus)) ==3){
-      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
-                                                  name = x,
-                                                  signatureColNames = sig_name,
-                                                  annotationColName = annotationName,
-                                                  rotateLabels = FALSE,
-                                                  fill_colors = c("#999999", "#E69F00", "#56B4E9"))
+              # if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
+              sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
 
-      return(p)
-    }
+              p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
+                                                            name = x,
+                                                            signatureColNames = sig_name,
+                                                            annotationColName = annotationName,
+                                                            rotateLabels = FALSE,
+                                                            fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
 
-    if(length(unique(colData(sig_data1)$TBStatus)) ==4){
-      p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
-                                                  name = x,
-                                                  signatureColNames = sig_name,
-                                                  annotationColName = annotationName,
-                                                  rotateLabels = FALSE,
-                                                  fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
-
-      return(p)
-    }
-
-  },sig_name)
-
-  p_boxplot <- plyr::compact(p_boxplot)
-
-  library(gridExtra)
-  library(ggplot2)
-  p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
-  return(p_combine)
+              return(p)
 
 
-}
+            }, sig_name)
 
-###############################################
+            library(gridExtra)
+            library(ggplot2)
+            p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+            return(p_combine)
+          })
+
+#sig_list <- ssgsea_PTB_Latent1;sig_name = "Zak_RISK_16";annotationName = "TBStatus";x = "GSE107993"
+
+setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "character"),
+          function(sig_list, sig_name = sig_name, annotationName = "TBStatus"){
+
+            sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
+
+            p_boxplot <- lapply(unique(sig_data$GSE), function(x, sig_name){
+              sig_data_gse <- sig_data %>% filter(GSE == x)
+
+
+              if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
+              sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
+
+              p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
+                                                            name = x,
+                                                            signatureColNames = sig_name,
+                                                            annotationColName = annotationName,
+                                                            rotateLabels = FALSE,
+                                                            fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
+
+              return(p)
+
+
+            }, sig_name)
+
+            # Remove empty element from list
+
+            p_boxplot <- plyr::compact(p_boxplot)
+
+            library(gridExtra)
+            library(ggplot2)
+            p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+            return(p_combine)
+          })
+
+
+################################################
 
 #' Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
 #' @name get_pvalue_auc

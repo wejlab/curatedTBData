@@ -3,7 +3,7 @@
 setGeneric("MDP", function(theObject, gset, ...) standardGeneric("MDP"))
 
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
-          function(theObject, gset = NULL, assay_name = 1){
+          function(theObject, gset = NULL, assay_name = 1, GSE = GSE){
    # theObject data after normalization
    counts <- assays(theObject)[[assay_name]]
    # select the reference group, calculate mean and sd
@@ -16,6 +16,12 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 
    # replace small gMDP values, set abs(gMDP) < 2 equals to 0
    gMDP[abs(gMDP)<2] <- 0
+
+   # set NaN value to 0, those with 0/0
+   gMDP[is.nan(gMDP)] <- 0
+
+   # set Inf value to 2, those with x/0
+   gMDP[is.infinite(gMDP)] <- 2
 
    # Include the gMDP assays in the existing SummarizedExperiment Object
    assays(theObject)[["gMDP"]] <- gMDP
@@ -54,7 +60,7 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 })
 
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
-          function(theObject, gset = NULL, experiment_type = "assay_reduce", assay_name = 1){
+          function(theObject, gset = NULL, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
             col_data = colData(theObject)
@@ -79,6 +85,12 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 
             # replace small gMDP values, set abs(gMDP) < 2 equals to 0
             gMDP[abs(gMDP)<2] <- 0
+
+            # set NaN value to 0, those with 0/0
+            gMDP[is.nan(gMDP)] <- 0
+
+            # set Inf value to 2, those with x/0
+            gMDP[is.infinite(gMDP)] <- 2
 
             # Include the gMDP assays in the existing SummarizedExperiment Object
             assays(theObject)[["gMDP"]] <- gMDP
@@ -109,7 +121,7 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
             names(sMDP) <- TBStatus
 
             sMDP_data <- do.call(rbind, lapply(1:length(sMDP), function(x) {
-              data.frame(Sample=names(sMDP[[x]]), sMDP = as.vector(sMDP[[x]]), TBStatus = names(sMDP[x]))
+              data.frame(Sample=names(sMDP[[x]]), sMDP = as.vector(sMDP[[x]]), TBStatus = names(sMDP[x]), GSE = GSE)
             }))
 
             return(sMDP_data)
@@ -170,7 +182,7 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             TBStatus <- colData(theObject)[,"TBStatus"]
             names(TBStatus) <- row.names(colData(theObject))
 
-            sMDP_data <- cbind(sMDP_sig,TBStatus)
+            sMDP_data <- cbind(sMDP_sig,TBStatus) %>% data.frame()
             return(sMDP_data)
 
           })
@@ -246,7 +258,7 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             TBStatus <- colData(theObject)[,"TBStatus"]
             names(TBStatus) <- row.names(colData(theObject))
 
-            sMDP_data <- cbind(sMDP_sig,TBStatus, GSE)
+            sMDP_data <- cbind(sMDP_sig,TBStatus, GSE) %>% data.frame()
             return(sMDP_data)
 
           })
