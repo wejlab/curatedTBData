@@ -1,17 +1,34 @@
 #' Normalization for microarray and RNA-seq transcriptome data.
 
-setGeneric(name="NormalizeReads", function(theObject,...){
-  standardGeneric("NormalizeReads")
+setGeneric(name="Normalization", function(theObject,...){
+  standardGeneric("Normalization")
 })
 
-setMethod("NormalizeReads",
+# theObject <- GSE39939_sobject
+
+setMethod("Normalization",
           signature="SummarizedExperiment",
 
-          function(theObject,experiment_type = "assay_raw",method = "quantile"){
-            # set counts less than 1 to be 1.
-            counts <- assays(theObject)[[1]]
-            counts[counts<1] <- 1
+          function(theObject,method = "quantile", experiment_type = "assay_raw"){
 
+            # check whether the object has been normalized.
+            norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"),
+                              collapse="|")
+            if (length(grep(norm_GSE,assayNames(theObject))) == 1){
+              assays(theObject)[["NormalizedData"]] <- assays(theObject)[[1]]
+              return(theObject)
+
+            }
+
+            # Remove outliers for microarray????
+            ################################# Function to be inserted ############
+
+            # set counts less than 10 to be 10.
+            counts <- assays(theObject)[[1]]
+            counts[counts<10] <- 10
+
+            # log2 transformed data
+            counts <- log(counts,base=2)
             # Normalize between arrays
             norm_counts <- limma::normalizeBetweenArrays (counts,
                                                           method = method)
@@ -20,14 +37,18 @@ setMethod("NormalizeReads",
           }
 )
 
-setMethod("NormalizeReads",
+setMethod("Normalization",
           signature = "MultiAssayExperiment",
           function(theObject, experiment_type = "assay_raw",method = "TMM"){
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
             if (experiment_type == "assay_raw"){
               counts <- assays(experiments(theObject)[[experiment_type]])[[1]]
-              counts[counts<1] <- 1
-              NormFactor <- calcNormFactors(counts, method = method)
+              counts[counts<10] <- 10
+
+              # log2 transformed data
+              counts <- log(counts,base=2)
+
+              NormFactor <- edgeR::calcNormFactors(counts, method = method)
               ScaleFactors <- colSums(counts) * NormFactor
 
               Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))
@@ -36,8 +57,13 @@ setMethod("NormalizeReads",
 
             }
             if (experiment_type == "assay_reprocess"){
+
               counts <- experiments(theObject)[[experiment_type]]
-              counts[counts<1] <- 1
+              counts[counts<10] <- 10
+
+              # log2 transformed data
+              counts <- log(counts,base=2)
+
               NormFactor <- calcNormFactors(counts, method = method)
               ScaleFactors <- colSums(counts) * NormFactor
 
@@ -52,39 +78,6 @@ setMethod("NormalizeReads",
           }
 )
 
-#' Combine samples with common genes from selected objects
-#' @name CombineObjects
-#' @param object_list A list contains expression data with mapped gene symbol
-#' @param gse_name A vector contains the name of the objects that you want to combine
-#' @return A SummarizedExperiment Object contains combined data from several objects
+#' Remove outliers using arrayQualityMetrics R package
 #'
 #'
-#' @export
-CombineObjects <- function(object_list,gse_name){
-  dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
-
-  # Combine sample with common genes from selected objects.
-  # Input data type should be data.frame
-  dat_exprs_combine <- Reduce(
-    function(x, y) merge(x, y, by = "id", all = F),
-    lapply(dat_exprs_match, function(x) { x$id <- rownames(x); x }))
-  row.names(dat_exprs_combine) <- dat_exprs_combine$id
-  dat_exprs_count <- dat_exprs_combine[,-1]
-  # Create combined column data information
-  Sample1 <- lapply(object_list[gse_name], function(x) MultiAssayExperiment::colData(x) %>% row.names())
-  Sample <- unlist(Sample1, use.names=FALSE)
-  col_data <- lapply(1:length(object_list[gse_name]), function(x) {
-    col_data <- MultiAssayExperiment::colData(object_list[gse_name][[x]])
-    col_data$GSE <-names(object_list[gse_name][x])
-    col_data
-    })
-
-  # Combine list into dataframe with unequal columns
-  col_info <- plyr:::rbind.fill(lapply(col_data,function(x){as.data.frame(x)}))
-  row.names(col_info) <- Sample
-
-  result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(dat_exprs_count)),
-                                                       colData = col_info)
-  return(result)
-
-  }
