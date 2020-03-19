@@ -8,3 +8,17 @@
 \description{
 Create MultiAssay Experiment object
 }
+\section{Slots}{
+
+\describe{
+\item{\code{assay_reprocess}}{A matrix contatins gene expression data}
+
+\item{\code{assay_raw}}{Another matrix contatins gene expression data}
+
+\item{\code{row_data}}{A DataFrame contains gene expression data with different dimensions}
+
+\item{\code{column_data}}{A DataFrame contains sample information}
+
+\item{\code{meta_data}}{A MIAME class contains experiment information}
+}}
+

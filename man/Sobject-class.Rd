@@ -4,7 +4,19 @@
 \name{Sobject-class}
 \alias{Sobject-class}
 \alias{Sobject}
-\title{Create Summarized Experiment object}
+\title{Create SummarizedExperiment object}
 \description{
-Create Summarized Experiment object
+Create SummarizedExperiment object
 }
+\section{Slots}{
+
+\describe{
+\item{\code{assay}}{A matrix contatins gene expression data}
+
+\item{\code{row_data}}{A DataFrame contains gene information}
+
+\item{\code{column_data}}{A DataFrame contains sample information}
+
+\item{\code{meta_data}}{A MIAME class contains experiment information}
+}}
+

@@ -104,19 +104,21 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "NULL"),
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, sig_name){
               sig_data_gse <- sig_data %>% filter(GSE == x)
 
-              #sig_data_gse_order <- c("Conrol", "Latent","PTB", "OD","NA")
-              # Re-order gene siganture, re-level
-              #aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+              sig_data_gse$TBStatus <- factor(sig_data_gse[,"TBStatus"], levels = c("Control", "Latent", "PTB", "OD"))
 
               # if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
               sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
+
+              # Create a custom color scale to deal with different factors
+              myColors <- RColorBrewer::brewer.pal(4,"Set1")
+              names(myColors) <- levels(sig_data_gse$TBStatus)
 
               p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
                                                             name = x,
                                                             signatureColNames = sig_name,
                                                             annotationColName = annotationName,
                                                             rotateLabels = FALSE,
-                                                            fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
+                                                            fill_colors = myColors)
 
               return(p)
 
@@ -129,7 +131,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "NULL"),
             return(p_combine)
           })
 
-#sig_list <- ssgsea_PTB_Latent1;sig_name = "Zak_RISK_16";annotationName = "TBStatus";x = "GSE107993"
+# sig_list <- MDP_result;sig_name = "Anderson_42";x = "GSE56153"
 
 setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "character"),
           function(sig_list, sig_name = sig_name, annotationName = "TBStatus"){
@@ -138,17 +140,23 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", sig_name = "character"),
 
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, sig_name){
               sig_data_gse <- sig_data %>% filter(GSE == x)
-
+              sig_data_gse$TBStatus <- factor(sig_data_gse[,"TBStatus"], levels = c("Control", "Latent", "PTB", "OD"))
 
               if(sig_data_gse %>% dplyr::select(sig_name) %>% is.na() %>% all()){return(NULL)}
+
               sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
+
+              # Create a custom color scale to deal with different factors
+              myColors <- RColorBrewer::brewer.pal(4,"Set1")
+              names(myColors) <- levels(sig_data_gse$TBStatus)
 
               p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
                                                             name = x,
                                                             signatureColNames = sig_name,
                                                             annotationColName = annotationName,
                                                             rotateLabels = FALSE,
-                                                            fill_colors = c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
+                                                            fill_colors = myColors)
+                                                            # c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
 
               return(p)
 
@@ -229,19 +237,18 @@ combine_auc <- function(result_list, gset, annotationName = "TBStatus"){
 #' @return Ridge plot with median line
 #'
 #' @examples
-#' aucs_result_dat <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=rnorm(3))
-#' p_ridge <- get_auc_distribution(aucs_result_dat)
+#' aucs_result <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=rnorm(3))
+#' p_ridge <- get_auc_distribution(aucs_result)
 #' @export
-get_auc_distribution <- function(aucs_result_dat){
+get_auc_distribution <- function(aucs_result){
   library(ggplot2)
   library(gridExtra)
   library(ggridges)
 
   # add 50% AUC line
-  aucs_result_dat_lines <- data.frame(Signature = aucs_result_dat$Signature,x0=0.5)
+  aucs_result_dat_lines <- data.frame(Signature = aucs_result$Signature,x0=0.5)
 
-  p_ridge <- ggplot(aucs_result_dat,aes(x=AUC,y=Signature)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) +
-    geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+  p_ridge <- ggplot(aucs_result,aes(x=AUC,y=Signature)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
                                                    yend = as.numeric(Signature) + .9), color = "red")
   return(p_ridge)
 }
