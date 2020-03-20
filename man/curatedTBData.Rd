@@ -3,7 +3,7 @@
 \name{curatedTBData}
 \alias{curatedTBData}
 \alias{curatedTBData,character-method}
-\title{Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570}
+\title{Create curated Tuberculosis transcriptome data from sequencing platform: GPL6947/GPL10558/GPL570}
 \usage{
 curatedTBData(geo_access, ...)
 
@@ -17,5 +17,5 @@ curatedTBData(geo_access, ...)
 \item{plat_access}{A character stands for acession number of squencing platform}
 }
 \description{
-Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570
+Create curated Tuberculosis transcriptome data from sequencing platform: GPL6947/GPL10558/GPL570
 }

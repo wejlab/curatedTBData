@@ -8,7 +8,7 @@
 Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
 experiment=NULL in default
 Output is in the form of SummarizedExperiment format for TBsignatureProfier
-through indication of which assay you are going to work with}
+through indication of which assay you are going to work with.}
 \usage{
 SubsetTBStatus(theObject, ...)
 
@@ -22,20 +22,20 @@ SubsetTBStatus(theObject, ...)
 )
 }
 \arguments{
-\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object}
+\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
 
-\item{...}{Extra named arguments passed to function}
+\item{...}{Extra named arguments passed to function.}
 
-\item{annotationColName}{A character indicates feature of interest in the object's column data}
+\item{annotationColName}{A character indicates feature of interest in the object's column data.}
 
-\item{diseases}{A vector indicates conditions want to subset}
+\item{diseases}{A vector indicates conditions want to subset.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object}
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
 }
 \description{
 Subsetting objects based on single/multiple conditions
 Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
 experiment=NULL in default
 Output is in the form of SummarizedExperiment format for TBsignatureProfier
-through indication of which assay you are going to work with
+through indication of which assay you are going to work with.
 }

@@ -7,10 +7,10 @@
 combine_auc(result_list, gset, annotationName = "TBStatus")
 }
 \arguments{
-\item{result_list}{A list of SummarizedExperiment Object from `runTBsigProfiler`}
+\item{result_list}{A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.}
 }
 \value{
-A data frame with signatures, p-value, and AUC
+A data frame with features including signatures, p-value, and AUC.
 }
 \description{
 Combine results from list. Calculate p-value and AUC values

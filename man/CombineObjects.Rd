@@ -2,18 +2,18 @@
 % Please edit documentation in R/Subsetting.R
 \name{CombineObjects}
 \alias{CombineObjects}
-\title{Combine samples with common genes from selected objects}
+\title{Combine samples with common genes from selected studies, usually run after `MatchProbe`}
 \usage{
-CombineObjects(object_list, gse_name = NULL)
+CombineObjects(object_list, gse_name = NULL, experiment_type = "assay_reduce")
 }
 \arguments{
-\item{object_list}{A list contains expression data with mapped gene symbol}
+\item{object_list}{A list contains expression data with mapped gene symbol.}
 
-\item{gse_name}{A vector contains the name of the objects that you want to combine}
+\item{gse_name}{A charac/vector (GEO accession number) contains object name want to combine.}
 }
 \value{
-A SummarizedExperiment Object contains combined data from several objects
+A SummarizedExperiment Object contains combined data from several objects.
 }
 \description{
-Combine samples with common genes from selected objects
+Combine samples with common genes from selected studies, usually run after `MatchProbe`
 }

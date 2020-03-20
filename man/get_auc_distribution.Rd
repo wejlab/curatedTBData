@@ -7,7 +7,7 @@
 get_auc_distribution(aucs_result)
 }
 \arguments{
-\item{aucs_result_dat}{A dataframe contains AUC and p-value for certain TB signatures across different datasets}
+\item{aucs_result_dat}{A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.}
 }
 \value{
 Ridge plot with median line

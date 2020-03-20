@@ -2,12 +2,24 @@
 % Please edit documentation in R/TBSignatureProfiling.R
 \name{BoxplotTBSig}
 \alias{BoxplotTBSig}
-\title{Boxplot functions for list with Signatures matched for each object (particularly, for inconsistent mattching)
-Also applies to consistent sigantures column names}
+\alias{BoxplotTBSig,list,character-method}
+\title{Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
+Also applies to consistent siganture column names.}
 \usage{
-BoxplotTBSig(sig_list, sig_name, ...)
+BoxplotTBSig(sig_list, gset, ...)
+
+\S4method{BoxplotTBSig}{list,character}(sig_list, gset = gset, annotationName = "TBStatus")
+}
+\arguments{
+\item{sig_list}{List of dataframes contain signature scores across studies. Prduced from `SignatureFilter`}
+
+\item{gset}{A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for examples.}
+
+\item{...}{Extra named arguments passed to function}
+
+\item{annotationColName}{A character indicates feature of interest in column names.}
 }
 \description{
-Boxplot functions for list with Signatures matched for each object (particularly, for inconsistent mattching)
-Also applies to consistent sigantures column names
+Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
+Also applies to consistent siganture column names.
 }

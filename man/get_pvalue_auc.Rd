@@ -7,9 +7,9 @@
 get_pvalue_auc(SE_scored, annotationColName = "TBStaus", signatureColNames)
 }
 \arguments{
-\item{SE_scored}{A summarized experiment from TB signature profiling}
+\item{SE_scored}{A SummarizedExperiment Object from TB signature profiling}
 
-\item{annotationColName}{A character, column name for TB status (default is "Disease")}
+\item{annotationColName}{A character indicates feature of interest in the object's column data}
 
 \item{signatureColNames}{A character or vector that contains gene signature name}
 }

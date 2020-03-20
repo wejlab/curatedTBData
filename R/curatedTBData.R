@@ -1,4 +1,4 @@
-#' Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570
+#' Create curated Tuberculosis transcriptome data from sequencing platform: GPL6947/GPL10558/GPL570
 #' @param geo_access A character stands for GEO accession number of the dataset
 #' @param plat_access A character stands for acession number of squencing platform
 #' @param ... Extra named arguments passed to function
@@ -29,6 +29,7 @@ setMethod("curatedTBData", signature = "character",
 
 #' Functions to create assays and row data from Illumina HumanHT-12 V4.0 expression beadchip
 #' @inheritParams curatedTBData
+#' @export
 .illumina4 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -52,6 +53,7 @@ setMethod("curatedTBData", signature = "character",
 
 #' Functions to create assays and row data from Illumina HumanHT-12 V3.0 expression beadchip
 #' @inheritParams curatedTBData
+#' @export
 .illumina3 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -74,7 +76,7 @@ setMethod("curatedTBData", signature = "character",
 
 #' Affymetrix Human Genome U133 Plus 2.0 Array
 #' @inheritParams curatedTBData
-
+#' @export
 .affy2 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -144,12 +146,7 @@ download_data_Illumina4<- function(geo_access){
 #' download_data_Illumina3("GSE19442")
 #' @export
 download_data_Illumina3<- function(geo_access){
-  # if (!requireNamespace("BiocManager", quietly = TRUE))
-  #  install.packages("BiocManager")
-  # if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
-  #if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
-  #library(dplyr)
-  #library(GEOquery)
+
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
   url_temp <- as.character(urls$url[grep(paste0(geo_access,"_RAW.tar"),urls$url)])
   # After untar, there are several txt files
@@ -214,8 +211,7 @@ download_data_Affy2<- function(geo_access){
 #' Create row data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 #' @name create_RowData
 #' @param dat_download A dataframe object read from `download_data_Illumina4` or `create_data_Illumina3`
-#' @param plat_access A string that indicates platform access number
-#'
+#' @param plat_access A character indicates platform access number
 #' @return A DataFrame object contains the information for each probe ID
 #' @examples
 #' Non_normalized_data <- download_data_Illumina4("GSE19442")
@@ -375,7 +371,7 @@ create_standard_ColData <- function(col_data){
 #################################################
 
 #' Match Description ID to Sample ID in some Illumina 4.0 datasets
-MatchSample <- function(){
+MatchSampleID <- function(){
 
 }
 
