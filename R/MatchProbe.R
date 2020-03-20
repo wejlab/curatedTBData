@@ -1,10 +1,16 @@
-#' Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.
-#'
+#' Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
+#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object,
+#' experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.
+#' @param ... Extra named arguments passed to function.
+#' @rdname MatchProbe
+#' @export
 
 setGeneric(name="MatchProbe", function(theObject,...){
   standardGeneric("MatchProbe")
 })
 
+#' @rdname MatchProbe
 setMethod("MatchProbe",
           signature="SummarizedExperiment",
           function(theObject, experiment_type = "assay_raw"){
@@ -69,7 +75,7 @@ setMethod("MatchProbe",
           }
 )
 
-
+#' @rdname MatchProbe
 setMethod("MatchProbe",
           signature="MultiAssayExperiment",
           function(theObject, experiment_type = c("assay_raw","assay_raw_norm")){
@@ -116,11 +122,11 @@ setMethod("MatchProbe",
 
           })
 
-#' Expand probe set for non-specific probes
+#' Expand probe set for non-specific probes.
 #' @name expandProbesets
 #'
-#' @param dat_example A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample
-#' @return A matrix that split non-uniquely mapped features to one per row
+#' @param dat_example A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.
+#' @return A matrix that split non-uniquely mapped features to one per row.
 #' @examples
 #' dat_example <- data.frame(SYMBOL=c("OR7E14P///OR7E12P","CEP104///LILRA6",
 #' "SNAR-A1///SNAR-A2///SNAR-A12","ALG6"),sample1=rnorm(4),sample2=rnorm(4))

@@ -1,7 +1,15 @@
-#' calculate molecular degree of perturbation scores for selected sample
-
+#' Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
+#' @param gset A vector contians name(s) of the signatures.
+#' @param assay_name A number/character specifying the assay name of the SummarizedExperiment objectt.
+#' @param GSE List of characters specifying the name of the study, usually GEO accession number.
+#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
+#' @param ... Extra named arguments passed to function.
+#' @rdname MDP
+#' @export
 setGeneric("MDP", function(theObject, gset, ...) standardGeneric("MDP"))
 
+#' @rdname Normalization
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
           function(theObject, gset = NULL, assay_name = 1, GSE = GSE){
    # theObject data after normalization
@@ -59,6 +67,7 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 
 })
 
+#' @rdname MDP
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
           function(theObject, gset = NULL, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 
@@ -131,7 +140,7 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 # Evaluate signatures using MDP score
 
 #theObject = MDP_batch; gset = TBsignatures; assay_name = "BacthCorrect"
-
+#' @rdname MDP
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           function(theObject, gset = gset, assay_name = 1){
             # theObject data after normalization
@@ -188,6 +197,7 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           })
 
 
+#' @rdname MDP
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
           function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 

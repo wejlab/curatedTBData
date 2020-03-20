@@ -2,10 +2,44 @@
 % Please edit documentation in R/MDP.R
 \name{MDP}
 \alias{MDP}
-\title{calculate molecular degree of perturbation scores for selected sample}
+\alias{MDP,MultiAssayExperiment,NULL-method}
+\alias{MDP,SummarizedExperiment,list-method}
+\alias{MDP,MultiAssayExperiment,list-method}
+\title{Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.}
 \usage{
 MDP(theObject, gset, ...)
+
+\S4method{MDP}{MultiAssayExperiment,`NULL`}(
+  theObject,
+  gset = NULL,
+  experiment_type = "assay_reduce",
+  assay_name = 1,
+  GSE = GSE
+)
+
+\S4method{MDP}{SummarizedExperiment,list}(theObject, gset = gset, assay_name = 1)
+
+\S4method{MDP}{MultiAssayExperiment,list}(
+  theObject,
+  gset = gset,
+  experiment_type = "assay_reduce",
+  assay_name = 1,
+  GSE = GSE
+)
+}
+\arguments{
+\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+
+\item{gset}{A vector contians name(s) of the signatures.}
+
+\item{...}{Extra named arguments passed to function.}
+
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
+
+\item{assay_name}{A number/character specifying the assay name of the SummarizedExperiment objectt.}
+
+\item{GSE}{List of characters specifying the name of the study, usually GEO accession number.}
 }
 \description{
-calculate molecular degree of perturbation scores for selected sample
+Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
 }

@@ -2,10 +2,24 @@
 % Please edit documentation in R/MatchProbe.R
 \name{MatchProbe}
 \alias{MatchProbe}
-\title{Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.}
+\alias{MatchProbe,SummarizedExperiment-method}
+\alias{MatchProbe,MultiAssayExperiment-method}
+\title{Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.}
 \usage{
 MatchProbe(theObject, ...)
+
+\S4method{MatchProbe}{SummarizedExperiment}(theObject, experiment_type = "assay_raw")
+
+\S4method{MatchProbe}{MultiAssayExperiment}(theObject, experiment_type = c("assay_raw", "assay_raw_norm"))
+}
+\arguments{
+\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+
+\item{...}{Extra named arguments passed to function.}
+
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object,
+experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.}
 }
 \description{
-Match ProbeID to gene symbol by creating MultiAssayExperiement object from SummarizedExperiment/MultiAssayExperiment Object.
+Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 }

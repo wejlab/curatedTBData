@@ -2,12 +2,12 @@
 #' Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
 #' experiment=NULL in default
 #' Output is in the form of SummarizedExperiment format for TBsignatureProfier
-#' through indication of which assay you are going to work with
-#' @param theObject A SummarizedExperiment/MultiAssayExperiment object
-#' @param annotationColName A character indicates feature of interest in the object's column data
-#' @param diseases A vector indicates conditions want to subset
-#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object
-#' @param ... Extra named arguments passed to function
+#' through indication of which assay you are going to work with.
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
+#' @param annotationColName A character indicates feature of interest in the object's column data.
+#' @param diseases A vector indicates conditions want to subset.
+#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
+#' @param ... Extra named arguments passed to function.
 #' @rdname SubsetTBStatus
 #' @export
 
@@ -42,7 +42,7 @@ setMethod("SubsetTBStatus",
 setMethod("SubsetTBStatus",
           signature="MultiAssayExperiment",
 
-          function(theObject,annotationColName, diseases,
+          function(theObject, annotationColName, diseases,
                    experiment_type = c("all", "assay_raw", "assay_reprocess", "assay_reduce")){
 
             # check eligibility
@@ -122,45 +122,24 @@ setMethod("SubsetTBStatus",
 )
 
 
-#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects
-#' @name remove_empty_object
-#' @param k A list contains both SummariexExperiment/MultiAssayExpriment objects
-#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object
-#'
-#' @export
-remove_empty_object <- function(k){
-  x <- k
-  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
-    if(nrow(colData(x[[i]]))==0){
-      x[[i]] <- NA
-    }
-  }
-  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
-    if(length(experiments(x[[j]]))==0){
-      x[[j]] <- NA
-    }
-  }
-  x <- x[!is.na(x)]
-  return(x)
-}
-
-
-
-#' Combine samples with common genes from selected objects
+#' Combine samples with common genes from selected studies, usually run after `MatchProbe`
 #' @name CombineObjects
-#' @param object_list A list contains expression data with mapped gene symbol
-#' @param gse_name A vector contains the name of the objects that you want to combine
-#' @return A SummarizedExperiment Object contains combined data from several objects
-#'
+#' @param object_list A list contains expression data with mapped gene symbol.
+#' @param gse_name A charac/vector (GEO accession number) contains object name want to combine.
+#' @return A SummarizedExperiment Object contains combined data from several objects.
 #'
 #' @export
-CombineObjects <- function(object_list,gse_name=NULL){
+CombineObjects <- function(object_list,gse_name=NULL,
+                           experiment_type = "assay_reduce"){
+
+  experiment_type <- match.arg(experiment_type)
+
   if(is.null(gse_name)){
-    gse_name = names(object_list)
-    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+    gse_name <-  names(object_list)
+    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[[experiment_type]] %>% data.frame)
   }
   else {
-    dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[["assay_reduce"]] %>% data.frame)
+    dat_exprs_match <- lapply(object_list[gse_name], function(x) experiments(x)[[experiment_type]] %>% data.frame)
   }
 
   # Combine sample with common genes from selected objects.
@@ -192,4 +171,26 @@ CombineObjects <- function(object_list,gse_name=NULL){
                                                        colData = col_info)
   return(result)
 
+}
+
+#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects.
+#' @name remove_empty_object
+#' @param k A list contains both SummariexExperiment/MultiAssayExpriment objects.
+#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object.
+#'
+#' @export
+remove_empty_object <- function(k){
+  x <- k
+  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
+    if(nrow(colData(x[[i]]))==0){
+      x[[i]] <- NA
+    }
+  }
+  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
+    if(length(experiments(x[[j]]))==0){
+      x[[j]] <- NA
+    }
+  }
+  x <- x[!is.na(x)]
+  return(x)
 }

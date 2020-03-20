@@ -2,18 +2,18 @@
 % Please edit documentation in R/MatchProbe.R
 \name{expandProbesets}
 \alias{expandProbesets}
-\title{Expand probe set for non-specific probes}
+\title{Expand probe set for non-specific probes.}
 \usage{
 expandProbesets(sobject_exprs_new, sep = "///")
 }
 \arguments{
-\item{dat_example}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample}
+\item{dat_example}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.}
 }
 \value{
-A matrix that split non-uniquely mapped features to one per row
+A matrix that split non-uniquely mapped features to one per row.
 }
 \description{
-Expand probe set for non-specific probes
+Expand probe set for non-specific probes.
 }
 \examples{
 dat_example <- data.frame(SYMBOL=c("OR7E14P///OR7E12P","CEP104///LILRA6",
