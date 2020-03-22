@@ -1,12 +1,13 @@
 #' Create curated Tuberculosis transcriptome data from sequencing platform: GPL6947/GPL10558/GPL570
+#' @name curatedTBData
 #' @param geo_access A character stands for GEO accession number of the dataset
 #' @param plat_access A character stands for acession number of squencing platform
 #' @param ... Extra named arguments passed to function
-#' @rdname curatedTBData
-#' @export
+#' @rdname curatedTBData-methods
+#' @exportMethod curatedTBData
 setGeneric("curatedTBData", function(geo_access, ...) standardGeneric("curatedTBData"))
 
-#' @rdname curatedTBData
+#' @rdname curatedTBData-methods
 setMethod("curatedTBData", signature = "character",
           function(geo_access,plat_access = c("GPL6947", "GPL10558", "GPL570")){
             plat_access <- match.arg(plat_access)
@@ -370,18 +371,22 @@ create_standard_ColData <- function(col_data){
 
 #################################################
 
-#' Match Description ID to Sample ID in some Illumina 4.0 datasets
-MatchSampleID <- function(){
+# Match Description ID to Sample ID in some Illumina 4.0 datasets
+#MatchSampleID <- function(){
 
-}
+#}
 
 #########################################################
 
 #' Create SummarizedExperiment object
+#' @name Sobject
 #' @slot assay A matrix contatins gene expression data
 #' @slot row_data A DataFrame contains gene information
 #' @slot column_data A DataFrame contains sample information
 #' @slot meta_data A MIAME class contains experiment information
+#' @rdname Sobject-class
+#' @importClassesFrom Biobase MIAME
+#' @exportClass Sobject
 Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame",
                                          column_data  = "data.frame", meta_data = "MIAME"),
                     prototype=list(assay = matrix(c(1, 2, 3, 11, 12, 13), nrow = 2, ncol = 3, byrow = TRUE,
@@ -406,11 +411,15 @@ Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame
 #########################################################
 
 #' Create MultiAssay Experiment object
+#' @name Mobject
 #' @slot assay_reprocess A matrix contatins gene expression data
 #' @slot assay_raw Another matrix contatins gene expression data
 #' @slot row_data A DataFrame contains gene expression data with different dimensions
 #' @slot column_data A DataFrame contains sample information
 #' @slot meta_data A MIAME class contains experiment information
+#' @rdname Mobject-class
+#' @importClassesFrom Biobase MIAME
+#' @exportClass Mobject
 Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix", row_data = "data.frame",primary = "data.frame",meta_data = "MIAME"),
                     prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3, byrow = TRUE, dimnames = list(c("AZA","BBD","CCS"),
                                                                                                               c("S.1","S.2","S.3","S.4"))),
@@ -427,16 +436,18 @@ Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw =
                         return("row names in the assay must be the same as ID_REF in the row data")
                       }
                     })
+
 #' Create SummarizedExperiment/MultiAssayExperiment object
+#' @name CreateObject
 #' @param theObject A class either Sobject or Mobject
 #' @param ... Extra named arguments passed to function
-#' @rdname CreateObject
-#' @export
+#' @rdname CreateObject-methods
+#' @exportMethod CreateObject
 setGeneric(name="CreateObject", function(theObject,...){
   standardGeneric("CreateObject")
 })
 
-#' @rdname CreateObject
+#' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Sobject",
           function(theObject){
@@ -451,7 +462,7 @@ setMethod("CreateObject",
 # kkk = Sobject()
 # CreateSobject(kkk)
 
-#' @rdname CreateObject
+#' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Mobject",
           function(theObject,assay_type = "assay_reprocess"){

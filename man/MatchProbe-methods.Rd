@@ -4,7 +4,7 @@
 \alias{MatchProbe}
 \alias{MatchProbe,SummarizedExperiment-method}
 \alias{MatchProbe,MultiAssayExperiment-method}
-\title{Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.}
+\title{S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.}
 \usage{
 MatchProbe(theObject, ...)
 
@@ -21,5 +21,5 @@ MatchProbe(theObject, ...)
 experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.}
 }
 \description{
-Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 }
