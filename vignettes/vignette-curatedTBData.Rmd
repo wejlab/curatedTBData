@@ -22,6 +22,10 @@ if (! "plyr" %in% installed.packages()) install.packages("plyr")
 if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github("aubreyodom/TBSignatureProfiler")
 ```
 
+```{r install curatedTBData, eval = FALSE}
+devtools::install_github("xutao-wang/curatedTBData")
+```
+
 ```{r libraries, message=FALSE}
 # Alphabetic order
 library(BiocParallel)
@@ -43,9 +47,9 @@ library(TBSignatureProfiler)
 # library(magick)
 # Load probe db
 
-devtools::load_all(".")
 library(curatedTBData)
 ```
+
 
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 
@@ -62,11 +66,11 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 
 # Get a list of all data
-data(list=list_files) # Takes some time...
+data(list=list_files) 
 strobject <- ls(pattern="*object$")
 
 # Create a list for loaded data for metadata analysis
-objects_list <- lapply(strobject, function(x) get(x))
+objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
 objects_name <- gsub("_.*","",strobject)
 names(objects_list) <- objects_name
 
@@ -288,7 +292,9 @@ combat_edata1 <- sva::ComBat(dat=assays(result)[[1]], batch=batch1, mod=mod1)
 # Add batch corrected data as a new assay to the orginal SummarizedExperiment
 assays(result)[["BacthCorrect"]] <- combat_edata1
 ```
+
 Boxplot before Batch correction
+
 ```{r, fig.width=8, fig.height=6, warning=FALSE}
 boxplot(assays(result)[[1]])
 ```
@@ -301,7 +307,7 @@ boxplot(assays(result)[[2]])
 
 ## Molecular Degree of Perturbation (MDP) for Batch Corrected Data
 Recall the list of studies that have control samples. We could either pick up some data from the data for batch correction or use all of them. Next we will use all the available 21 studies. Function `CombineObjects` enables us to combine studies from different sources/platforms by intersecting commone genes from each dataset. The output data can be used for batch correction.
-```{r, cache=TRUE, message=FALSE, warning=FALSE}
+```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message=FALSE, warning=FALSE}
 # Batch correction
 # remove GSE74092 becuase it only has about matched gene symbol
 MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")]) 

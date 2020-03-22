@@ -1,16 +1,18 @@
-#' Match ProbeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+#' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+#' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object,
 #' experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.
 #' @param ... Extra named arguments passed to function.
-#' @rdname MatchProbe
-#' @export
+#' @rdname MatchProbe-methods
+#' @exportMethod MatchProbe
 
 setGeneric(name="MatchProbe", function(theObject,...){
   standardGeneric("MatchProbe")
 })
 
-#' @rdname MatchProbe
+#' @rdname MatchProbe-methods
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MatchProbe",
           signature="SummarizedExperiment",
           function(theObject, experiment_type = "assay_raw"){
@@ -75,7 +77,8 @@ setMethod("MatchProbe",
           }
 )
 
-#' @rdname MatchProbe
+#' @rdname MatchProbe-methods
+#' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MatchProbe",
           signature="MultiAssayExperiment",
           function(theObject, experiment_type = c("assay_raw","assay_raw_norm")){

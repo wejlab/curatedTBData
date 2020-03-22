@@ -3,19 +3,20 @@
 #' experiment=NULL in default
 #' Output is in the form of SummarizedExperiment format for TBsignatureProfier
 #' through indication of which assay you are going to work with.
+#' @name SubsetTBStatus
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param diseases A vector indicates conditions want to subset.
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
 #' @param ... Extra named arguments passed to function.
-#' @rdname SubsetTBStatus
-#' @export
+#' @rdname SubsetTBStatus-methods
+#' @exportMethod SubsetTBStatus
 
 setGeneric(name="SubsetTBStatus", function(theObject,...){
   standardGeneric("SubsetTBStatus")
 })
 
-#' @rdname SubsetTBStatus
+#' @rdname SubsetTBStatus-methods
 setMethod("SubsetTBStatus",
           signature="SummarizedExperiment",
           function(theObject,annotationColName, diseases, ...){
@@ -38,7 +39,7 @@ setMethod("SubsetTBStatus",
           }
 )
 
-#' @rdname SubsetTBStatus
+#' @rdname SubsetTBStatus-methods
 setMethod("SubsetTBStatus",
           signature="MultiAssayExperiment",
 

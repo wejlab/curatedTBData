@@ -1,15 +1,22 @@
-#' Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
+#' @import methods
+NULL
+#' @importFrom methods setClass setGeneric setMethod setRefClass
+NULL
+
+#' S4 Method calcualtes molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
+#' @name MDP
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param gset A vector contians name(s) of the signatures.
 #' @param assay_name A number/character specifying the assay name of the SummarizedExperiment objectt.
 #' @param GSE List of characters specifying the name of the study, usually GEO accession number.
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
 #' @param ... Extra named arguments passed to function.
-#' @rdname MDP
-#' @export
+#' @rdname MDP-methods
+#' @exportMethod MDP
 setGeneric("MDP", function(theObject, gset, ...) standardGeneric("MDP"))
 
-#' @rdname Normalization
+#' @rdname MDP-methods
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
           function(theObject, gset = NULL, assay_name = 1, GSE = GSE){
    # theObject data after normalization
@@ -67,12 +74,13 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 
 })
 
-#' @rdname MDP
+#' @rdname MDP-methods
+#' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
           function(theObject, gset = NULL, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
-            col_data = colData(theObject)
+            col_data <- MultiAssayExperiment:: colData(theObject)
             if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
               index <- sapply(1:length(colnames(theObject[[experiment_type]])), function (i)
                 which(row.names(col_data) %in% colnames(theObject[[experiment_type]])[i]))
@@ -83,9 +91,9 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
             theObject <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(theObject[[experiment_type]])), colData = col_data)
 
             # Everything follows the summarized Experiment
-            counts <- assays(theObject)[[assay_name]]
+            counts <- SummarizedExperiment::assays(theObject)[[assay_name]]
             # select the reference group, calculate mean and sd
-            theObject_ref <- assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
+            theObject_ref <- SummarizedExperiment::assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
             mean_ref <- apply(theObject_ref, 1, mean)
             sd_ref <- apply(theObject_ref, 1, sd)
 
@@ -140,7 +148,9 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 # Evaluate signatures using MDP score
 
 #theObject = MDP_batch; gset = TBsignatures; assay_name = "BacthCorrect"
-#' @rdname MDP
+
+#' @rdname MDP-methods
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           function(theObject, gset = gset, assay_name = 1){
             # theObject data after normalization
@@ -197,12 +207,13 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           })
 
 
-#' @rdname MDP
+#' @rdname MDP-methods
+#' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
           function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
-            col_data <-  colData(theObject)
+            col_data <- MultiAssayExperiment::colData(theObject)
             if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
               index <- sapply(1:length(colnames(theObject[[experiment_type]])), function (i)
                 which(row.names(col_data) %in% colnames(theObject[[experiment_type]])[i]))

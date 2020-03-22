@@ -2,12 +2,15 @@
 % Please edit documentation in R/MDP.R
 \name{MDP}
 \alias{MDP}
+\alias{MDP,SummarizedExperiment,NULL-method}
 \alias{MDP,MultiAssayExperiment,NULL-method}
 \alias{MDP,SummarizedExperiment,list-method}
 \alias{MDP,MultiAssayExperiment,list-method}
-\title{Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.}
+\title{S4 Method calcualtes molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.}
 \usage{
 MDP(theObject, gset, ...)
+
+\S4method{MDP}{SummarizedExperiment,`NULL`}(theObject, gset = NULL, assay_name = 1, GSE = GSE)
 
 \S4method{MDP}{MultiAssayExperiment,`NULL`}(
   theObject,
@@ -34,12 +37,12 @@ MDP(theObject, gset, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
-
 \item{assay_name}{A number/character specifying the assay name of the SummarizedExperiment objectt.}
 
 \item{GSE}{List of characters specifying the name of the study, usually GEO accession number.}
+
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
 }
 \description{
-Calculate molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
+S4 Method calcualtes molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.
 }

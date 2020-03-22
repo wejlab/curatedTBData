@@ -1,16 +1,17 @@
 #######################################
 #' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
+#' @name SignatureFilter
 #' @param sig_list SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.
 #' @param gset A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param ... Extra named arguments passed to function.
-#' @rdname SignatureFilter
-#' @export
+#' @rdname SignatureFilter-methods
+#' @exportMethod SignatureFilter
 setGeneric(name="SignatureFilter", function(sig_list, gset,...){
   standardGeneric("SignatureFilter")
 })
 
-#' @rdname SignatureFilter
+#' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "list"),
           function(sig_list, gset, annotationColName="TBStatus"){
@@ -28,7 +29,7 @@ setMethod("SignatureFilter",
           }
 )
 
-#' @rdname SignatureFilter
+#' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
           function(sig_list, gset, annotationColName="TBStatus"){
@@ -47,7 +48,7 @@ setMethod("SignatureFilter",
 )
 # tt = SignatureFilter(ssgsea_PTB_Latent,TBsignatures)
 
-#' @rdname SignatureFilter
+#' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
           function(sig_list, gset, annotationColName="TBStatus"){
@@ -69,7 +70,7 @@ setMethod("SignatureFilter",
 
 # k = SignatureFilter(ssgsea_PTB_Latent,"Anderson_42")
 
-#' @rdname SignatureFilter
+#' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature (sig_list = "SummarizedExperiment", gset = "list"),
           function(sig_list, gset, GSE, annotationColName="TBStatus"){
@@ -82,7 +83,7 @@ setMethod("SignatureFilter",
 
 # kk = SignatureFilter(ssgsea_PTB_Latent[[1]],TBsignatures, GSE="test")
 
-#' @rdname SignatureFilter
+#' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature(sig_list = "SummarizedExperiment", gset = "character"),
           function(sig_list, gset, GSE, annotationColName="TBStatus"){
@@ -101,19 +102,20 @@ setMethod("SignatureFilter",
 
 #' Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
 #' Also applies to consistent siganture column names.
+#' @name BoxplotTBSig
 #' @param sig_list List of dataframes contain signature scores across studies. Prduced from `SignatureFilter`
 #' @param gset A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for examples.
 #' @param annotationColName A character indicates feature of interest in column names.
 #' @param ... Extra named arguments passed to function
-#' @rdname BoxplotTBSig
-#' @export
+#' @rdname BoxplotTBSig-methods
+#' @exportMethod BoxplotTBSig
 
 setGeneric("BoxplotTBSig", function(sig_list, gset, ...) standardGeneric("BoxplotTBSig"))
 
 # sig_list <- MDP_result_NULL;x <- "GSE107993";annotationName = "TBStatus"
 # sig_list <- MDP_result;gset = "Anderson_42";x = "GSE56153"
 
-#' @rdname BoxplotTBSig
+#' @rdname BoxplotTBSig-methods
 setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
           function(sig_list, gset = gset, annotationName = "TBStatus"){
 
