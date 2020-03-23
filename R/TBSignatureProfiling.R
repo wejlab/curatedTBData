@@ -140,8 +140,14 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
                                                             rotateLabels = FALSE,
                                                             fill_colors = myColors)
                                                             # c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
+              p1 <- p + theme(plot.title = ggplot2::element_text(size=26, face="bold"),
+                              legend.title = element_blank(),
+                              legend.position = "none",
+                              legend.text = ggplot2::element_text(size=20),
+                              axis.text.x = ggplot2::element_text(colour="Black", size=26, hjust = 0.5, face="bold"),
+                              axis.text.y = ggplot2::element_text(size=20, angle = 0, hjust = 0.5))
 
-              return(p)
+              return(p1)
 
 
             }, gset)
@@ -154,6 +160,42 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             library(ggplot2)
             p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
             return(p_combine)
+          })
+
+
+#' @rdname BoxplotTBSig-methods
+# sig_list <- MDP_batch_result;gset <- names(TBsignatures);annotationName = "TBStatus"
+setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"),
+          function(sig_list, gset = gset, annotationName = "TBStatus"){
+
+            sig_data <- sig_list
+            signatureColNames <- colnames(sig_data)[na.omit(match(gset, colnames(sig_data)))]
+
+            sig_data$annotationNameLevels <- factor(sig_data[,annotationName], levels = c("Control", "Latent", "PTB", "OD"))
+            myColors <- RColorBrewer::brewer.pal(4,"Set1")
+            names(myColors) <- levels(sig_data$annotationNameLevels)
+
+            sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data)
+
+
+            p <- TBSignatureProfiler::signatureBoxplot(
+              inputData = sig_data1,
+              name = NULL,
+              signatureColNames = signatureColNames,
+              annotationColName = "annotationNameLevels",
+              rotateLabels = FALSE,
+              fill_colors = myColors)
+            p1 <- p + theme(plot.title = ggplot2::element_text(size=26, face="bold"),
+                            strip.text = element_text(size=26, face="bold"),
+                            legend.title = element_blank(),
+                            legend.position = "none",
+                            legend.text = ggplot2::element_text(size=20),
+                            axis.text.x = ggplot2::element_text(colour="Black", size=24, hjust = 0.5, face="bold"),
+                            axis.text.y = ggplot2::element_text(size=22, angle = 0, hjust = 0.5))
+
+            return(p1)
+
+
           })
 
 
