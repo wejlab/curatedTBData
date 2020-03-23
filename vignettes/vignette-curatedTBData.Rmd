@@ -44,9 +44,6 @@ library(sva)
 library(TBSignatureProfiler)
 
 
-# library(magick)
-# Load probe db
-
 library(curatedTBData)
 ```
 
@@ -61,8 +58,7 @@ Insert introduction/background infrmation about this data package
 
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
-```{r load list of sobject, message=FALSE}
-# Load the pacakge
+```{r load list of datasets, message=FALSE}
 list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 
 # Get a list of all data
@@ -216,7 +212,7 @@ ssgsea_PTB_Latent1 <- SignatureFilter(ssgsea_PTB_Latent, TBsignatures, annotatio
 
 ### Boxplot of all scores signatures{.tabset}
 
-```{r Boxplot for each signature PTB vs. Latent, results = "asis", message = FALSE, fig.height = 25, fig.width=28}
+```{r Boxplot for each signature PTB vs. Latent, results = "asis", message = FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -255,7 +251,7 @@ MDP_result_NULL <- lapply(1:length(MDP_control), function(x) MDP(MDP_control[[x]
 
 ### Boxplot for MDP{.tabset}
 
-```{r, results = "asis", message = FALSE, fig.height = 28, fig.width=30}
+```{r, results = "asis", message = FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -268,7 +264,7 @@ for (i in names(TBsignatures)){
 
 #### Default 
 
-```{r, results = "asis", message = FALSE, fig.height = 28, fig.width=30}
+```{r, results = "asis", message = FALSE, warning=FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE}
 BoxplotTBSig(MDP_result_NULL, gset = "sMDP", annotationName = "TBStatus")
 # sMDP is the annotation column name from MDP_result_NULL
 ```
@@ -280,7 +276,7 @@ BoxplotTBSig(MDP_result_NULL, gset = "sMDP", annotationName = "TBStatus")
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object.
 ```{r, message=FALSE}
 # Select the objects you want to combine
-# Randomly pick 2 from RNA-seq,2 from microaray
+# Randomly pick 2 from RNA-seq,2 from microarray
 result <- CombineObjects(object_match, gse_name=c("GSE101705","GSE107104", "GSE54992", "GSE19444"), experiment_type="assay_reduce") 
 # output is a SummarizedExperiment Object
 
@@ -307,7 +303,7 @@ boxplot(assays(result)[[2]])
 
 ## Molecular Degree of Perturbation (MDP) for Batch Corrected Data
 Recall the list of studies that have control samples. We could either pick up some data from the data for batch correction or use all of them. Next we will use all the available 21 studies. Function `CombineObjects` enables us to combine studies from different sources/platforms by intersecting commone genes from each dataset. The output data can be used for batch correction.
-```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message=FALSE, warning=FALSE}
+```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message = FALSE, warning = FALSE, results = "hide"}
 # Batch correction
 # remove GSE74092 becuase it only has about matched gene symbol
 MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")]) 
@@ -334,32 +330,15 @@ MDP_batch_ssgsea <- TBSignatureProfiler::runTBsigProfiler(input = MDP_batch,
 
 ### Boxplot for Batch Corrected MDP
 
-```{r, cache=TRUE, results = "asis", message = FALSE, warning = FALSE, fig.height = 32, fig.width=32}
+```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32}
 # 5 levels of TBStatus: Control/Laent/OD/PTB
 # Create SummarizedExperiment Object to make it compaticble with the function
-MDP_batch_result$TBStatus <- factor(MDP_batch_result$TBStatus, levels = c("Control", "Latent", "PTB", "OD"))
-myColors <- RColorBrewer::brewer.pal(4,"Set1")
-names(myColors) <- levels(MDP_batch_result$TBStatus)
-              
-TBSignatureProfiler::signatureBoxplot(
-               inputData = SummarizedExperiment(colData = MDP_batch_result),
-               name = "Boxplot for Batch Corrected MDP",
-               signatureColNames = colnames(MDP_batch_result)[-ncol(MDP_batch_result)],
-               annotationColName = "TBStatus",
-               rotateLabels = FALSE,
-               fill_colors = myColors)
+
+BoxplotTBSig(MDP_batch_result, gset = names(TBsignatures), annotationName = "TBStatus")
 ```
 
 ### Boxplot for batch corrected ssGSEA
-```{r, results = "asis", message = FALSE, warning = FALSE, fig.height = 32, fig.width=32}
-index <- grep("Sloot_HIV_2|Suliman_RISK_4", names(TBsignatures))
-TBSignatureProfiler::signatureBoxplot(
-                        inputData = SummarizedExperiment(colData = colData(MDP_batch_ssgsea)),
-                                name = "Boxplot for Batch Corrected MDP",
-                                signatureColNames = names(TBsignatures)[-index],
-                                annotationColName = "TBStatus",
-                                rotateLabels = FALSE,
-                                fill_colors = myColors)
-
+```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32}
+BoxplotTBSig(data.frame(colData(MDP_batch_ssgsea)), gset = names(TBsignatures), annotationName = "TBStatus")
 ```
 
