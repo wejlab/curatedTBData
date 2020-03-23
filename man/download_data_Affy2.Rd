@@ -2,7 +2,7 @@
 % Please edit documentation in R/curatedTBData.R
 \name{download_data_Affy2}
 \alias{download_data_Affy2}
-\title{Download data from Affymetrix Microarray.}
+\title{Download data from Affymetrix Human Genome U133 Plus 2.0 Array.}
 \usage{
 download_data_Affy2(geo_access)
 }
@@ -13,7 +13,7 @@ download_data_Affy2(geo_access)
 A dataframe that contains non-normalized read counts.
 }
 \description{
-Download data from Affymetrix Microarray.
+Download data from Affymetrix Human Genome U133 Plus 2.0 Array.
 }
 \examples{
 download_data_Affy2("GSE36238")

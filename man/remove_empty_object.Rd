@@ -2,16 +2,16 @@
 % Please edit documentation in R/Subsetting.R
 \name{remove_empty_object}
 \alias{remove_empty_object}
-\title{Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects}
+\title{Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects.}
 \usage{
 remove_empty_object(k)
 }
 \arguments{
-\item{k}{A list contains both SummariexExperiment/MultiAssayExpriment objects}
+\item{k}{A list contains both SummariexExperiment/MultiAssayExpriment objects.}
 }
 \value{
-A list contains non-empty SummariexExperiment/MultiAssayExpriment object
+A list contains non-empty SummariexExperiment/MultiAssayExpriment object.
 }
 \description{
-Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects
+Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects.
 }

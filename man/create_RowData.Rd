@@ -9,7 +9,7 @@ create_RowData(dat_download, plat_access)
 \arguments{
 \item{dat_download}{A dataframe object read from `download_data_Illumina4` or `create_data_Illumina3`}
 
-\item{plat_access}{A string that indicates platform access number}
+\item{plat_access}{A character indicates platform access number}
 }
 \value{
 A DataFrame object contains the information for each probe ID
