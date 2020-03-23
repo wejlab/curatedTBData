@@ -1,7 +1,13 @@
-#' Create curated Tuberculosis transcriptome data from GPL6947/GPL10558/GPL570
-
+#' Create curated Tuberculosis transcriptome data from sequencing platform: GPL6947/GPL10558/GPL570
+#' @name curatedTBData
+#' @param geo_access A character stands for GEO accession number of the dataset
+#' @param plat_access A character stands for acession number of squencing platform
+#' @param ... Extra named arguments passed to function
+#' @rdname curatedTBData-methods
+#' @exportMethod curatedTBData
 setGeneric("curatedTBData", function(geo_access, ...) standardGeneric("curatedTBData"))
 
+#' @rdname curatedTBData-methods
 setMethod("curatedTBData", signature = "character",
           function(geo_access,plat_access = c("GPL6947", "GPL10558", "GPL570")){
             plat_access <- match.arg(plat_access)
@@ -22,6 +28,9 @@ setMethod("curatedTBData", signature = "character",
 
           })
 
+#' Functions to create assays and row data from Illumina HumanHT-12 V4.0 expression beadchip
+#' @inheritParams curatedTBData
+#' @export
 .illumina4 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -43,6 +52,9 @@ setMethod("curatedTBData", signature = "character",
 
 }
 
+#' Functions to create assays and row data from Illumina HumanHT-12 V3.0 expression beadchip
+#' @inheritParams curatedTBData
+#' @export
 .illumina3 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -63,6 +75,9 @@ setMethod("curatedTBData", signature = "character",
 
 }
 
+#' Affymetrix Human Genome U133 Plus 2.0 Array
+#' @inheritParams curatedTBData
+#' @export
 .affy2 <- function(geo_access, plat_access){
 
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
@@ -132,12 +147,7 @@ download_data_Illumina4<- function(geo_access){
 #' download_data_Illumina3("GSE19442")
 #' @export
 download_data_Illumina3<- function(geo_access){
-  # if (!requireNamespace("BiocManager", quietly = TRUE))
-  #  install.packages("BiocManager")
-  # if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
-  #if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
-  #library(dplyr)
-  #library(GEOquery)
+
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
   url_temp <- as.character(urls$url[grep(paste0(geo_access,"_RAW.tar"),urls$url)])
   # After untar, there are several txt files
@@ -166,7 +176,7 @@ download_data_Illumina3<- function(geo_access){
 
 #####################################################
 
-#' Download data from Affymetrix Microarray.
+#' Download data from Affymetrix Human Genome U133 Plus 2.0 Array.
 #' @name download_data_Affy2
 #'
 #' @param geo_access A character that contains GEO accession number.
@@ -202,8 +212,7 @@ download_data_Affy2<- function(geo_access){
 #' Create row data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 #' @name create_RowData
 #' @param dat_download A dataframe object read from `download_data_Illumina4` or `create_data_Illumina3`
-#' @param plat_access A string that indicates platform access number
-#'
+#' @param plat_access A character indicates platform access number
 #' @return A DataFrame object contains the information for each probe ID
 #' @examples
 #' Non_normalized_data <- download_data_Illumina4("GSE19442")
@@ -362,14 +371,22 @@ create_standard_ColData <- function(col_data){
 
 #################################################
 
-#' Match Description ID to Sample ID in some Illumina 4.0 datasets
-MatchSample <- function(){
+# Match Description ID to Sample ID in some Illumina 4.0 datasets
+#MatchSampleID <- function(){
 
-}
+#}
 
 #########################################################
 
-#' Create Summarized Experiment object
+#' Create SummarizedExperiment object
+#' @name Sobject
+#' @slot assay A matrix contatins gene expression data
+#' @slot row_data A DataFrame contains gene information
+#' @slot column_data A DataFrame contains sample information
+#' @slot meta_data A MIAME class contains experiment information
+#' @rdname Sobject-class
+#' @importClassesFrom Biobase MIAME
+#' @exportClass Sobject
 Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame",
                                          column_data  = "data.frame", meta_data = "MIAME"),
                     prototype=list(assay = matrix(c(1, 2, 3, 11, 12, 13), nrow = 2, ncol = 3, byrow = TRUE,
@@ -394,6 +411,15 @@ Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame
 #########################################################
 
 #' Create MultiAssay Experiment object
+#' @name Mobject
+#' @slot assay_reprocess A matrix contatins gene expression data
+#' @slot assay_raw Another matrix contatins gene expression data
+#' @slot row_data A DataFrame contains gene expression data with different dimensions
+#' @slot column_data A DataFrame contains sample information
+#' @slot meta_data A MIAME class contains experiment information
+#' @rdname Mobject-class
+#' @importClassesFrom Biobase MIAME
+#' @exportClass Mobject
 Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix", row_data = "data.frame",primary = "data.frame",meta_data = "MIAME"),
                     prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3, byrow = TRUE, dimnames = list(c("AZA","BBD","CCS"),
                                                                                                               c("S.1","S.2","S.3","S.4"))),
@@ -411,10 +437,17 @@ Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw =
                       }
                     })
 
+#' Create SummarizedExperiment/MultiAssayExperiment object
+#' @name CreateObject
+#' @param theObject A class either Sobject or Mobject
+#' @param ... Extra named arguments passed to function
+#' @rdname CreateObject-methods
+#' @exportMethod CreateObject
 setGeneric(name="CreateObject", function(theObject,...){
   standardGeneric("CreateObject")
 })
 
+#' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Sobject",
           function(theObject){
@@ -429,6 +462,7 @@ setMethod("CreateObject",
 # kkk = Sobject()
 # CreateSobject(kkk)
 
+#' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Mobject",
           function(theObject,assay_type = "assay_reprocess"){

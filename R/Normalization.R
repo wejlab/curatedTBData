@@ -1,15 +1,21 @@
 #' Normalization for microarray and RNA-seq transcriptome data.
-
+#' @name Normalization
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
+#' @param method character string specifying the normalization method to be used. See `limma::normalizeBetweenArrays` for microarray, and `edgeR::TMM` for RNA sequence data.
+#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
+#' @param ... Extra named arguments passed to function.
+#' @rdname Normalization-methods
+#' @exportMethod Normalization
 setGeneric(name="Normalization", function(theObject,...){
   standardGeneric("Normalization")
 })
 
 # theObject <- GSE39939_sobject
-
+#' @rdname Normalization-methods
 setMethod("Normalization",
           signature="SummarizedExperiment",
 
-          function(theObject,method = "quantile", experiment_type = "assay_raw"){
+          function(theObject, method = "quantile", ...){
 
             # check whether the object has been normalized.
             norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"),
@@ -37,10 +43,12 @@ setMethod("Normalization",
           }
 )
 
+#' @rdname Normalization-methods
 setMethod("Normalization",
           signature = "MultiAssayExperiment",
-          function(theObject, experiment_type = "assay_raw",method = "TMM"){
+          function(theObject, experiment_type = c("assay_raw","assay_reprocess"), method = "TMM"){
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
+            experiment_type <- match.arg(experiment_type)
             if (experiment_type == "assay_raw"){
               counts <- assays(experiments(theObject)[[experiment_type]])[[1]]
               counts[counts<10] <- 10
@@ -78,6 +86,5 @@ setMethod("Normalization",
           }
 )
 
-#' Remove outliers using arrayQualityMetrics R package
-#'
-#'
+# Remove outliers using arrayQualityMetrics R package
+
