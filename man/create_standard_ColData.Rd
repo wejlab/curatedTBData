@@ -18,5 +18,5 @@ Make column information consitent across dataset
 \examples{
 gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
 col_data <- create_ColData("GSE39939",gse)
-col_data_new <- create_new_ColData(col_data)
+col_data_new <- create_standard_ColData(col_data)
 }

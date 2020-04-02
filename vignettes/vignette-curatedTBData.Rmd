@@ -26,6 +26,21 @@ if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github(
 devtools::install_github("xutao-wang/curatedTBData")
 ```
 
+This package requires large memory to process the curatedTBData. Please increase R script memory before running this vignette. 
+[Increase memory for Macs](https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached)
+Step 1: Open terminal
+Step 2:
+```{r, engine='bash', eval=FALSE}
+cd ~
+touch .Renviron
+open .Renviron
+```
+Step 3: Save the following as the first line of .Renviron:
+```{r, engine='bash', eval=FALSE}
+R_MAX_VSIZE=50Gb 
+```
+
+
 ```{r libraries, message=FALSE}
 # Alphabetic order
 library(BiocParallel)
@@ -43,10 +58,8 @@ library(SummarizedExperiment)
 library(sva)
 library(TBSignatureProfiler)
 
-
 library(curatedTBData)
 ```
-
 
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 
@@ -306,6 +319,7 @@ Recall the list of studies that have control samples. We could either pick up so
 ```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message = FALSE, warning = FALSE, results = "hide"}
 # Batch correction
 # remove GSE74092 becuase it only has about matched gene symbol
+# because GSE74092 used quantitative PCR because they did not have enough coverage to capture all genes
 MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")]) 
 
 # Batch Correction

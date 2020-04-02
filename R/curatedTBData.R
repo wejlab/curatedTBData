@@ -310,7 +310,7 @@ create_RowData <- function(dat_download, plat_access){
 #'
 #' @examples
 #' gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
-#' create_ColData_Illumina4("GSE39939",gse)
+#' create_ColData("GSE39939",gse)
 #'
 #' @export
 create_ColData <- function(geo_access,gse){
@@ -340,7 +340,7 @@ create_ColData <- function(geo_access,gse){
 #' @examples
 #' gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
 #' col_data <- create_ColData("GSE39939",gse)
-#' col_data_new <- create_new_ColData(col_data)
+#' col_data_new <- create_standard_ColData(col_data)
 #' @export
 create_standard_ColData <- function(col_data){
   ## Import standard name sequence
@@ -414,13 +414,13 @@ Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "data.frame
 #' @name Mobject
 #' @slot assay_reprocess A matrix contatins gene expression data
 #' @slot assay_raw Another matrix contatins gene expression data
-#' @slot row_data A DataFrame contains gene expression data with different dimensions
-#' @slot column_data A DataFrame contains sample information
+#' @slot row_data A data.frame contains gene expression data with different dimensions
+#' @slot primary A data.frame contains sample information
 #' @slot meta_data A MIAME class contains experiment information
 #' @rdname Mobject-class
 #' @importClassesFrom Biobase MIAME
 #' @exportClass Mobject
-Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix", row_data = "data.frame",primary = "data.frame",meta_data = "MIAME"),
+Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix", row_data = "data.frame", primary = "data.frame", meta_data = "MIAME"),
                     prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3, byrow = TRUE, dimnames = list(c("AZA","BBD","CCS"),
                                                                                                               c("S.1","S.2","S.3","S.4"))),
                                      assay_raw = matrix(c(1, 2, 3, 11, 12, 13), nrow = 2, ncol = 3, byrow = TRUE,
