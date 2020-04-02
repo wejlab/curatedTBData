@@ -14,9 +14,9 @@ Create MultiAssay Experiment object
 
 \item{\code{assay_raw}}{Another matrix contatins gene expression data}
 
-\item{\code{row_data}}{A DataFrame contains gene expression data with different dimensions}
+\item{\code{row_data}}{A data.frame contains gene expression data with different dimensions}
 
-\item{\code{column_data}}{A DataFrame contains sample information}
+\item{\code{primary}}{A data.frame contains sample information}
 
 \item{\code{meta_data}}{A MIAME class contains experiment information}
 }}

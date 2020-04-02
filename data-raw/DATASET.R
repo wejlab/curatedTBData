@@ -67,3 +67,6 @@ add_new_data_mobject(edit_files)
 # Add 1 data on Mar. 1st
 GSEXXXXX_sobject <- readRDS("data-raw/GSEXXXXX_sobject.RDS")
 usethis::use_data(GSEXXXXX_sobject)
+
+# Modify GSE112104 on Apr. 1st
+add_new_data_mobject("GSE112104_mobject.RDS")
