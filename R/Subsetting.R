@@ -126,12 +126,13 @@ setMethod("SubsetTBStatus",
 #' Combine samples with common genes from selected studies, usually run after `MatchProbe`
 #' @name CombineObjects
 #' @param object_list A list contains expression data with mapped gene symbol.
-#' @param gse_name A charac/vector (GEO accession number) contains object name want to combine.
+#' @param gse_name A character/vector (GEO accession number) contains object name want to combine.
+#' @param experiment_type A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
 #'
 #' @export
 CombineObjects <- function(object_list,gse_name=NULL,
-                           experiment_type = "assay_reduce"){
+                           experiment_type = c("assay_reduce","assay_reprocess_norm")){
 
   experiment_type <- match.arg(experiment_type)
 

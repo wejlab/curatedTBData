@@ -72,7 +72,7 @@ setMethod("Normalization",
               # log2 transformed data
               counts <- log(counts,base=2)
 
-              NormFactor <- calcNormFactors(counts, method = method)
+              NormFactor <- edgeR::calcNormFactors(counts, method = method)
               ScaleFactors <- colSums(counts) * NormFactor
 
               Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))

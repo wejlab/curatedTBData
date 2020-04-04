@@ -10,23 +10,15 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-if (! "BiocParallel" %in% installed.packages()) BiocManager::install("BiocParallel")
-if (! "SummarizedExperiment" %in% installed.packages()) BiocManager::install("SummarizedExperiment")
-if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
-if (! "limma" %in% installed.packages()) install.packages("plyr")
-if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
-if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
-if (! "plyr" %in% installed.packages()) install.packages("plyr")
-if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github("aubreyodom/TBSignatureProfiler")
+devtools::load_all()
 ```
 
 ```{r install curatedTBData, eval = FALSE}
+devtools::install_github("aubreyodom/TBSignatureProfiler")
 devtools::install_github("xutao-wang/curatedTBData")
 ```
 
-This package requires large memory to process the curatedTBData. Please increase R script memory before running this vignette. 
+This package requires large memory to process data. Please increase R script memory before running this vignette. 
 [Increase memory for Macs](https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached)
 Step 1: Open terminal
 Step 2:
@@ -171,7 +163,7 @@ For objects that contain probe information, we match them to gene symbol. We col
 
 ```{r}
 # Match Probe ID using raw data
-# Specificy experiment_type = "assay_raw_norm" fo matching probe ID using normalized data (if applicable)
+# Specificy experiment_type = "assay_raw_norm" for matching probe ID using normalized data (if applicable)
 MatchProbe(GSE39939_sobject, experiment_type = "assay_raw")
 MatchProbe(GSE107991_mobject, experiment_type = "assay_raw")
 ```
@@ -320,7 +312,7 @@ Recall the list of studies that have control samples. We could either pick up so
 # Batch correction
 # remove GSE74092 becuase it only has about matched gene symbol
 # because GSE74092 used quantitative PCR because they did not have enough coverage to capture all genes
-MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")]) 
+MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")], experiment_type = "assay_reduce") 
 
 # Batch Correction
 mod1 <- model.matrix(~as.factor(TBStatus), data=colData(MDP_batch))
