@@ -1,3 +1,7 @@
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
+
 #' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
@@ -103,12 +107,12 @@ setMethod("MatchProbe",
                 stop("Input Summarized Experiment Object row names are not exactly the same with ID_REF from row Data, consider change")
               }
 
-              ## Starting create Multi-assay experiment
+              # Create Multi-assay experiment
 
-              # Add new column to the expression matrix
+              ## Add new column to the expression matrix
               sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=row_data$SYMBOL_NEW) %>% filter(SYMBOL!='NA')
 
-              # Expand probe sets for non-specific probes if apllicable
+              ## Expand probe sets for non-specific probes if apllicable
               if(!identical(grep("///",sobject_exprs_new$SYMBOL), integer(0))){
                 sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
               }

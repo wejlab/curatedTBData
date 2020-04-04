@@ -4,12 +4,18 @@
 \alias{CombineObjects}
 \title{Combine samples with common genes from selected studies, usually run after `MatchProbe`}
 \usage{
-CombineObjects(object_list, gse_name = NULL, experiment_type = "assay_reduce")
+CombineObjects(
+  object_list,
+  gse_name = NULL,
+  experiment_type = c("assay_reduce", "assay_reprocess_norm")
+)
 }
 \arguments{
 \item{object_list}{A list contains expression data with mapped gene symbol.}
 
-\item{gse_name}{A charac/vector (GEO accession number) contains object name want to combine.}
+\item{gse_name}{A character/vector (GEO accession number) contains object name want to combine.}
+
+\item{experiment_type}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
 }
 \value{
 A SummarizedExperiment Object contains combined data from several objects.
