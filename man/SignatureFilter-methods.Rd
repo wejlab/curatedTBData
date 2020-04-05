@@ -14,8 +14,6 @@ SignatureFilter(sig_list, gset, ...)
 
 \S4method{SignatureFilter}{list,character}(sig_list, gset, annotationColName = "TBStatus")
 
-\S4method{SignatureFilter}{list,character}(sig_list, gset, annotationColName = "TBStatus")
-
 \S4method{SignatureFilter}{SummarizedExperiment,list}(sig_list, gset, GSE, annotationColName = "TBStatus")
 
 \S4method{SignatureFilter}{SummarizedExperiment,character}(sig_list, gset, GSE, annotationColName = "TBStatus")
