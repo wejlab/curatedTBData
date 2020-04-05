@@ -9,13 +9,30 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
-devtools::load_all()
+knitr::opts_chunk$set(echo=TRUE, cache.lazy=FALSE, message=FALSE, warning=FALSE)
 ```
 
 ```{r install curatedTBData, eval = FALSE}
 devtools::install_github("aubreyodom/TBSignatureProfiler")
 devtools::install_github("xutao-wang/curatedTBData")
+```
+
+```{r libraries, message=FALSE}
+library(dplyr)
+library(edgeR)
+library(GEOquery)
+library(ggplot2)
+library(ggridges)
+library(gridExtra)
+library(limma)
+library(MultiAssayExperiment)
+library(plyr)
+library(SummarizedExperiment)
+library(sva)
+library(TBSignatureProfiler)
+
+devtools::load_all()
+library(curatedTBData)
 ```
 
 This package requires large memory to process data. Please increase R script memory before running this vignette. 
@@ -32,27 +49,6 @@ Step 3: Save the following as the first line of .Renviron:
 R_MAX_VSIZE=50Gb 
 ```
 
-
-```{r libraries, message=FALSE}
-# Alphabetic order
-library(BiocParallel)
-library(dplyr)
-library(edgeR)
-library(GEOquery)
-library(ggplot2)
-library(ggridges)
-library(gridExtra)
-library(illuminaHumanv4.db) # Illumina HumanHT-12 V4.0 expression beadchip
-library(limma)
-library(MultiAssayExperiment)
-library(plyr)
-library(SummarizedExperiment)
-library(sva)
-library(TBSignatureProfiler)
-
-library(curatedTBData)
-```
-
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 
 Insert introduction/background infrmation about this data package
@@ -67,7 +63,7 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 
 # Get a list of all data
-data(list=list_files) 
+data(list=list_files) # Takes some time...
 strobject <- ls(pattern="*object$")
 
 # Create a list for loaded data for metadata analysis
@@ -168,11 +164,11 @@ MatchProbe(GSE39939_sobject, experiment_type = "assay_raw")
 MatchProbe(GSE107991_mobject, experiment_type = "assay_raw")
 ```
 
-# TBSignature Analysis 
+# TB Signature Analysis 
 First of all, we create reate a list of object with normalized reads and probesets mapped to symbols. Match probe ID to symbol using either raw data or normalized data (if applicable) .
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
 
-```{r normalized/matched sample, cache=TRUE, message=FALSE}
+```{r normalized/matched sample, cache=TRUE}
 # Normalization. For RNA-seq data, we use raw data from online for normalization (Not the self-processed data)
 # Use online raw data by specifying the experiment_type=assay_raw
 object_norm <- lapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw")) 
@@ -199,8 +195,7 @@ $$\frac{ES_{jk}}{\max(ES_{jk})-\min(ES_{jk})}, j=1,\dots,n$$
 # Modify the list to make it compatible with TBSignatureProfiler
 
 multi_set_PTB_Latent <- lapply(object_match, function(x)
-  SubsetTBStatus(x,"TBStatus",c("Latent","PTB"), experiment_type="assay_reduce")) %>% plyr::compact() 
-# Remove empty objects use plyr::compact()
+  SubsetTBStatus(x, annotationColName = "TBStatus",diseases = c("Latent","PTB"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                     function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
@@ -208,11 +203,11 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 12))
+                                  parallel.sz = 14))
 
-# Get signatures with only scores and disease status
-# TBSignature, a list of desired signarure signature 
-ssgsea_PTB_Latent1 <- SignatureFilter(ssgsea_PTB_Latent, TBsignatures, annotationColName="TBStatus")
+# Subset TBstatus, TBSignatures, and GSE from each SummarizedEpxeriment object
+ssgsea_PTB_Latent1 <- SignatureFilter(ssgsea_PTB_Latent, gset = TBsignatures, annotationColName="TBStatus")
+names(ssgsea_PTB_Latent1) <- names(ssgsea_PTB_Latent)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -230,16 +225,32 @@ for (i in names(TBsignatures)){
 }
 ```
 
-### Comparing Signature Scores via AUCs
+### Table with T-tests & AUC
+Table presnets signatures with P.value, 
+```{r, cache=TRUE}
+for (i in names(ssgsea_PTB_Latent)){
 
-```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, message=FALSE}
+  cat("####", i, "\n")
+  
+  get_stats(ssgsea_PTB_Latent[[i]], annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50)
+
+  cat("\n\n")
+}
+```
+
+
+### Comparison of Signature Performance using AUCs
+
+```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, cache=TRUE}
 # Combine results from ssgsea_PTB_Latent
-ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, gset = TBsignatures)
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures))
 
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
 get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
 ```
+
+### Signature Performance predicting progression
 
 ## Molecular Degree of Perturbation Analysis
 Molecular Degree of Perturbation (MDP) is a method to standardized gene expression data to the refernce (control). First of all, we subset the lists that contain samples with TBStatus: Control.
@@ -346,5 +357,10 @@ BoxplotTBSig(MDP_batch_result, gset = names(TBsignatures), annotationName = "TBS
 ### Boxplot for batch corrected ssGSEA
 ```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32}
 BoxplotTBSig(data.frame(colData(MDP_batch_ssgsea)), gset = names(TBsignatures), annotationName = "TBStatus")
+```
+
+```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32,eval=FALSE,include=FALSE}
+BoxplotTBSig(data.frame(kk[,-ncol(kk)]), gset = names(TBsignatures), annotationName = "TBStatus")
+
 ```
 
