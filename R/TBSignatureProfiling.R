@@ -15,7 +15,7 @@ setGeneric(name="SignatureFilter", function(sig_list, gset,...){
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "list"),
           function(sig_list, gset, annotationColName="TBStatus"){
-            sig_list <- lapply(1:length(sig_list), function(y,gset){
+            sig_list1 <- lapply(1:length(sig_list), function(y,gset){
 
               x <- sig_list[[y]]
               GSE <- rep(names(sig_list[y]), nrow(colData(x)))
@@ -24,7 +24,8 @@ setMethod("SignatureFilter",
               cbind(TBStatus,colData(x)[,index],GSE)
 
             }, gset)
-            return(sig_list)
+            names(sig_list1) <- names(sig_list)
+            return(sig_list1)
 
           }
 )
@@ -33,7 +34,7 @@ setMethod("SignatureFilter",
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
           function(sig_list, gset, annotationColName="TBStatus"){
-            sig_list <- lapply(1:length(sig_list), function(i,gset){
+            sig_list1 <- lapply(1:length(sig_list), function(i,gset){
 
               x <- sig_list[[i]]
               GSE <- rep(names(sig_list[i]), nrow(colData(x)))
@@ -42,7 +43,8 @@ setMethod("SignatureFilter",
               cbind(TBStatus,colData(x)[,index],GSE)
 
             }, gset)
-            return(sig_list)
+            names(sig_list1) <- names(sig_list)
+            return(sig_list1)
 
           }
 )
@@ -52,7 +54,7 @@ setMethod("SignatureFilter",
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
           function(sig_list, gset, annotationColName="TBStatus"){
-            sig_list <- lapply(1:length(sig_list), function(i,gset){
+            sig_list1 <- lapply(1:length(sig_list), function(i,gset){
 
               x <- sig_list[[i]]
               GSE <- rep(names(sig_list[i]), nrow(colData(x)))
@@ -63,7 +65,8 @@ setMethod("SignatureFilter",
               result
 
             }, gset)
-            return(sig_list)
+            names(sig_list1) <- names(sig_list)
+            return(sig_list1)
 
           }
 )
@@ -201,49 +204,109 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
 ################################################
 
-#' Obtain two-sample t-test pvalues and emprirical AUC for signature scores.
-#' @name get_pvalue_auc
-#' @param SE_scored A SummarizedExperiment Object from TB signature profiling
+#' Obtain pvalue, emprirical AUC, and 95% CI for each signature using two-sample t-test, ROCit::rocit, and bootstraping
+#' @name get_stats
+#' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
-#' @param signatureColNames A character or vector that contains gene signature name
+#' @param signatureColNames A character/vector contains name of gene signature.
+#' @param num.boot Number of bootstraps
+#' @param output A character specifies types of output, either data.frame or datatable from `DT`
 #' @return A data frame contains p-value from two-sample t-test and AUC value for each signature
 #'
 #' @export
-get_pvalue_auc <- function(SE_scored, annotationColName = "TBStaus", signatureColNames){
-
+get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
+                      num.boot=NULL, output="data.frame"){
   # check signatureColNames
+  index <- na.omit(match(signatureColNames,colnames(SummarizedExperiment::colData(SE_scored))))
+  signatureColNames <-  colnames(SummarizedExperiment::colData(SE_scored))[index]
 
-  pvals <- aucs <- NULL
   annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][,1] %>% as.character() %>% as.factor()
-  for (i in signatureColNames) {
-    score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
-    pvals <- c(pvals, stats::t.test(score ~ annotationData)$p.value)
-    pred <- ROCit::rocit(score, annotationData)
-    auc <- pred$AUC
-    aucs <- c(aucs, max(auc, 1 - auc))
+
+  if (is.null(num.boot)){
+
+    sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
+      score <- SummarizedExperiment::colData(SE_scored)[i][,1]
+      pvals <- stats::t.test(score ~ annotationData)$p.value
+      pred <- ROCit::rocit(score, annotationData)
+      aucs <- max(pred$AUC, 1 - pred$AUC)
+      data.frame(Signature=i,P.value=round(pvals,4),AUC=round(aucs,4))
+
+
+    }, SE_scored, annotationData)
+
+    result <- data.frame(do.call(rbind, sig_result))
+    row.names(result) <- NULL
+    if(output == "DataTabble"){
+      return(DT::datatable(result))
+    }
+    else{
+      return(result)
+    }
+
   }
-  return(data.frame(Signature=signatureColNames,P.value=round(pvals,4),AUC=round(aucs,4)))
+  else{
+
+    sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
+      score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
+      pvals <- stats::t.test(score ~ annotationData)$p.value
+      pred <- ROCit::rocit(score, annotationData)
+      aucs <- max(pred$AUC, 1 - pred$AUC)
+      bootCI <- sapply(1:num.boot, function(j, score, annotationData){
+
+        index <- sample(1:length(score), replace = TRUE)
+        tmp_score <- score[index]
+        tmp_annotationData <- annotationData[index]
+        # Consider when resampling only has 1 cases, remove it
+        if(length(unique(tmp_annotationData)) == 2){
+          tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
+          tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+          tmp_auc
+        }else{NA}
+
+      }, score, annotationData)
+
+      bootCI <- na.omit(bootCI)
+
+      LowerAUC <- stats::quantile(bootCI,prob=0.05)
+      UpperAUC <- stats::quantile(bootCI,prob=0.95)
+      data.frame(Signature=i,P.value=round(pvals,4),`neg10xLog(P.value)` = round(-10 * log(pvals), 4),
+                 AUC=round(aucs,4), LowerAUC=round(LowerAUC,4), UpperAUC=round(UpperAUC,4))
+
+    }, SE_scored, annotationData)
+    result <- data.frame(do.call(rbind, sig_result))
+    row.names(result) <- NULL
+    if(output == "DataTabble"){
+      return(DT::datatable(result))
+    }
+    else{
+      return(result)
+    }
+
+
+  }
 
 }
 
 ################################
 #' Combine results from list. Calculate p-value and AUC values
 #' @name combine_auc
-#' @param result_list A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.
+#' @param SE_scored_list A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.
+#' @param annotationColName A character indicates feature of interest in the object's column data
+#' @param signatureColNames A character/vector contains name of gene signature.
 #' @return A data frame with features including signatures, p-value, and AUC.
 #' @export
-combine_auc <- function(result_list, gset, annotationName = "TBStatus"){
-  aucs_result <- lapply(result_list, function(x){
-    index <- na.omit(match(names(gset),names(colData(x))))
-    get_pvalue_auc(x,
+combine_auc <- function(SE_scored_list, annotationName = "TBStatus", signatureColNames, num.boot=NULL){
+  aucs_result <- lapply(SE_scored_list, function(x){
+    get_stats(x,
                    annotationColName = annotationName,
-                   signatureColNames = names(colData(x))[index])
+                   signatureColNames = signatureColNames,
+                   num.boot = num.boot)
   }
     )
   aucs_result_dat <- do.call(rbind,aucs_result)
 
   # re-order data based on their median AUC
-  aucs_result_dat_median <- aucs_result_dat %>% group_by(Signature) %>% summarise_all(median) %>% arrange(desc(AUC))
+  aucs_result_dat_median <- aucs_result_dat %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(median) %>% dplyr::arrange(desc(AUC))
 
   # New addition: order signatures based on median AUC values
 
@@ -254,7 +317,7 @@ combine_auc <- function(result_list, gset, annotationName = "TBStatus"){
   return(aucs_result_dat)
 }
 
-###########################
+##############################################################################
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution

@@ -24,11 +24,14 @@ Imports:
     MultiAssayExperiment,
     plyr,
     rmarkdown,
+    ROCit,
     roxygen2,
+    stats,
     SummarizedExperiment
 Suggests:
     affy,
     BiocParallel,
+    DT,
     hgu133plus2.db,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
