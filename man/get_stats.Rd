@@ -19,12 +19,12 @@ get_stats(
 
 \item{signatureColNames}{A character/vector contains name of gene signature.}
 
-\item{num.boot}{Number of bootstraps}
+\item{num.boot}{Number of bootstrapping.}
 
 \item{output}{A character specifies types of output, either data.frame or datatable from `DT`}
 }
 \value{
-A data frame contains p-value from two-sample t-test and AUC value for each signature
+A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 }
 \description{
 Obtain pvalue, emprirical AUC, and 95% CI for each signature using two-sample t-test, ROCit::rocit, and bootstraping

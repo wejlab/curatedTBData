@@ -15,6 +15,9 @@ setGeneric(name="SignatureFilter", function(sig_list, gset,...){
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "list"),
           function(sig_list, gset, annotationColName="TBStatus"){
+            if(!any(is(sig_list[[1]])=="SummarizedExperiment")){
+              stop(cat("Should be a list of SummarizedExperiment","You list element is ",class(sig_list[[1]])))
+            }
             sig_list1 <- lapply(1:length(sig_list), function(y,gset){
 
               x <- sig_list[[y]]
@@ -34,6 +37,9 @@ setMethod("SignatureFilter",
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
           function(sig_list, gset, annotationColName="TBStatus"){
+            if(!any(is(sig_list[[1]])=="SummarizedExperiment")){
+              stop(cat("Should be a list of SummarizedExperiment","You list element is ",class(sig_list[[1]])))
+            }
             sig_list1 <- lapply(1:length(sig_list), function(i,gset){
 
               x <- sig_list[[i]]
@@ -49,29 +55,6 @@ setMethod("SignatureFilter",
           }
 )
 # tt = SignatureFilter(ssgsea_PTB_Latent,TBsignatures)
-
-#' @rdname SignatureFilter-methods
-setMethod("SignatureFilter",
-          signature (sig_list = "list", gset = "character"),
-          function(sig_list, gset, annotationColName="TBStatus"){
-            sig_list1 <- lapply(1:length(sig_list), function(i,gset){
-
-              x <- sig_list[[i]]
-              GSE <- rep(names(sig_list[i]), nrow(colData(x)))
-              TBStatus <- colData(x)[,annotationColName]
-              index <- na.omit(match(gset,names(colData(x))))
-              result <- DataFrame(TBStatus,colData(x)[,index],GSE)
-              colnames(result)[2] <- gset
-              result
-
-            }, gset)
-            names(sig_list1) <- names(sig_list)
-            return(sig_list1)
-
-          }
-)
-
-# k = SignatureFilter(ssgsea_PTB_Latent,"Anderson_42")
 
 #' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
@@ -115,18 +98,23 @@ setMethod("SignatureFilter",
 
 setGeneric("BoxplotTBSig", function(sig_list, gset, ...) standardGeneric("BoxplotTBSig"))
 
-# sig_list <- MDP_result_NULL;x <- "GSE107993";annotationName = "TBStatus"
+# sig_list <- MDP_result_NULL;x <- "GSE107993";annotationColName = "TBStatus"
 # sig_list <- MDP_result;gset = "Anderson_42";x = "GSE56153"
 
 #' @rdname BoxplotTBSig-methods
 setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
-          function(sig_list, gset = gset, annotationName = "TBStatus"){
+          function(sig_list, gset = gset, annotationColName = "TBStatus"){
+
+            # Clean column data, extracting information about annotation, signature scores and name of the each dataset
+            if(any(is(sig_list[[1]]) == "SummarizedExperiment")){
+              sig_list <- SignatureFilter(sig_list, gset = gset, annotationColName = annotationColName)
+            }
 
             sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
 
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% filter(GSE == x)
-              sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationName], levels = c("Control", "Latent", "PTB", "OD"))
+              sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName], levels = c("Control", "Latent", "PTB", "OD"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
 
@@ -167,14 +155,13 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
 
 
 #' @rdname BoxplotTBSig-methods
-# sig_list <- MDP_batch_result;gset <- names(TBsignatures);annotationName = "TBStatus"
 setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"),
-          function(sig_list, gset = gset, annotationName = "TBStatus"){
+          function(sig_list, gset = gset, annotationColName = "TBStatus"){
 
             sig_data <- sig_list
             signatureColNames <- colnames(sig_data)[na.omit(match(gset, colnames(sig_data)))]
 
-            sig_data$annotationNameLevels <- factor(sig_data[,annotationName], levels = c("Control", "Latent", "PTB", "OD"))
+            sig_data$annotationNameLevels <- factor(sig_data[,annotationColName], levels = c("Control", "Latent", "PTB", "OD"))
             myColors <- RColorBrewer::brewer.pal(4,"Set1")
             names(myColors) <- levels(sig_data$annotationNameLevels)
 
@@ -209,10 +196,9 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 #' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
-#' @param num.boot Number of bootstraps
+#' @param num.boot Number of bootstrapping.
 #' @param output A character specifies types of output, either data.frame or datatable from `DT`
-#' @return A data frame contains p-value from two-sample t-test and AUC value for each signature
-#'
+#' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
 get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
                       num.boot=NULL, output="data.frame"){
@@ -293,12 +279,15 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
 #' @param SE_scored_list A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
-#' @return A data frame with features including signatures, p-value, and AUC.
+#' @param num.boot Number of bootstrapping.
+#' @param output A character specifies types of output, either data.frame or datatable from `DT`
+#' @return A data frame/datatable with features including signatures, p-value, and AUC for each signature across datasets.
 #' @export
-combine_auc <- function(SE_scored_list, annotationName = "TBStatus", signatureColNames, num.boot=NULL){
+combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
+                        num.boot=NULL, output="data.frame"){
   aucs_result <- lapply(SE_scored_list, function(x){
     get_stats(x,
-                   annotationColName = annotationName,
+                   annotationColName = annotationColName,
                    signatureColNames = signatureColNames,
                    num.boot = num.boot)
   }
