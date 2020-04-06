@@ -2,7 +2,7 @@
 #' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
 #' @name SignatureFilter
 #' @param sig_list SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.
-#' @param gset A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.
+#' @param gset A character/vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param ... Extra named arguments passed to function.
 #' @rdname SignatureFilter-methods
@@ -10,28 +10,6 @@
 setGeneric(name="SignatureFilter", function(sig_list, gset,...){
   standardGeneric("SignatureFilter")
 })
-
-#' @rdname SignatureFilter-methods
-setMethod("SignatureFilter",
-          signature (sig_list = "list", gset = "list"),
-          function(sig_list, gset, annotationColName="TBStatus"){
-            if(!any(is(sig_list[[1]])=="SummarizedExperiment")){
-              stop(cat("Should be a list of SummarizedExperiment","You list element is ",class(sig_list[[1]])))
-            }
-            sig_list1 <- lapply(1:length(sig_list), function(y,gset){
-
-              x <- sig_list[[y]]
-              GSE <- rep(names(sig_list[y]), nrow(colData(x)))
-              TBStatus <- colData(x)[,annotationColName]
-              index <- na.omit(match(names(gset),names(colData(x))))
-              cbind(TBStatus,colData(x)[,index],GSE)
-
-            }, gset)
-            names(sig_list1) <- names(sig_list)
-            return(sig_list1)
-
-          }
-)
 
 #' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
@@ -44,25 +22,14 @@ setMethod("SignatureFilter",
 
               x <- sig_list[[i]]
               GSE <- rep(names(sig_list[i]), nrow(colData(x)))
-              TBStatus <- colData(x)[,annotationColName]
               index <- na.omit(match(gset,names(colData(x))))
-              cbind(TBStatus,colData(x)[,index],GSE)
+              result <- data.frame(SummarizedExperiment::colData(x)[,annotationColName],SummarizedExperiment::colData(x)[,index],GSE=GSE)
+              colnames(result)[1:2] <- c(annotationColName, gset)
+              result
 
             }, gset)
             names(sig_list1) <- names(sig_list)
             return(sig_list1)
-
-          }
-)
-# tt = SignatureFilter(ssgsea_PTB_Latent,TBsignatures)
-
-#' @rdname SignatureFilter-methods
-setMethod("SignatureFilter",
-          signature (sig_list = "SummarizedExperiment", gset = "list"),
-          function(sig_list, gset, GSE, annotationColName="TBStatus"){
-            index <- na.omit(match(names(gset),names(colData(sig_list))))
-            TBStatus <- colData(sig_list)[,annotationColName]
-            result <- DataFrame(cbind(TBStatus,colData(sig_list)[,index],GSE))
 
           }
 )
@@ -72,11 +39,10 @@ setMethod("SignatureFilter",
 #' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature(sig_list = "SummarizedExperiment", gset = "character"),
-          function(sig_list, gset, GSE, annotationColName="TBStatus"){
+          function(sig_list, gset, GSE, annotationColName = "TBStatus"){
             index <- na.omit(match(gset,names(colData(sig_list))))
-            TBStatus <- colData(sig_list)[,annotationColName]
-            result <- DataFrame(TBStatus,colData(sig_list)[,index], GSE)
-            colnames(result)[2] <- gset
+            result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],SummarizedExperiment::colData(sig_list)[,index], GSE)
+            colnames(result)[1:2] <- c(annotationColName, gset)
             return(result)
 
           }
@@ -98,9 +64,9 @@ setMethod("SignatureFilter",
 
 setGeneric("BoxplotTBSig", function(sig_list, gset, ...) standardGeneric("BoxplotTBSig"))
 
-# sig_list <- MDP_result_NULL;x <- "GSE107993";annotationColName = "TBStatus"
-# sig_list <- MDP_result;gset = "Anderson_42";x = "GSE56153"
 
+#sig_list <- ssgsea_progress;gset = "Anderson_42";x = "GSE107994";annotationColName = "Progression"
+#BoxplotTBSig(sig_list, gset = gset, annotationColName = "TBStatus")
 #' @rdname BoxplotTBSig-methods
 setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
           function(sig_list, gset = gset, annotationColName = "TBStatus"){
@@ -114,14 +80,15 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
 
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% filter(GSE == x)
-              sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName], levels = c("Control", "Latent", "PTB", "OD"))
+              sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
+                                                          levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
 
               sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
 
               # Create a custom color scale to deal with different factors
-              myColors <- RColorBrewer::brewer.pal(4,"Set1")
+              myColors <- RColorBrewer::brewer.pal(length(levels(sig_data_gse$annotationNameLevels)),"Set1")
               names(myColors) <- levels(sig_data_gse$annotationNameLevels)
 
               p <-  TBSignatureProfiler::signatureBoxplot(inputData = sig_data1,
@@ -161,8 +128,9 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
             sig_data <- sig_list
             signatureColNames <- colnames(sig_data)[na.omit(match(gset, colnames(sig_data)))]
 
-            sig_data$annotationNameLevels <- factor(sig_data[,annotationColName], levels = c("Control", "Latent", "PTB", "OD"))
-            myColors <- RColorBrewer::brewer.pal(4,"Set1")
+            sig_data$annotationNameLevels <- factor(sig_data[,annotationColName],
+                                                    levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+
             names(myColors) <- levels(sig_data$annotationNameLevels)
 
             sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data)

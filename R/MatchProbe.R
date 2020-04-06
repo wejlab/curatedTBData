@@ -42,8 +42,8 @@ setMethod("MatchProbe",
 
             }
 
-            # For regular case
-            row_data <- rowData(theObject) %>% data.frame()
+            # For regular cases
+            row_data <- SummarizedExperiment::rowData(theObject) %>% data.frame()
 
             if (!any(colnames(row_data)=="SYMBOL_NEW")){
               stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
@@ -92,7 +92,6 @@ setMethod("MatchProbe",
               if(experiment_type == "assay_raw"){
                 assay_name = 1
               }
-
 
               sobject_ori <- MultiAssayExperiment::experiments(theObject)[["assay_raw"]]
               sobject_exprs <- MultiAssayExperiment::assays(sobject_ori)[[assay_name]]
