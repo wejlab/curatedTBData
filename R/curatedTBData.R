@@ -347,10 +347,10 @@ create_standard_ColData <- function(col_data){
   standard_name_seq <- c("Age","Gender","Ethnicity","TBStatus","GeographicalRegion","BcgVaccinated",
                          "BirthRegion","TST","exposure_latent", "index_case_disease_site","smear_of_index_case",
                          "modal_x_ray_grade","SputumSmearStatus","sputum_culture","bal_smear",
-                         "bal_culture","isolate_sensitivity")
+                         "bal_culture","isolate_sensitivity", "Tissue", "Progression")
 
   col_info <- col_data %>% data.frame()
-  dat_NA_new <- matrix(c(rep('n.a.',length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
+  dat_NA_new <- matrix(c(rep("n.a.",length(standard_name_seq)*nrow(col_info))),ncol=length(standard_name_seq),
                        byrow=T,dimnames=list(row.names(col_info),
                                              standard_name_seq)) %>% data.frame()
 
@@ -361,10 +361,8 @@ create_standard_ColData <- function(col_data){
   }
 
   # Append the rest of cloumns to the dataframe
-  col_info_rest <- col_info %>% dplyr::select(-overlap_name)
-  dat_final <- cbind(dat_NA_new,col_info_rest)
-
-  dat_final <- data.frame(dat_final)
+  col_info1 <- col_info %>% dplyr::select(-overlap_name)
+  dat_final <- data.frame(cbind(dat_NA_new,col_info1))
 
   return(dat_final)
 }

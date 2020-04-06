@@ -14,7 +14,6 @@ Imports:
     BiocManager,
     BiocStyle,
     dplyr,
-    edgeR,
     GEOquery,
     ggplot2,
     ggridges,
@@ -23,18 +22,22 @@ Imports:
     limma,
     MultiAssayExperiment,
     plyr,
+    RColorBrewer,
     rmarkdown,
     ROCit,
     roxygen2,
     stats,
     SummarizedExperiment
 Suggests:
+    AgiMicroRna,
     affy,
     BiocParallel,
     DT,
+    edgeR,
     hgu133plus2.db,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
+    sva,
     TBSignatureProfiler,
     testthat
 VignetteBuilder: knitr

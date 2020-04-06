@@ -2,26 +2,20 @@
 % Please edit documentation in R/TBSignatureProfiling.R
 \name{SignatureFilter}
 \alias{SignatureFilter}
-\alias{SignatureFilter,list,list-method}
 \alias{SignatureFilter,list,character-method}
-\alias{SignatureFilter,SummarizedExperiment,list-method}
 \alias{SignatureFilter,SummarizedExperiment,character-method}
 \title{Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.}
 \usage{
 SignatureFilter(sig_list, gset, ...)
 
-\S4method{SignatureFilter}{list,list}(sig_list, gset, annotationColName = "TBStatus")
-
 \S4method{SignatureFilter}{list,character}(sig_list, gset, annotationColName = "TBStatus")
-
-\S4method{SignatureFilter}{SummarizedExperiment,list}(sig_list, gset, GSE, annotationColName = "TBStatus")
 
 \S4method{SignatureFilter}{SummarizedExperiment,character}(sig_list, gset, GSE, annotationColName = "TBStatus")
 }
 \arguments{
 \item{sig_list}{SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.}
 
-\item{gset}{A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.}
+\item{gset}{A character/vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.}
 
 \item{...}{Extra named arguments passed to function.}
 
