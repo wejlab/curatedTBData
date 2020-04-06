@@ -4,13 +4,27 @@
 \alias{combine_auc}
 \title{Combine results from list. Calculate p-value and AUC values}
 \usage{
-combine_auc(result_list, gset, annotationName = "TBStatus")
+combine_auc(
+  SE_scored_list,
+  annotationColName = "TBStatus",
+  signatureColNames,
+  num.boot = NULL,
+  output = "data.frame"
+)
 }
 \arguments{
-\item{result_list}{A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.}
+\item{SE_scored_list}{A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.}
+
+\item{annotationColName}{A character indicates feature of interest in the object's column data}
+
+\item{signatureColNames}{A character/vector contains name of gene signature.}
+
+\item{num.boot}{Number of bootstrapping.}
+
+\item{output}{A character specifies types of output, either data.frame or datatable from `DT`}
 }
 \value{
-A data frame with features including signatures, p-value, and AUC.
+A data frame/datatable with features including signatures, p-value, and AUC for each signature across datasets.
 }
 \description{
 Combine results from list. Calculate p-value and AUC values

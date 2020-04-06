@@ -11,6 +11,7 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.5.3)
 Imports:
+    BiocManager,
     BiocStyle,
     dplyr,
     GEOquery,
@@ -18,17 +19,26 @@ Imports:
     ggridges,
     gridExtra,
     knitr,
+    limma,
     MultiAssayExperiment,
     plyr,
+    RColorBrewer,
     rmarkdown,
+    ROCit,
     roxygen2,
-    SummarizedExperiment,
-    TBSignatureProfiler
+    stats,
+    SummarizedExperiment
 Suggests:
-    BiocStyle,
-    knitr,
-    rmarkdown,
-    roxygen2,
+    AgiMicroRna,
+    affy,
+    BiocParallel,
+    DT,
+    edgeR,
+    hgu133plus2.db,
+    illuminaHumanv4.db,
+    illuminaHumanv3.db,
+    sva,
+    TBSignatureProfiler,
     testthat
 VignetteBuilder: knitr
 RoxygenNote: 7.1.0
