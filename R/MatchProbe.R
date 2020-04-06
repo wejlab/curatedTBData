@@ -1,3 +1,7 @@
+#' @importFrom magrittr %>%
+#' @export
+magrittr::`%>%`
+
 #' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
@@ -23,10 +27,10 @@ setMethod("MatchProbe",
               experiment_type = "NormalizedData"
             }
 
-            sobject_exprs <- assays(theObject)[[experiment_type]]
+            sobject_exprs <- SummarizedExperiment::assays(theObject)[[experiment_type]]
 
             #### row data is NULL, special case for those normalized data with unique gene symbol as row names
-            if (ncol(rowData(theObject)) == 0){
+            if (ncol(SummarizedExperiment::rowData(theObject)) == 0){
 
               ### A special case for those normalized data with unique gene symbol as row names GSEXXXX
               ## Matching process has already done
@@ -38,8 +42,8 @@ setMethod("MatchProbe",
 
             }
 
-            # For regular case
-            row_data <- rowData(theObject) %>% data.frame()
+            # For regular cases
+            row_data <- SummarizedExperiment::rowData(theObject) %>% data.frame()
 
             if (!any(colnames(row_data)=="SYMBOL_NEW")){
               stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
@@ -52,7 +56,7 @@ setMethod("MatchProbe",
             }
             # Add new column to the expression matrix
 
-            sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=row_data$SYMBOL_NEW) %>% filter(SYMBOL!='NA')
+            sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>% dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
 
             # Expand probe sets for non-specific probes if apllicable
             if(!identical(grep("///",sobject_exprs_new$SYMBOL), integer(0))){
@@ -89,26 +93,25 @@ setMethod("MatchProbe",
                 assay_name = 1
               }
 
-
               sobject_ori <- MultiAssayExperiment::experiments(theObject)[["assay_raw"]]
-              sobject_exprs <- assays(sobject_ori)[[assay_name]]
-              row_data <- rowData(sobject_ori) %>% data.frame()
+              sobject_exprs <- MultiAssayExperiment::assays(sobject_ori)[[assay_name]]
+              row_data <- SummarizedExperiment::rowData(sobject_ori) %>% data.frame()
               if (!any(colnames(row_data)=="SYMBOL_NEW")){
                 stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
               }
               if (!any(colnames(row_data)=="ID_REF")){
                 stop("RowData of the input Summarized Experiment Object does not have ID_REF column, add ID_REF column that includes probe IDs.")
               }
-              if (!all(row.names(assays(sobject_ori)[[1]])==row_data$ID_REF)){
+              if (!all(row.names(MultiAssayExperiment::assays(sobject_ori)[[1]])==row_data$ID_REF)){
                 stop("Input Summarized Experiment Object row names are not exactly the same with ID_REF from row Data, consider change")
               }
 
-              ## Starting create Multi-assay experiment
+              # Create Multi-assay experiment
 
-              # Add new column to the expression matrix
-              sobject_exprs_new <- sobject_exprs %>% as_tibble() %>% mutate(SYMBOL=row_data$SYMBOL_NEW) %>% filter(SYMBOL!='NA')
+              ## Add new column to the expression matrix
+              sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>% dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
 
-              # Expand probe sets for non-specific probes if apllicable
+              ## Expand probe sets for non-specific probes if apllicable
               if(!identical(grep("///",sobject_exprs_new$SYMBOL), integer(0))){
                 sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
               }

@@ -9,9 +9,9 @@ Also applies to consistent siganture column names.}
 \usage{
 BoxplotTBSig(sig_list, gset, ...)
 
-\S4method{BoxplotTBSig}{list,character}(sig_list, gset = gset, annotationName = "TBStatus")
+\S4method{BoxplotTBSig}{list,character}(sig_list, gset = gset, annotationColName = "TBStatus")
 
-\S4method{BoxplotTBSig}{data.frame,character}(sig_list, gset = gset, annotationName = "TBStatus")
+\S4method{BoxplotTBSig}{data.frame,character}(sig_list, gset = gset, annotationColName = "TBStatus")
 }
 \arguments{
 \item{sig_list}{List of dataframes contain signature scores across studies. Prduced from `SignatureFilter`}

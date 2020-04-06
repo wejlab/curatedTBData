@@ -22,12 +22,11 @@ setMethod("SubsetTBStatus",
           function(theObject,annotationColName, diseases, ...){
 
             # check eligibility
-            if(!all(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))){
-              stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD", "NA", collapse = ","),
-                       ". Disease type",
-                       diseases[-which(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))], "is not recognized"
-              ))
-            }
+          #  if(!all(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))){
+          #    stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD", "NA", collapse = ","),
+          #             ". Disease type is not recognized"
+          #    ))
+          #  }
 
             n <- length(diseases)
             theObject_filter <- theObject[,colData(theObject)[,annotationColName] %in% diseases]
@@ -47,16 +46,16 @@ setMethod("SubsetTBStatus",
                    experiment_type = c("all", "assay_raw", "assay_reprocess", "assay_reduce")){
 
             # check eligibility
-            if(!all(diseases %in% c("Control", "Latent", "PTB", "OD","NA"))){
-              stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD","NA", collapse = ","),
-                       ". Disease type",
-                   diseases[-which(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))], "is not recognized"
-                   ))
-            }
+        #     if(!all(diseases %in% c("Control", "Latent", "PTB", "OD","NA"))){
+        #      stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD","NA", collapse = ","),
+        #               ". Disease type",
+        #           diseases[-which(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))], "is not recognized"
+        #           ))
+        #    }
 
             experiment_type <- match.arg(experiment_type)
 
-            # Perform whole MultiAssayExperiment selection, output is MultiAsaayExperiment
+            # When experiment_type == "all". Perform whole MultiAssayExperiment selection, output is MultiAsaayExperiment
             if(experiment_type == "all"){
 
               n <- length(diseases)
@@ -126,12 +125,13 @@ setMethod("SubsetTBStatus",
 #' Combine samples with common genes from selected studies, usually run after `MatchProbe`
 #' @name CombineObjects
 #' @param object_list A list contains expression data with mapped gene symbol.
-#' @param gse_name A charac/vector (GEO accession number) contains object name want to combine.
+#' @param gse_name A character/vector (GEO accession number) contains object name want to combine.
+#' @param experiment_type A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
 #'
 #' @export
 CombineObjects <- function(object_list,gse_name=NULL,
-                           experiment_type = "assay_reduce"){
+                           experiment_type = c("assay_reduce","assay_reprocess_norm")){
 
   experiment_type <- match.arg(experiment_type)
 

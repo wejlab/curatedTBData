@@ -46,7 +46,7 @@ add_new_data_mobject <- function(edit_files){
   library(purrr)
   library(devtools)
   sobject_total <- lapply(edit_files,
-                          function(x) readRDS(paste0("data-raw/",x)))
+                          function(x) readRDS(paste0("~/Desktop/curatedTBData/data-raw/",x)))
   # sobject_total_name_ori <- lapply(sobject_total, function(x) names(assays(x)))
   # sobject_total_name <- lapply(sobject_total_name_ori, function(x) gsub("(.+?)(\\_.*)", "\\1", x)) %>% unlist()
   # sobject_total_name
@@ -58,6 +58,7 @@ add_new_data_mobject <- function(edit_files){
   })
 
 }
+
 edit_files <- paste0(c("GSE101705_mobject", "GSE107104_mobject", "GSE89403_mobject",
                       "GSE79362_mobject","GSE94438_mobject", "GSE107991_mobject",
                       "GSE107992_mobject","GSE107993_mobject","GSE107994_mobject"),".RDS")
@@ -67,3 +68,12 @@ add_new_data_mobject(edit_files)
 # Add 1 data on Mar. 1st
 GSEXXXXX_sobject <- readRDS("data-raw/GSEXXXXX_sobject.RDS")
 usethis::use_data(GSEXXXXX_sobject)
+
+#----------------------------------------------------.
+# Edit GSE112104 on Apr. 1st
+add_new_data_mobject("GSE112104_mobject.RDS")
+
+#----------------------------------------------------.
+# Edit GSE107994,GSE79362 on Apr. 5th
+add_new_data_mobject("GSE107994_mobject.RDS")
+add_new_data_mobject("GSE79362_mobject.RDS")
