@@ -9,7 +9,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALSE)
 ```
 
 ```{r install curatedTBData, eval = FALSE}
@@ -60,6 +60,7 @@ Insert introduction/background infrmation about this data package
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
 ```{r load list of datasets}
+
 list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 
 # Get a list of all data
@@ -184,7 +185,8 @@ object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "
 ## Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`{.tabset}
 
 ### Caculate ssGSEA
-`TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetSample`, and implement Single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
+
+`TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetTBStatus`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
 Workflow of ssGSEA:
 1. Input data, take sample-specific absolute rank.
 2. After getting the ranked data, calculate random walk statistics for each sample. p: Number of genes, j: sample, k:gene set
@@ -206,7 +208,7 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
-# load("~/Desktop/ssgsea_PTB_Latent.RData")
+ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS") 
 
 # Obtain p.value, AUC
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
@@ -226,6 +228,11 @@ for (i in names(TBsignatures)){
 }
 ```
 
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
 ### Table with T-tests & AUC{.tabset}
 
 ```{r Table for each signature PTB vs. Latent, cache=TRUE, results = "asis"}
@@ -233,7 +240,7 @@ for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
   
-  ssgsea_PTB_Latent_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature) %>% DT::datatable() %>% print()
+  print(htmltools::tagList(DT::datatable(ssgsea_PTB_Latent_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature))))
   
   cat("\n\n")
 }
@@ -243,6 +250,7 @@ for (i in names(TBsignatures)){
 
 ```{r suumary table PTB vs. Latent}
 ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(-GSE) %>% DT::datatable()
+
 ```
 
 ### Comparison of Signature Performance using AUCs
@@ -257,7 +265,7 @@ get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for
 Datasets GSE79362, GSE107993, GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information
 
 ### Calculate ssGSEA for selected objects
-```{r Calculate ssGSEA for progression, cache=TRUE}
+```{r Calculate ssGSEA for progression, cache=TRUE, results = "hide"}
 gse_progress <- c("GSE79362", "GSE107994", "GSE112104")
 multi_set_progress <- lapply(object_match[gse_progress], function(x)
   SubsetTBStatus(x, annotationColName = "Progression", c("Positive","Negative"), experiment_type = "assay_reduce")) %>% plyr::compact()
@@ -288,6 +296,11 @@ for (i in names(TBsignatures)){
 }
 ```
 
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
 ### Table for progression{.tabset}
 
 ```{r Table for progression, results = "asis"}
@@ -295,8 +308,8 @@ for (i in gse_progress){
 
   cat("####", i, "\n")
   
-  ssgsea_progress_combine %>% dplyr::filter(GSE == i) %>% dplyr::select(-GSE) %>% DT::datatable() %>% print()
-  
+  print(htmltools::tagList(DT::datatable(ssgsea_progress_combine %>% dplyr::filter(GSE == i) %>% dplyr::select(-GSE))))
+
   cat("\n\n")
 }
 ```
@@ -417,5 +430,7 @@ BoxplotTBSig(MDP_batch_result, gset = names(TBsignatures), annotationColName = "
 BoxplotTBSig(data.frame(colData(MDP_batch_ssgsea)), gset = names(TBsignatures), annotationColName = "TBStatus")
 ```
 
-
+```{r session info}
+sessionInfo()
+```
 
