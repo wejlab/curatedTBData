@@ -60,6 +60,9 @@ Insert introduction/background infrmation about this data package
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
 ```{r load list of datasets}
+# To get a signle dataset, run the following:
+# data(package="curatedTBData")
+# data(GSE39939_sobject)
 
 list_files <- data(package="curatedTBData")[["results"]][,"Item"]
 
@@ -72,6 +75,7 @@ objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
 objects_name <- gsub("_.*","",strobject)
 names(objects_list) <- objects_name
 
+#####################################################
 ## Create summary table for data with their sequencing platform
 rna_seq_name <- which(sapply(objects_list, function(x) class(x)) == "MultiAssayExperiment") %>% names()
 microarray_name <- which(sapply(objects_list, function(x) class(x)) != "MultiAssayExperiment") %>% names()
@@ -180,6 +184,11 @@ object_match1 <- lapply(object_norm, function(x) MatchProbe(x, experiment_type =
 
 # Remove samples with TBStatus == NA
 object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"])
+
+# Add new list of signatures
+TBsignatures$'Suliman_RISK_4' <- c("GAS6","SEPT4","CD1C","BLK")
+TBsignatures$"Suliman_4" <- c("ANKRD22", "C1QC", "OSBPL10", "TRAV27") 
+TBsignatures$'Leong_RISK_29'<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
 ```
 
 ## Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`{.tabset}
@@ -194,6 +203,7 @@ $$v_{jk}(\ell)=\frac{\sum_{i=1}^\ell r_{ij}^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^
 ES_{jk}=\sum_{\ell=1}^p v_{jk}(\ell)$$
 3. Re-scale the enrichment scores (ES) for each sample
 $$\frac{ES_{jk}}{\max(ES_{jk})-\min(ES_{jk})}, j=1,\dots,n$$
+
 ```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
 # Select sample contain information about PTB and Latent
 # Modify the list to make it compatible with TBSignatureProfiler
@@ -247,13 +257,15 @@ for (i in names(TBsignatures)){
 ```
 
 ### Summary Table for the performance of each signature
-
+Evaluate AUCs by taking te means. How about the P value?
 ```{r suumary table PTB vs. Latent}
 ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(-GSE) %>% DT::datatable()
 
 ```
 
-### Comparison of Signature Performance using AUCs
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot
 
 ```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
@@ -261,10 +273,41 @@ ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_al
 get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
 ```
 
+#### Heatmap
+
+```{r,fig.height = 15, fig.width=8}
+heatmap_auc <- function(combine_dat){
+  dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
+  data_wide <- tidyr::spread(dat, Signature, AUC)
+  row.names(data_wide) <- data_wide$GSE
+  dat_input <- data_wide[,-1] %>% as.matrix
+  dat_input[is.na(dat_input)] <- 0.5
+
+  dd <- stats::dist(dat_input)
+  hc <- stats::hclust(dd)
+  dat_input1 <-dat_input[hc$order, hc$order]
+
+  p <- ggplot(data = reshape2::melt(dat_input1), aes(x=Var1, y=Var2, fill=value)) + 
+       geom_tile() +
+       scale_fill_distiller(palette = "RdPu", trans = "reverse") +
+       theme(axis.title.x=element_blank(),
+             axis.title.y=element_blank(),
+             axis.text.x = element_text(angle = 45, vjust = 1, 
+                     size = 12, hjust = 1), 
+             axis.text.y = element_text(size = 12)) + 
+             coord_fixed()
+  return(p)
+}
+
+heatmap_auc(ssgsea_PTB_Latent_combine) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
+
 ## Signature for predicting progression{.tabset}
+
 Datasets GSE79362, GSE107993, GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information
 
 ### Calculate ssGSEA for selected objects
+
 ```{r Calculate ssGSEA for progression, cache=TRUE, results = "hide"}
 gse_progress <- c("GSE79362", "GSE107994", "GSE112104")
 multi_set_progress <- lapply(object_match[gse_progress], function(x)
@@ -314,10 +357,17 @@ for (i in gse_progress){
 }
 ```
 
-### Summary Table for the performance of each signature
+### Summary Table for the performance of each signature{.tabset}
 
+#### Summary table
 ```{r summary for progression}
 ssgsea_progress_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(-GSE) %>% DT::datatable()
+```
+
+#### Heatmap
+
+```{r,fig.height = 15, fig.width=8}
+heatmap_auc(ssgsea_progress_combine) + ggtitle("Heatmap of AUC for predicting TB progression")
 ```
 
 ## Molecular Degree of Perturbation Analysis{.tabset}
