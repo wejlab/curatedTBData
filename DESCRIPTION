@@ -9,7 +9,7 @@ Description: More about what it does (maybe more than one line)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5.3)
+Depends: R (>= 4.0)
 Imports:
     BiocManager,
     BiocStyle,
@@ -35,8 +35,10 @@ Suggests:
     DT,
     edgeR,
     hgu133plus2.db,
+    hrbrthemes,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
+    reshape2,
     sva,
     TBSignatureProfiler,
     testthat
