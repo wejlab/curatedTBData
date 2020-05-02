@@ -27,7 +27,8 @@ Imports:
     ROCit,
     roxygen2,
     stats,
-    SummarizedExperiment
+    SummarizedExperiment,
+    tidyr
 Suggests:
     AgiMicroRna,
     affy,
