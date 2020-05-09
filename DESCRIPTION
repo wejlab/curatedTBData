@@ -23,6 +23,7 @@ Imports:
     MultiAssayExperiment,
     plyr,
     RColorBrewer,
+    reshape2,
     rmarkdown,
     ROCit,
     roxygen2,
@@ -39,7 +40,6 @@ Suggests:
     hrbrthemes,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
-    reshape2,
     sva,
     TBSignatureProfiler,
     testthat
