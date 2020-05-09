@@ -8,8 +8,7 @@ combine_auc(
   SE_scored_list,
   annotationColName = "TBStatus",
   signatureColNames,
-  num.boot = NULL,
-  output = "data.frame"
+  num.boot = NULL
 )
 }
 \arguments{

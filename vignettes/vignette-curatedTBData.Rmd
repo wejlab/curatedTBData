@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALS
 ```
 
 ```{r install curatedTBData, eval = FALSE}
-devtools::install_github("aubreyodom/TBSignatureProfiler")
 devtools::install_github("xutao-wang/curatedTBData")
 ```
 
@@ -59,7 +58,7 @@ Insert introduction/background infrmation about this data package
 
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
-```{r load list of datasets}
+```{r load a list of datasets}
 # To get a signle dataset, run the following:
 # data(package="curatedTBData")
 # data(GSE39939_sobject)
@@ -83,6 +82,7 @@ data_type <- data.frame(GSE = c(rna_seq_name,microarray_name), Type = c(rep("RNA
 index_norm <- which(data_type$GSE %in% c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"))
 
 data_type[index_norm,"Type"] <- "NormalizedMicroarray"
+
 ```
 
 # Subsetting Objects
@@ -186,6 +186,7 @@ object_match1 <- lapply(object_norm, function(x) MatchProbe(x, experiment_type =
 object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"])
 
 # Add new list of signatures
+TBsignatures <- TBSignatureProfiler::TBsignatures
 TBsignatures$'Suliman_RISK_4' <- c("GAS6","SEPT4","CD1C","BLK")
 TBsignatures$"Suliman_4" <- c("ANKRD22", "C1QC", "OSBPL10", "TRAV27") 
 TBsignatures$'Leong_RISK_29'<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
@@ -218,11 +219,10 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
-ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS") 
+# ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS") 
 
 # Obtain p.value, AUC
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
-ssgsea_PTB_Latent_combine$GSE <- gsub("\\..*","",row.names(ssgsea_PTB_Latent_combine))
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -259,7 +259,7 @@ for (i in names(TBsignatures)){
 ### Summary Table for the performance of each signature
 Evaluate AUCs by taking te means. How about the P value?
 ```{r suumary table PTB vs. Latent}
-ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(-GSE) %>% DT::datatable()
+ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
 
 ```
 
@@ -270,43 +270,132 @@ ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_al
 ```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
-get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent")
+get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent") + theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
 ```
 
-#### Heatmap
+#### Heatmap{.tabset}
 
-```{r,fig.height = 15, fig.width=8}
-heatmap_auc <- function(combine_dat){
-  dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
-  data_wide <- tidyr::spread(dat, Signature, AUC)
-  row.names(data_wide) <- data_wide$GSE
-  dat_input <- data_wide[,-1] %>% as.matrix
-  dat_input[is.na(dat_input)] <- 0.5
+##### Without grouping
+```{r PTB vs. Latent heatmap without grouping,fig.height = 12, fig.width=15, fig.wide=TRUE}
+# Import signature and data information
+GSE_sig <- readxl::read_excel("~/Desktop/RA work/build_TB_data/Signatures/Signature_data_cur.xlsx",sheet = "Sheet2")
 
-  dd <- stats::dist(dat_input)
-  hc <- stats::hclust(dd)
-  dat_input1 <-dat_input[hc$order, hc$order]
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = FALSE) + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold")) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
 
-  p <- ggplot(data = reshape2::melt(dat_input1), aes(x=Var1, y=Var2, fill=value)) + 
-       geom_tile() +
-       scale_fill_distiller(palette = "RdPu", trans = "reverse") +
-       theme(axis.title.x=element_blank(),
-             axis.title.y=element_blank(),
-             axis.text.x = element_text(angle = 45, vjust = 1, 
-                     size = 12, hjust = 1), 
-             axis.text.y = element_text(size = 12)) + 
-             coord_fixed()
-  return(p)
+##### With grouping
+```{r PTB vs. Latent heatmap with grouping,fig.height = 12, fig.width=15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold")) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
+
+## Avtive TB (PTB) vs. Other Diseases (OD) {.tabset}
+
+### Calculate signature scores using ssGSEA
+```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
+# Select sample contain information about PTB and Other Diseases (OD)
+# Modify the list to make it compatible with TBSignatureProfiler
+
+multi_set_PTB_OD <- lapply(object_match, function(x)
+  SubsetTBStatus(x, annotationColName = "TBStatus",diseases = c("PTB","OD"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+
+ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE,
+                                  parallel.sz = 14))
+
+saveRDS(ssgsea_PTB_OD, "~/Desktop/ssgsea_PTB_OD.RDS")
+# ssgsea_PTB_OD <- readRDS("~/Desktop/ssgsea_PTB_OD.RDS") 
+
+# Obtain p.value, AUC
+ssgsea_PTB_OD_combine <- combine_auc(ssgsea_PTB_OD, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
+
+```
+
+### Boxplots signature scores{.tabset}
+
+```{r Boxplot for each signature PTB vs. OD, cache=TRUE, results = "asis", fig.height = 30, fig.width=28, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(ssgsea_PTB_OD, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
 }
-
-heatmap_auc(ssgsea_PTB_Latent_combine) + ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. OD, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(ssgsea_PTB_OD_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for the performance of each signature
+
+Evaluate AUCs by taking te means.
+```{r suumary table PTB vs. OD}
+ssgsea_PTB_OD_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot
+
+```{r AUC ridge plot for PTB vs OD,fig.height = 15, fig.width=8, cache=TRUE}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. OD
+get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB vs. OD") + theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+#### Heatmap{.tabset}
+
+##### Without grouping
+```{r PTB vs. OD heatmap without grouping,fig.height = 12, fig.width=10, fig.wide=TRUE}
+# Import signature and data information
+GSE_sig <- readxl::read_excel("~/Desktop/RA work/build_TB_data/Signatures/Signature_data_cur.xlsx",sheet = "Sheet2")
+
+heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, names(TBsignatures), facet = FALSE) + ggtitle("Heatmap of AUC for PTB vs. OD")
+```
+
+##### With grouping
+```{r PTB vs. OD heatmap with grouping,fig.height = 12, fig.width=10, fig.wide=TRUE}
+heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, TBsignatures = names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. OD")
+
+# Use if want to add axis label
+# + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold"))
+```
+
+
+
+
+
+
 
 ## Signature for predicting progression{.tabset}
 
-Datasets GSE79362, GSE107993, GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information
+Datasets GSE79362, GSE107993, GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information. GSE107993 only includes latent non-progressor and control samples.
 
-### Calculate ssGSEA for selected objects
+### Calculate ssGSEA
 
 ```{r Calculate ssGSEA for progression, cache=TRUE, results = "hide"}
 gse_progress <- c("GSE79362", "GSE107994", "GSE112104")
@@ -323,7 +412,6 @@ ssgsea_progress <- lapply(multi_set_progress,
 
 # Obtain p.value, AUC
 ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Progression", signatureColNames = names(TBsignatures), num.boot=50)
-ssgsea_progress_combine$GSE <- gsub("\\..*","",row.names(ssgsea_progress_combine))
 ```
 
 ### Boxplot for progression{.tabset}
@@ -357,130 +445,27 @@ for (i in gse_progress){
 }
 ```
 
-### Summary Table for the performance of each signature{.tabset}
-
-#### Summary table
+### Summary table
 ```{r summary for progression}
-ssgsea_progress_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(-GSE) %>% DT::datatable()
+ssgsea_progress_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
 ```
 
-#### Heatmap
+### Heatmap{.tabset}
 
-```{r,fig.height = 15, fig.width=8}
-heatmap_auc(ssgsea_progress_combine) + ggtitle("Heatmap of AUC for predicting TB progression")
+#### Without Grouping
+
+```{r progression heatmap without grouping,fig.height = 10, fig.width=6}
+heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = FALSE) + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + ggtitle("Heatmap of AUC for predicting TB progression")
 ```
 
-## Molecular Degree of Perturbation Analysis{.tabset}
+#### With Group
 
-### Calculate MDP scores
+```{r progression heatmap with grouping,fig.height = 10, fig.width=6}
+heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for predicting TB progression") + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + xlab("Datasets")
 
-Molecular Degree of Perturbation (MDP) is a method to standardized gene expression data to the refernce (control). First of all, we subset the lists that contain samples with TBStatus: Control.
-```{r MDP, cache=TRUE, eval=FALSE}
-MDP_control_name <- lapply(object_match, function(x) 
-  x[,x$TBStatus == "Control"]) %>% remove_empty_object() %>% names()
-MDP_control <- object_match[MDP_control_name] # study includes control samples
-
-MDP_result <- lapply(1:length(MDP_control), function(x) MDP(MDP_control[[x]], gset = TBsignatures, experiment_type = "assay_reduce", assay_name = 1, GSE = names(MDP_control)[x]))
-
-# Use the original methods by selecting top 25% genes
-MDP_result_NULL <- lapply(1:length(MDP_control), function(x) MDP(MDP_control[[x]], gset = NULL, experiment_type = "assay_reduce", assay_name = 1, GSE = names(MDP_control)[x]))
 ```
 
-### Boxplot for MDP{.tabset}
-
-```{r, results = "asis", message = FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE, eval=FALSE}
-for (i in names(TBsignatures)){
-
-  cat("####", i, "\n")
-  
-  BoxplotTBSig(MDP_result, gset = i, annotationColName = "TBStatus")
-  
-  cat("\n\n")
-}
-```
-
-#### Default 
-
-```{r, results = "asis", message = FALSE, warning=FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE, eval=FALSE}
-BoxplotTBSig(MDP_result_NULL, gset = "sMDP", annotationColName = "TBStatus")
-# sMDP is the annotation column name from MDP_result_NULL
-```
-
-# Integration of RNA-Seq data with microarray data for TB profiling
-
-## Batch Correction with ComBat
-
-If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object.
-```{r, message=FALSE, eval=FALSE}
-# Select the objects you want to combine
-# Randomly pick 2 from RNA-seq,2 from microarray
-result <- CombineObjects(object_match, gse_name=c("GSE101705","GSE107104", "GSE54992", "GSE19444"), experiment_type="assay_reduce") 
-# output is a SummarizedExperiment Object
-
-# Batch Correction
-mod1 <- model.matrix(~as.factor(TBStatus), data=colData(result))
-batch1 <- colData(result)$GSE
-combat_edata1 <- sva::ComBat(dat=assays(result)[[1]], batch=batch1, mod=mod1)
-
-# Add batch corrected data as a new assay to the orginal SummarizedExperiment
-assays(result)[["BacthCorrect"]] <- combat_edata1
-```
-
-Boxplot before Batch correction
-
-```{r, fig.width=8, fig.height=6, warning=FALSE, eval=FALSE}
-boxplot(assays(result)[[1]])
-```
-
-Boxplot after Batch correction
-```{r, fig.width=8, fig.height=6, warning=FALSE, eval=FALSE}
-# log 2
-boxplot(assays(result)[[2]])
-```
-
-## Molecular Degree of Perturbation (MDP) for Batch Corrected Data
-Recall the list of studies that have control samples. We could either pick up some data from the data for batch correction or use all of them. Next we will use all the available 21 studies. Function `CombineObjects` enables us to combine studies from different sources/platforms by intersecting commone genes from each dataset. The output data can be used for batch correction.
-```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message = FALSE, warning = FALSE, results = "hide", eval=FALSE}
-# Batch correction
-# remove GSE74092 becuase it only has about matched gene symbol
-# because GSE74092 used quantitative PCR because they did not have enough coverage to capture all genes
-MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")], experiment_type = "assay_reduce") 
-
-# Batch Correction
-mod1 <- model.matrix(~as.factor(TBStatus), data=colData(MDP_batch))
-batch1 <- colData(MDP_batch)$GSE
-combat_edata1 <- sva::ComBat(dat=assays(MDP_batch)[[1]], batch=batch1, mod=mod1)
-
-# Add batch corrected data as a new assay to the orginal SummarizedExperiment
-assays(MDP_batch)[["BacthCorrect"]] <- combat_edata1
-
-# Calculate MDP for batch correct object
-MDP_batch_result <- MDP(theObject = MDP_batch, gset = TBsignatures, assay_name = "BacthCorrect")
-
-# Calculate ssGSE for batch correct object
-MDP_batch_ssgsea <- TBSignatureProfiler::runTBsigProfiler(input = MDP_batch,
-                                  useAssay = "BacthCorrect",
-                                  signatures = TBsignatures, 
-                                  algorithm = "ssGSEA",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 12)
-```
-
-### Boxplot for Batch Corrected MDP
-
-```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32, eval=FALSE}
-# 5 levels of TBStatus: Control/Laent/OD/PTB
-# Create SummarizedExperiment Object to make it compaticble with the function
-
-BoxplotTBSig(MDP_batch_result, gset = names(TBsignatures), annotationColName = "TBStatus")
-```
-
-### Boxplot for batch corrected ssGSEA
-```{r, results = "asis", message = FALSE, warning = FALSE, fig.wide=TRUE, fig.height = 32, fig.width=32, eval=FALSE}
-BoxplotTBSig(data.frame(colData(MDP_batch_ssgsea)), gset = names(TBsignatures), annotationColName = "TBStatus")
-```
 
 ```{r session info}
 sessionInfo()
 ```
-
