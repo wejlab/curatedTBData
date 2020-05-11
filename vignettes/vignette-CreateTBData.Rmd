@@ -10,16 +10,6 @@ vignette: >
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache.lazy = FALSE)
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-if (! "BiocParallel" %in% installed.packages()) BiocManager::install("BiocParallel")
-if (! "SummarizedExperiment" %in% installed.packages()) BiocManager::install("SummarizedExperiment")
-if (! "MultiAssayExperiment" %in% installed.packages()) BiocManager::install("MultiAssayExperiment")
-if (! "limma" %in% installed.packages()) install.packages("plyr")
-if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
-if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
-if (! "plyr" %in% installed.packages()) install.packages("plyr")
-if (! "TBSignatureProfiler" %in% installed.packages()) devtools::install_github("aubreyodom/TBSignatureProfiler")
 ```
 
 ```{r libraries, message=FALSE}
@@ -45,6 +35,11 @@ library(TBSignatureProfiler)
 
 devtools::load_all(".")
 library(curatedTBData)
+```
+
+```{r install curatedTBData, eval = FALSE}
+devtools::install_github("aubreyodom/TBSignatureProfiler")
+devtools::install_github("xutao-wang/curatedTBData")
 ```
 
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
@@ -116,5 +111,6 @@ GSE19442 <- SummarizedExperiment(assays = list(GSE19442_Non_normalized_counts= a
 ## Create SummarizedExperiment Object from Illumina 4.0 Micoraray
 
 ```{r}
-# GSE39939 to be cotinued
+GSE39939 <-  get_metadata("GSE39939")
+suppl_file <- GSE39939$series_supplementary_file
 ```
