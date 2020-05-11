@@ -317,7 +317,7 @@ get_auc_distribution <- function(aucs_result){
 #' @name heatmap_auc
 #' @param combine_dat A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.
 #' @param GSE_sig A dataframe contains information about eacch signature and its traning dataset name.
-#' @param signatureColNames A character vector. Expect to be in the format "Name_type_number". e.g. "Anderson_OD_51"
+#' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
 #' @param facet Logic. True if want to group signatures into groups. Default is FLASE.
 #' @return Heatmap with AUC values. x axis represents expression data, y axis represents signatures.
 #' @examples
