@@ -127,12 +127,12 @@ Steps take:
 GSE39939_sobject_norm <- Normalization(GSE39939_sobject, method = "quantile")
 ```
 Boxplot for non-normalized microarray data
-```{r, fig.height = 8, fig.width = 8}
+```{r, fig.width = 8, fig.height = 8}
 boxplot(log(assays(GSE39939_sobject_norm)[["GSE39939_Non_normalized_counts"]][,1:20], base=2))
 # display the boxplot in log2 for selected samples
 ```
 Boxplot for microarray data after quantile normalization
-```{r, fig.height = 8, fig.width = 8}
+```{r, fig.width = 8, fig.height = 8}
 boxplot(assays(GSE39939_sobject_norm)[["NormalizedData"]][,1:20])
 # display the boxplot in log2 for selected samples
 ```
@@ -146,13 +146,13 @@ GSE107991_mobject_norm <- Normalization(GSE107991_mobject, experiment_type = "as
 ```
 
 Boxplot for non-normalized RNA-seq data
-```{r, fig.height = 8, fig.width = 8}
+```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
 boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20]+0.0001, base = 2))
 ```
 
 Boxplot for normalized RNA-seq data
-```{r, fig.height = 8, fig.width = 8}
+```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
 # TMM reduces maximum value
 boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])[["NormalizedData"]][,1:20])
@@ -187,9 +187,9 @@ object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "
 
 # Add new list of signatures
 TBsignatures <- TBSignatureProfiler::TBsignatures
-TBsignatures$'Suliman_RISK_4' <- c("GAS6","SEPT4","CD1C","BLK")
+TBsignatures$"Suliman_RISK_4" <- c("GAS6","SEPT4","CD1C","BLK")
 TBsignatures$"Suliman_4" <- c("ANKRD22", "C1QC", "OSBPL10", "TRAV27") 
-TBsignatures$'Leong_RISK_29'<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
+TBsignatures$"Leong_RISK_29"<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
 ```
 
 ## Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`{.tabset}
@@ -198,12 +198,17 @@ TBsignatures$'Leong_RISK_29'<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "
 
 `TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetTBStatus`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
 Workflow of ssGSEA:
-1. Input data, take sample-specific absolute rank.
+1. Input data, take sample-specific absolute rank:$|r_{ij}|$.
+
 2. After getting the ranked data, calculate random walk statistics for each sample. p: Number of genes, j: sample, k:gene set
-$$v_{jk}(\ell)=\frac{\sum_{i=1}^\ell r_{ij}^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^pr_{ij}^\tau I(g(i)\in\gamma_k)}-\frac{\sum_{i=1}^\ell I(g(i)\notin \gamma_k)}{p-|\gamma_k|}, \quad\ell=1,\dots,p \\
+$$v_{jk}(\ell)=\frac{\sum_{i=1}^\ell |r_{ij}|^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^p|r_{ij}|^\tau I(g(i)\in\gamma_k)}-\frac{\sum_{i=1}^\ell I(g(i)\notin \gamma_k)}{p-|\gamma_k|}, \quad\ell=1,\dots,p \\
 ES_{jk}=\sum_{\ell=1}^p v_{jk}(\ell)$$
+$p=$ Number of genes.
+$|\gamma_k|$= Number of genes within gene set $k$.
+$\tau=0.25$.
+
 3. Re-scale the enrichment scores (ES) for each sample
-$$\frac{ES_{jk}}{\max(ES_{jk})-\min(ES_{jk})}, j=1,\dots,n$$
+$$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{nk}\}}$$
 
 ```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
 # Select sample contain information about PTB and Latent
@@ -219,7 +224,6 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
-# ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS") 
 
 # Obtain p.value, AUC
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
@@ -227,7 +231,7 @@ ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = 
 
 ### Boxplot of all scores signatures{.tabset}
 
-```{r Boxplot for each signature PTB vs. Latent, cache=TRUE, results = "asis", fig.height = 30, fig.width=28, fig.wide=TRUE}
+```{r Boxplot for each signature PTB vs. Latent, cache=TRUE, results = "asis", fig.width=28, fig.height = 30, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -267,7 +271,7 @@ ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_al
 
 #### Ridge Plot
 
-```{r AUC ridge plot for PTB vs Latent,fig.height = 15, fig.width=8, cache=TRUE}
+```{r AUC ridge plot for PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
 get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent") + theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
@@ -278,23 +282,23 @@ get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for
 #### Heatmap{.tabset}
 
 ##### Without grouping
-```{r PTB vs. Latent heatmap without grouping,fig.height = 12, fig.width=15, fig.wide=TRUE}
+```{r PTB vs. Latent heatmap without grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
 # Import signature and data information
 GSE_sig <- readxl::read_excel("~/Desktop/RA work/build_TB_data/Signatures/Signature_data_cur.xlsx",sheet = "Sheet2")
 
-heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = FALSE) + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold")) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = FALSE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
 ##### With grouping
-```{r PTB vs. Latent heatmap with grouping,fig.height = 12, fig.width=15, fig.wide=TRUE}
+```{r PTB vs. Latent heatmap with grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
 # Import signature and data information
-heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold")) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
 ## Avtive TB (PTB) vs. Other Diseases (OD) {.tabset}
 
 ### Calculate signature scores using ssGSEA
-```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
+```{r calculate ssgsea for PTB vs OD, cache=TRUE, results = "hide"}
 # Select sample contain information about PTB and Other Diseases (OD)
 # Modify the list to make it compatible with TBSignatureProfiler
 
@@ -319,7 +323,7 @@ ssgsea_PTB_OD_combine <- combine_auc(ssgsea_PTB_OD, annotationColName = "TBStatu
 
 ### Boxplots signature scores{.tabset}
 
-```{r Boxplot for each signature PTB vs. OD, cache=TRUE, results = "asis", fig.height = 30, fig.width=28, fig.wide=TRUE}
+```{r Boxplot for each signature PTB vs. OD, cache=TRUE, results = "asis", fig.width=28, fig.height = 30, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -359,10 +363,10 @@ ssgsea_PTB_OD_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(me
 
 #### Ridge Plot
 
-```{r AUC ridge plot for PTB vs OD,fig.height = 15, fig.width=8, cache=TRUE}
+```{r AUC ridge plot for PTB vs OD, fig.width=8, fig.height = 15, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. OD
-get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB vs. OD") + theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB vs. OD") + ggplot2::theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
                  axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
 
 ```
@@ -370,7 +374,7 @@ get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB
 #### Heatmap{.tabset}
 
 ##### Without grouping
-```{r PTB vs. OD heatmap without grouping,fig.height = 12, fig.width=10, fig.wide=TRUE}
+```{r PTB vs. OD heatmap without grouping, fig.width=8, fig.height = 12, fig.wide=TRUE}
 # Import signature and data information
 GSE_sig <- readxl::read_excel("~/Desktop/RA work/build_TB_data/Signatures/Signature_data_cur.xlsx",sheet = "Sheet2")
 
@@ -378,16 +382,12 @@ heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, names(TBsignatures), facet = FALSE) 
 ```
 
 ##### With grouping
-```{r PTB vs. OD heatmap with grouping,fig.height = 12, fig.width=10, fig.wide=TRUE}
-heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, TBsignatures = names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. OD")
+```{r PTB vs. OD heatmap with grouping, fig.width=8, fig.height = 12, fig.wide=TRUE}
+heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. OD")
 
 # Use if want to add axis label
 # + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=0.5,hjust=-0.12,size=13,face="bold"))
 ```
-
-
-
-
 
 
 
@@ -416,7 +416,7 @@ ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Pro
 
 ### Boxplot for progression{.tabset}
 
-```{r Boxplot for progression, results = "asis", fig.height = 12, fig.width=8, fig.wide=TRUE}
+```{r Boxplot for progression, results = "asis", fig.width=10, fig.height = 6, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -454,13 +454,13 @@ ssgsea_progress_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(
 
 #### Without Grouping
 
-```{r progression heatmap without grouping,fig.height = 10, fig.width=6}
+```{r progression heatmap without grouping, fig.width=6, fig.height = 10}
 heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = FALSE) + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + ggtitle("Heatmap of AUC for predicting TB progression")
 ```
 
 #### With Group
 
-```{r progression heatmap with grouping,fig.height = 10, fig.width=6}
+```{r progression heatmap with grouping, fig.width=6, fig.height = 10}
 heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for predicting TB progression") + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + xlab("Datasets")
 
 ```
