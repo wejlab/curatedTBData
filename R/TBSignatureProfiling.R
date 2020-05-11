@@ -21,10 +21,15 @@ setMethod("SignatureFilter",
             sig_list1 <- lapply(1:length(sig_list), function(i,gset){
 
               x <- sig_list[[i]]
-              GSE <- rep(names(sig_list[i]), nrow(colData(x)))
-              index <- na.omit(match(gset,names(colData(x))))
+              GSE <- rep(names(sig_list[i]), nrow(SummarizedExperiment::colData(x)))
+              index <- na.omit(match(gset,names(SummarizedExperiment::colData(x))))
+              if(length(index) == 0) {
+                result <- data.frame(SummarizedExperiment::colData(x)[,annotationColName],NA,GSE=GSE)
+                colnames(result) <- c(annotationColName, gset,"GSE")
+                return(result)
+              }
               result <- data.frame(SummarizedExperiment::colData(x)[,annotationColName],SummarizedExperiment::colData(x)[,index],GSE=GSE)
-              colnames(result)[1:2] <- c(annotationColName, gset)
+              colnames(result) <- c(annotationColName, gset,"GSE")
               result
 
             }, gset)
@@ -34,21 +39,24 @@ setMethod("SignatureFilter",
           }
 )
 
-# kk = SignatureFilter(ssgsea_PTB_Latent[[1]],TBsignatures, GSE="test")
-
 #' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature(sig_list = "SummarizedExperiment", gset = "character"),
           function(sig_list, gset, GSE, annotationColName = "TBStatus"){
             index <- na.omit(match(gset,names(colData(sig_list))))
+            if(length(index)==0){
+              result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],NA, GSE)
+              colnames(result) <- c(annotationColName, gset,"GSE")
+              return(result)
+            }
+
             result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],SummarizedExperiment::colData(sig_list)[,index], GSE)
-            colnames(result)[1:2] <- c(annotationColName, gset)
+            colnames(result) <- c(annotationColName, gset,"GSE")
             return(result)
 
           }
 )
 
-# kkk = SignatureFilter(ssgsea_PTB_Latent[[1]],"Anderson_42", GSE="test")
 
 #########################################
 
@@ -98,7 +106,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
                                                             rotateLabels = FALSE,
                                                             fill_colors = myColors)
                                                             # c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
-              p1 <- p + theme(plot.title = ggplot2::element_text(size=26, face="bold"),
+              p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size=26, face="bold"),
                               legend.title = element_blank(),
                               legend.position = "none",
                               legend.text = ggplot2::element_text(size=20),
@@ -131,6 +139,9 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
             sig_data$annotationNameLevels <- factor(sig_data[,annotationColName],
                                                     levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
 
+            # Create a custom color scale to deal with different factors
+            myColors <- RColorBrewer::brewer.pal(length(levels(sig_data$annotationNameLevels)),"Set1")
+
             names(myColors) <- levels(sig_data$annotationNameLevels)
 
             sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data)
@@ -143,7 +154,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
               annotationColName = "annotationNameLevels",
               rotateLabels = FALSE,
               fill_colors = myColors)
-            p1 <- p + theme(plot.title = ggplot2::element_text(size=26, face="bold"),
+            p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size=26, face="bold"),
                             strip.text = element_text(size=26, face="bold"),
                             legend.title = element_blank(),
                             legend.position = "none",
@@ -252,12 +263,11 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
 #' @return A data frame/datatable with features including signatures, p-value, and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
-                        num.boot=NULL, output="data.frame"){
+                        num.boot=NULL){
   aucs_result <- lapply(SE_scored_list, function(x){
-    get_stats(x,
-                   annotationColName = annotationColName,
-                   signatureColNames = signatureColNames,
-                   num.boot = num.boot)
+    get_stats(x,annotationColName = annotationColName,
+                signatureColNames = signatureColNames,
+                num.boot = num.boot)
   }
     )
   aucs_result_dat <- do.call(rbind,aucs_result)
@@ -270,6 +280,9 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
   Signature_order <- as.character(aucs_result_dat_median$Signature)
   # Re-order gene siganture, re-level
   aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
+
+  # label name of each dataset as "GSE"
+  aucs_result_dat$GSE <- gsub("\\..*","",row.names(aucs_result_dat))
 
   return(aucs_result_dat)
 }
@@ -296,4 +309,128 @@ get_auc_distribution <- function(aucs_result){
   p_ridge <- ggplot(aucs_result,aes(x=AUC,y=Signature)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
                                                    yend = as.numeric(Signature) + .9), color = "red")
   return(p_ridge)
+}
+
+##############################################################################
+
+#' Obtain ridge plots for emprirical AUC distribution for signature scores.
+#' @name heatmap_auc
+#' @param combine_dat A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.
+#' @param GSE_sig A dataframe contains information about eacch signature and its traning dataset name.
+#' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
+#' @param facet Logic. True if want to group signatures into groups. Default is FLASE.
+#' @return Heatmap with AUC values. x axis represents expression data, y axis represents signatures.
+#' @examples
+#' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86","Blankley_5"),2),
+#'                AUC=runif(10,0.5,1), GSE=rep(c("GSE39939","GSE19442"), each=5))
+#' GSE_sig_exp <- data.frame(Signature=c("Anderson","Anderson","Berry","Berry"),GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
+#' TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86","Blankley_5")
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
+#'@export
+heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
+  dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
+  data_wide <- tidyr::spread(dat, Signature, AUC)
+  row.names(data_wide) <- data_wide$GSE
+  dat_input <- data_wide[,-1] %>% as.matrix
+  dat_input[is.na(dat_input)] <- 0.5
+
+  # Clustering AUC values
+  dd <- dist(dat_input)
+  hc <- hclust(dd)
+  dat_input1 <-dat_input[hc$order,]
+
+  # Get mean AUC for each dataset
+  dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1))
+
+  # Trasform into long format
+  datta <- reshape2::melt(dat_input1)
+
+  # Get traning data position index
+  datta$trian <- FALSE
+
+  index <- NULL
+  for (i in 1:nrow(GSE_sig)){
+    kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
+    kk$indx <- row.names(kk)
+    indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
+    index <- c(index,indx)
+  }
+
+  # Label signature type
+  sig_type_temp <- sig_type_temp2 <- sapply(strsplit(signatureColNames,"_"), function(x) x[2])
+  sig_type <- suppressWarnings(sig_type_temp[which(is.na(as.numeric(sig_type_temp2)))]) %>% unique()
+  datta$sig_typek <- "Normal"
+
+  for (i in sig_type){
+    datta$sig_typek[grep(i,datta$Var2)] <- i
+  }
+  datta$sig_typek[grep("Avg",datta$Var2)] <- "Avg"
+
+  datta$sig_typek <- factor(datta$sig_typek, levels = c("Avg",sig_type,"Normal"))
+
+  datta[as.numeric(index),"trian"] <- TRUE
+  frames2 <-  frames <- datta[datta$trian, c("Var1", "Var2","sig_typek")]
+
+  frames2$Var1 <- as.integer(frames$Var1)
+  frames2$Var2 <- as.integer(frames$Var2)
+
+  # Functions to create correct traning index in facet grid
+  facet_rect_position <- function(datta, frames){
+
+    # Split dataframe into list based on different signature type
+    frames_list <- frames %>% dplyr::group_split(sig_typek)
+    names(frames_list) <- sapply(frames_list, function(x) x$sig_typek[1])
+
+    datta_list <- datta %>% dplyr::group_split(sig_typek)
+    names(datta_list) <- sapply(datta_list, function(x) x$sig_typek[1])
+
+    # Get the correct index in for traning dataset
+    # chnage sig_type levels from sub list based on characters in full list
+    frame_facet1 <- lapply(names(frames_list), function(i){
+      frames_list[[i]]$Var1 <- as.integer(frames_list[[i]]$Var1)
+      frames_list[[i]]$Var2 <- as.integer(factor(frames_list[[i]]$Var2, levels = unique(datta_list[[i]]$Var2)))
+
+      frames_list[[i]]
+    })
+    frame_facet <- do.call(rbind,frame_facet1)
+    return(frame_facet)
+
+  }
+
+  frame_facet <- facet_rect_position(datta,frames)
+
+  if (facet==FALSE){
+    p <- ggplot(data = datta, aes(x=Var1, y=Var2, fill=value)) +
+      geom_tile() +
+      geom_text(aes(label = round(value, 2)), cex=3.5) +
+      scale_fill_distiller(palette = "RdPu", trans = "reverse") +
+      geom_rect(data=frames2, size=1, fill=NA, colour="black",
+                aes(xmin=Var1 - 0.5, xmax=Var1 + 0.5, ymin=Var2 - 0.5, ymax=Var2 + 0.5)) +
+      theme(axis.title.x=element_blank(),
+            axis.title.y=element_blank(),
+            axis.text.x = element_text(angle = 45, vjust = 1,
+                                       size = 12, hjust = 1),
+            axis.text.y = element_text(size = 12))
+    return(p)
+
+  }
+  if(facet==TRUE){
+    p <- ggplot(data = datta, aes(x=Var1, y=Var2, fill=value)) +
+      geom_tile() +
+      scale_fill_distiller(palette = "RdPu", trans = "reverse") +
+      facet_grid(sig_typek~., switch = "y", scales="free", space="free") +
+      geom_text(aes(label = round(value, 2)), cex=3.5) +
+      theme(axis.title.x=element_blank(),
+            axis.title.y=element_blank(),
+            axis.text.x = element_text(angle = 45, vjust = 1,
+                                       size = 12, hjust = 1),
+            axis.text.y = element_text(size = 12)) +
+      geom_rect(data = data.frame(frame_facet),
+                aes(xmin = Var1-0.5, xmax = Var1+0.5, ymin = Var2-0.5, ymax = Var2+0.5),
+                size=1, fill=NA, colour="black", inherit.aes = FALSE)
+
+    return(p)
+  }
+
 }
