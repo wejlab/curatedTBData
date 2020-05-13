@@ -225,8 +225,10 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
 
+
+ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS")
 # Obtain p.value, AUC
-ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50, percent = 0.95)
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -261,9 +263,17 @@ for (i in names(TBsignatures)){
 ```
 
 ### Summary Table for the performance of each signature
-Evaluate AUCs by taking te means. How about the P value?
+Compute mean AUC and bootstrapped 95% CI
 ```{r suumary table PTB vs. Latent}
-ssgsea_PTB_Latent_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary <- ssgsea_PTB_Latent_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+cbind(Signature=sapply(PTB_Latent_auc_summary, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_Latent_auc_summary, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) %>% DT::datatable()
 
 ```
 
@@ -313,8 +323,6 @@ ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
 
-saveRDS(ssgsea_PTB_OD, "~/Desktop/ssgsea_PTB_OD.RDS")
-# ssgsea_PTB_OD <- readRDS("~/Desktop/ssgsea_PTB_OD.RDS") 
 
 # Obtain p.value, AUC
 ssgsea_PTB_OD_combine <- combine_auc(ssgsea_PTB_OD, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)

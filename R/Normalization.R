@@ -48,6 +48,7 @@ setMethod("Normalization",
           signature = "MultiAssayExperiment",
           function(theObject, experiment_type = c("assay_raw","assay_reprocess"), method = "TMM"){
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
+            if(missing(experiment_type)){experiment_type="assay_raw"}
             experiment_type <- match.arg(experiment_type)
             if (experiment_type == "assay_raw"){
               counts <- assays(experiments(theObject)[[experiment_type]])[[1]]
