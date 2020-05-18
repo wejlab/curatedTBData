@@ -29,7 +29,7 @@ setMethod("SubsetTBStatus",
           #  }
 
             n <- length(diseases)
-            theObject_filter <- theObject[,colData(theObject)[,annotationColName] %in% diseases]
+            theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% diseases]
             annotation <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
             if(length(unique(annotation)) == n){
               return(theObject_filter)
@@ -59,7 +59,7 @@ setMethod("SubsetTBStatus",
             if(experiment_type == "all"){
 
               n <- length(diseases)
-              theObject_filter <- theObject[,colData(theObject)[,annotationColName] %in% diseases]
+              theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% diseases]
               TB_status <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
               if(length(unique(TB_status)) == n){
                 return(theObject_filter)
@@ -74,7 +74,7 @@ setMethod("SubsetTBStatus",
 
 
               n <- length(diseases)
-              col_data <-  colData(theObject)
+              col_data <-  SummarizedExperiment::colData(theObject)
 
               # when not all samples are included in the expression matrix
               # This is the cases with some RNA-seq data
@@ -82,6 +82,12 @@ setMethod("SubsetTBStatus",
                 index <- na.omit(match(colnames(theObject[[experiment_type]]), row.names(col_data)))
                 col_data <- col_data[index,]
               }
+
+              ## Make sure that row/column names have NULL attribute
+              # Set atrribute to be NULL
+              colnames(theObject[[experiment_type]]) <- as.character(colnames(theObject[[experiment_type]]))
+
+              row.names(theObject[[experiment_type]]) <- as.character(row.names(theObject[[experiment_type]]))
 
               sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=as.matrix(theObject[[experiment_type]])), colData = col_data)
 
