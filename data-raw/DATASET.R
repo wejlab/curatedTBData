@@ -77,3 +77,7 @@ add_new_data_mobject("GSE112104_mobject.RDS")
 # Edit GSE107994,GSE79362 on Apr. 5th
 add_new_data_mobject("GSE107994_mobject.RDS")
 add_new_data_mobject("GSE79362_mobject.RDS")
+
+#----------------------------------------------------.
+# Edit GSE94438 on Apr. 5th
+add_new_data_mobject("GSE94438_mobject.RDS")

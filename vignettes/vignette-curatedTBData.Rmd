@@ -17,7 +17,9 @@ devtools::install_github("xutao-wang/curatedTBData")
 ```
 
 ```{r libraries, message=FALSE}
+library(BiocParallel)
 library(dplyr)
+library(dtplyr)
 library(edgeR)
 library(GEOquery)
 library(ggplot2)
@@ -59,7 +61,7 @@ Insert introduction/background infrmation about this data package
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
 ```{r load a list of datasets}
-# To get a signle dataset, run the following:
+# To get a single data, run the following:
 # data(package="curatedTBData")
 # data(GSE39939_sobject)
 
@@ -174,22 +176,20 @@ First of all, we create reate a list of object with normalized reads and probese
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
 
 ```{r normalized/matched sample, cache=TRUE}
+#Initialize parallel
+param <- SerialParam(progressbar=TRUE)
 # Normalization. For RNA-seq data, we use raw data from online for normalization (Not the self-processed data)
 # Use online raw data by specifying the experiment_type=assay_raw
-object_norm <- lapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw")) 
+object_norm <- bplapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw"),BPPARAM = param) 
 
 # Match Probe to gene symbols
 # Use the normalized data from assay_raw by specifying the experiment_type=assay_raw_norm
-object_match1 <- lapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"))
+object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"),BPPARAM = param)
 
 # Remove samples with TBStatus == NA
-object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"])
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
 
-# Add new list of signatures
 TBsignatures <- TBSignatureProfiler::TBsignatures
-TBsignatures$"Suliman_RISK_4" <- c("GAS6","SEPT4","CD1C","BLK")
-TBsignatures$"Suliman_4" <- c("ANKRD22", "C1QC", "OSBPL10", "TRAV27") 
-TBsignatures$"Leong_RISK_29"<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
 ```
 
 ## Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`{.tabset}
@@ -198,14 +198,14 @@ TBsignatures$"Leong_RISK_29"<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "
 
 `TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetTBStatus`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
 Workflow of ssGSEA:
-1. Input data, take sample-specific absolute rank:$|r_{ij}|$.
+1. Transform sample-specific gene expression value into absolute rank. For gene $i$ and sample $j$, the rank is: $|r_{ij}|$. **The list is then ordered from the highest rank to the lowest**. 
 
-2. After getting the ranked data, calculate random walk statistics for each sample. p: Number of genes, j: sample, k:gene set
-$$v_{jk}(\ell)=\frac{\sum_{i=1}^\ell |r_{ij}|^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^p|r_{ij}|^\tau I(g(i)\in\gamma_k)}-\frac{\sum_{i=1}^\ell I(g(i)\notin \gamma_k)}{p-|\gamma_k|}, \quad\ell=1,\dots,p \\
-ES_{jk}=\sum_{\ell=1}^p v_{jk}(\ell)$$
-$p=$ Number of genes.
+2. After getting the ranked data, calculate random walk statistics for each sample. 
+$$v_{jk}(\ell) = \frac{\sum_{i=1}^\ell |r_{ij}|^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^p|r_{ij}|^\tau I(g(i)\in\gamma_k)}-\frac{\sum_{i=1}^\ell I(g(i)\notin \gamma_k)}{p-|\gamma_k|}, \quad\ell=1,\dots,p\\
+                ES_{jk} =\sum_{\ell=1}^p v_{jk}(\ell)$$
+$\tau=0.25$.\\
+$p=$ Total number of genes.\\ 
 $|\gamma_k|$= Number of genes within gene set $k$.
-$\tau=0.25$.
 
 3. Re-scale the enrichment scores (ES) for each sample
 $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{nk}\}}$$
@@ -226,9 +226,14 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   parallel.sz = 14))
 
 
-ssgsea_PTB_Latent <- readRDS("~/Desktop/ssgsea_PTB_Latent.RDS")
 # Obtain p.value, AUC
-ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50, percent = 0.95)
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
+
+# Obtain signature gene rank
+sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
+
+# Filter TB signatures with genes less than or equal to 16
+TBsignatures_sub <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=16) %>% unlist]
 ```
 
 ### Boxplot of all scores signatures{.tabset}
@@ -243,6 +248,21 @@ for (i in names(TBsignatures)){
   cat("\n\n")
 }
 ```
+
+
+### Boxplots signature rank{.tabset}
+
+```{r Boxplot for each signature rank, results = "asis", fig.width=50, fig.height = 50, fig.wide=TRUE}
+for (i in names(TBsignatures_sub)){
+
+  cat("####", i, "\n")
+  
+  get_rank_boxplot(sig_list,i)
+  
+  cat("\n\n")
+}
+```
+
 
 ```{r include = FALSE}
 # Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
@@ -324,6 +344,7 @@ ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
                                   parallel.sz = 14))
 
 
+
 # Obtain p.value, AUC
 ssgsea_PTB_OD_combine <- combine_auc(ssgsea_PTB_OD, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot=50)
 
@@ -360,22 +381,50 @@ for (i in names(TBsignatures)){
 }
 ```
 
-### Summary Table for the performance of each signature
+### Summary Table for AUC and its Confidence Interval
 
-Evaluate AUCs by taking te means.
+Compute mean AUC and bootstrapped 95% CI
 ```{r suumary table PTB vs. OD}
-ssgsea_PTB_OD_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
+# Seletct signatures and associated AUC
+PTB_OD_auc_summary <- ssgsea_PTB_OD_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+cbind(Signature=sapply(PTB_OD_auc_summary, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_OD_auc_summary, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) %>% DT::datatable()
+
 ```
 
 ### Comparison of Signature Performance using AUCs{.tabset}
 
-#### Ridge Plot
+#### Ridge Plot{.tabset}
+
+##### Single Ridge Plot
 
 ```{r AUC ridge plot for PTB vs OD, fig.width=8, fig.height = 15, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. OD
 get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB vs. OD") + ggplot2::theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
                  axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+##### Compare with PTB vs. Latent
+
+```{r AUC ridge plot for PTB vs OD and PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "PTBvsLatent" 
+d2 <- ssgsea_PTB_OD_combine
+d2$type <- "PTBvsOD" 
+
+d3 <- rbind(d1,d2)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "red") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","Black"))
 
 ```
 
@@ -401,12 +450,12 @@ heatmap_auc(ssgsea_PTB_OD_combine, GSE_sig, names(TBsignatures), facet = TRUE) +
 
 ## Signature for predicting progression{.tabset}
 
-Datasets GSE79362, GSE107993, GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information. GSE107993 only includes latent non-progressor and control samples.
+Datasets GSE79362 (Adolescent Cohort Study), GSE94438 (GC6-74), GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information. GSE107993 only includes latent non-progressor and control samples.
 
 ### Calculate ssGSEA
 
 ```{r Calculate ssGSEA for progression, cache=TRUE, results = "hide"}
-gse_progress <- c("GSE79362", "GSE107994", "GSE112104")
+gse_progress <- c("GSE79362", "GSE107994", "GSE94438","GSE112104")
 multi_set_progress <- lapply(object_match[gse_progress], function(x)
   SubsetTBStatus(x, annotationColName = "Progression", c("Positive","Negative"), experiment_type = "assay_reduce")) %>% plyr::compact()
 
@@ -420,11 +469,15 @@ ssgsea_progress <- lapply(multi_set_progress,
 
 # Obtain p.value, AUC
 ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Progression", signatureColNames = names(TBsignatures), num.boot=50)
+
+# Obtain signature gene rank
+sig_list_progression <- bplapply(ssgsea_progress, function(x) get_gsea_rank(x, TBsignatures, annotationColName = "Progression"),BPPARAM=param)
+TBsignatures_sub_progress <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=29) %>% unlist]
 ```
 
 ### Boxplot for progression{.tabset}
 
-```{r Boxplot for progression, results = "asis", fig.width=10, fig.height = 6, fig.wide=TRUE}
+```{r Boxplot for progression, results = "asis", fig.width=8, fig.height = 10, fig.wide=TRUE}
 for (i in names(TBsignatures)){
 
   cat("####", i, "\n")
@@ -434,6 +487,19 @@ for (i in names(TBsignatures)){
   cat("\n\n")
 }
 ```
+
+### Boxplot for progression gene rank{.tabset}
+```{r Boxplot for each signature rank progression, results = "asis", fig.width=30, fig.height = 20, fig.wide=TRUE}
+for (i in names(TBsignatures_sub_progress)){
+
+  cat("####", i, "\n")
+  
+  get_rank_boxplot(sig_list_progression,i)
+  
+  cat("\n\n")
+}
+```
+
 
 ```{r include = FALSE}
 # Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
@@ -454,8 +520,18 @@ for (i in gse_progress){
 ```
 
 ### Summary table
-```{r summary for progression}
-ssgsea_progress_combine %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(mean) %>% select(Signature, AUC, LowerAUC, UpperAUC) %>% DT::datatable()
+Compute mean AUC and bootstrapped 95% CI
+```{r suumary table Progression}
+# Seletct signatures and associated AUC
+PTB_progress_auc_summary <- ssgsea_progress_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+cbind(Signature=sapply(PTB_progress_auc_summary, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_progress_auc_summary, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) %>% DT::datatable()
+
 ```
 
 ### Heatmap{.tabset}

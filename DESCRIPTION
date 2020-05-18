@@ -13,6 +13,7 @@ Depends: R (>= 4.0)
 Imports:
     BiocManager,
     BiocStyle,
+    BiocParallel,
     dplyr,
     GEOquery,
     ggplot2,
@@ -33,13 +34,14 @@ Imports:
 Suggests:
     AgiMicroRna,
     affy,
-    BiocParallel,
     DT,
     edgeR,
+    GSVA,
     hgu133plus2.db,
     hrbrthemes,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
+    magick,
     sva,
     TBSignatureProfiler,
     testthat
