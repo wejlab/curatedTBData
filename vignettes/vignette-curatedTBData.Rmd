@@ -1,7 +1,11 @@
 ---
 title: "curatedTBData"
 author: "Xutao Wang"
-output: BiocStyle::html_document
+output:
+  BiocStyle::html_document:
+    toc_float: true
+  BiocStyle::pdf_document: default
+package: BiocStyle
 vignette: >
   %\VignetteIndexEntry{curatedTBData}
   %\VignetteEngine{knitr::rmarkdown}
@@ -473,6 +477,8 @@ ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Pro
 # Obtain signature gene rank
 sig_list_progression <- bplapply(ssgsea_progress, function(x) get_gsea_rank(x, TBsignatures, annotationColName = "Progression"),BPPARAM=param)
 TBsignatures_sub_progress <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=29) %>% unlist]
+
+get_rank_boxplot(sig_list_progression,gset="Sweeney_OD_3")
 ```
 
 ### Boxplot for progression{.tabset}
