@@ -234,7 +234,7 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
 
 # Obtain signature gene rank
-sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
+# sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
 
 # Filter TB signatures with genes less than or equal to 16
 TBsignatures_sub <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=16) %>% unlist]
@@ -256,7 +256,7 @@ for (i in names(TBsignatures)){
 
 ### Boxplots signature rank{.tabset}
 
-```{r Boxplot for each signature rank, results = "asis", fig.width=50, fig.height = 50, fig.wide=TRUE}
+```{r Boxplot for each signature rank, eval=FALSE,include=FALSE, results = "asis", fig.width=50, fig.height = 50, fig.wide=TRUE}
 for (i in names(TBsignatures_sub)){
 
   cat("####", i, "\n")
@@ -328,6 +328,38 @@ heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = FAL
 # Import signature and data information
 heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
+
+### Implement SingScore to assess TB signature performance
+```{r singscore PTB vs OD}
+singscore_PTB_Latent <- bplapply(multi_set_PTB_Latent, function(x,TBsignatures) {
+  sobject_new <- x
+  rowData(sobject_new) <- NULL
+  dat <- assay(x)
+  rankData <- singscore::rankGenes(dat)
+  score_list <- lapply(TBsignatures, function(i) singscore::simpleScore(rankData, upSet = i, knownDirection = FALSE)$TotalScore)
+  score_df <- do.call(cbind,score_list)
+  colData(sobject_new) <- DataFrame(colData(sobject_new),score_df)
+  
+  sobject_new
+}, TBsignatures, BPPARAM=param)
+
+# Obtain p.value, AUC
+singscore_PTB_Latent_combine <- combine_auc(singscore_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50, percent = 0.95)
+```
+
+### Boxplot for singscore{.tabset}
+
+```{r, results = "asis", message = FALSE, fig.height = 30, fig.width=28, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(singscore_PTB_Latent, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
 
 ## Avtive TB (PTB) vs. Other Diseases (OD) {.tabset}
 
@@ -415,7 +447,7 @@ get_auc_distribution(ssgsea_PTB_OD_combine) + ggtitle("Ridge plot of AUC for PTB
 
 ```
 
-##### Compare with PTB vs. Latent
+##### PTB vs Latent as reference
 
 ```{r AUC ridge plot for PTB vs OD and PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
 d1 <- ssgsea_PTB_Latent_combine
@@ -428,9 +460,20 @@ d3 <- rbind(d1,d2)
 aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
 
 ggplot(d3,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
-                                                   yend = as.numeric(Signature) + .9), color = "red") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","Black"))
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","red")) + ggtitle("PTB vs Latent as reference")
 
 ```
+
+##### PTB vs OD as reference
+```{r AUC ridge plot for PTB vs OD and PTB vs Latent2, fig.width=8, fig.height = 15, cache=TRUE}
+d3_1 <- rbind(d2,d1)
+
+ggplot(d3_1,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","red")) + ggtitle("PTB vs OD as reference")
+
+```
+
+
 
 #### Heatmap{.tabset}
 
