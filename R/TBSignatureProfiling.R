@@ -253,7 +253,6 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
   }
 
 }
-
 ################################
 #' Combine results from list. Calculate p-value and AUC values
 #' @name combine_auc

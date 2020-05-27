@@ -193,6 +193,7 @@ object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type
 # Remove samples with TBStatus == NA
 object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
 
+# Define the list of TB signatures
 TBsignatures <- TBSignatureProfiler::TBsignatures
 ```
 
@@ -330,18 +331,23 @@ heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRU
 ```
 
 ### Implement SingScore to assess TB signature performance
-```{r singscore PTB vs OD}
-singscore_PTB_Latent <- bplapply(multi_set_PTB_Latent, function(x,TBsignatures) {
-  sobject_new <- x
+```{r singscore PTB vs OD, results = "hide"}
+singscore_sobject <- function(sobject,TB_sig){
+  param <- SerialParam(progressbar=TRUE)
+  sobject_new <- sobject
   rowData(sobject_new) <- NULL
-  dat <- assay(x)
+  dat <- na.omit(assay(sobject))
+  
   rankData <- singscore::rankGenes(dat)
-  score_list <- lapply(TBsignatures, function(i) singscore::simpleScore(rankData, upSet = i, knownDirection = FALSE)$TotalScore)
+  score_list <- bplapply(TBsignatures, function(i) suppressWarnings(singscore::simpleScore(rankData, upSet = i, knownDirection = FALSE)$TotalScore), BPPARAM=param)
   score_df <- do.call(cbind,score_list)
   colData(sobject_new) <- DataFrame(colData(sobject_new),score_df)
   
-  sobject_new
-}, TBsignatures, BPPARAM=param)
+  return(sobject_new)
+}
+
+singscore_PTB_Latent <- lapply(multi_set_PTB_Latent, function(x)
+  singscore_sobject(x,TBsignatures))
 
 # Obtain p.value, AUC
 singscore_PTB_Latent_combine <- combine_auc(singscore_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50, percent = 0.95)
@@ -358,6 +364,88 @@ for (i in names(TBsignatures)){
   
   cat("\n\n")
 }
+```
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. Latent Singscore, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(singscore_PTB_Latent_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for AUC and its Confidence Interval
+
+```{r suumary table PTB vs. Latent Singscore}
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary_singscore <- singscore_PTB_Latent_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+cbind(Signature=sapply(PTB_Latent_auc_summary_singscore, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_Latent_auc_summary_singscore, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) %>% DT::datatable()
+
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot{.tabset}
+
+##### Single Ridge Plot
+
+```{r, fig.width=8, fig.height = 15, cache=TRUE}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. OD
+get_auc_distribution(singscore_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent (Singscore)") + ggplot2::theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+##### ssGSEA as reference
+
+```{r AUC ridge plot for Singscore vs ssGSEA A, fig.width=8, fig.height = 15, cache=TRUE}
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "ssGSEA" 
+d2 <- singscore_PTB_Latent_combine
+d2$type <- "Singscore" 
+
+d3 <- rbind(d1,d2)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","red")) + ggtitle("PTB vs Latent as reference")
+
+```
+
+
+##### Singscore as reference
+
+```{r AUC ridge plot for Singscore vs ssGSEA B, fig.width=8, fig.height = 15, cache=TRUE}
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "ssGSEA" 
+d2 <- singscore_PTB_Latent_combine
+d2$type <- "Singscore" 
+
+d3_B <- rbind(d2,d1)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3_B,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = c("blue","red")) + ggtitle("PTB vs Latent as reference")
+
 ```
 
 
@@ -378,7 +466,6 @@ ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE,
                                   parallel.sz = 14))
-
 
 
 # Obtain p.value, AUC

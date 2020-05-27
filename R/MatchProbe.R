@@ -120,7 +120,7 @@ setMethod("MatchProbe",
 
               # Create expression matrix with gene symbol, take mean values for same genes
               sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
-              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% data.frame()
+              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% as.data.frame()
               row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
