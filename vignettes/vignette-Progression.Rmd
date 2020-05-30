@@ -1,0 +1,166 @@
+---
+title: "curatedTBData - Progression"
+author: "Xutao Wang"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+  BiocStyle::pdf_document: default
+package: BiocStyle
+vignette: >
+  %\VignetteIndexEntry{curatedTBData}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r load a list of datasets}
+# To get a single data, run the following:
+# data(package="curatedTBData")
+# data(GSE39939_sobject)
+
+list_files <- data(package="curatedTBData")[["results"]][,"Item"]
+
+# Get a list of all data
+data(list=list_files) # Takes some time...
+strobject <- ls(pattern="*object$")
+
+# Create a list for loaded data for metadata analysis
+objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
+objects_name <- gsub("_.*","",strobject)
+names(objects_list) <- objects_name
+
+```
+
+# Normalization
+```{r normalized/matched sample, cache=TRUE, results="hide"}
+#Initialize parallel
+param <- SerialParam(progressbar=TRUE)
+# Normalization. For RNA-seq data, we use raw data from online for normalization (Not the self-processed data)
+# Use online raw data by specifying the experiment_type=assay_raw
+object_norm <- bplapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw"),BPPARAM = param) 
+
+# Match Probe to gene symbols
+# Use the normalized data from assay_raw by specifying the experiment_type=assay_raw_norm
+object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"),BPPARAM = param)
+
+# Remove samples with TBStatus == NA
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
+
+# Define the list of TB signatures
+TBsignatures <- TBSignatureProfiler::TBsignatures
+```
+
+# Signature for predicting progression
+
+Datasets GSE79362 (Adolescent Cohort Study/ACS), GSE94438 (GC6-74), GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information. GSE107993 only includes latent non-progressor and control samples.
+
+## ssGSEA{.tabset}
+
+### Calculation
+
+```{r Calculate ssGSEA for progression, cache=TRUE, results = "hide"}
+gse_progress <- c("GSE79362", "GSE107994", "GSE94438","GSE112104")
+multi_set_progress <- lapply(object_match[gse_progress], function(x)
+  SubsetTBStatus(x, annotationColName = "Progression", c("Positive","Negative"), experiment_type = "assay_reduce")) %>% plyr::compact()
+
+ssgsea_progress <- lapply(multi_set_progress,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE,
+                                  parallel.sz = 14))
+
+# Obtain p.value, AUC
+ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Progression", signatureColNames = names(TBsignatures), num.boot=50)
+
+# Obtain signature gene rank
+sig_list_progression <- bplapply(ssgsea_progress, function(x) get_gsea_rank(x, TBsignatures, annotationColName = "Progression"),BPPARAM=param)
+TBsignatures_sub_progress <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=29) %>% unlist]
+
+get_rank_boxplot(sig_list_progression,gset="Sweeney_OD_3")
+```
+
+### Boxplot for progression{.tabset}
+
+```{r Boxplot for progression, results = "asis", fig.width=8, fig.height = 10, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(ssgsea_progress, gset = i, annotationColName = "Progression")
+  
+  cat("\n\n")
+}
+```
+
+### Boxplot for progression gene rank{.tabset}
+```{r Boxplot for each signature rank progression, results = "asis", fig.width=30, fig.height = 20, fig.wide=TRUE}
+for (i in names(TBsignatures_sub_progress)){
+
+  cat("####", i, "\n")
+  
+  get_rank_boxplot(sig_list_progression,i)
+  
+  cat("\n\n")
+}
+```
+
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table for progression{.tabset}
+
+```{r Table for progression, results = "asis"}
+for (i in gse_progress){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(ssgsea_progress_combine %>% dplyr::filter(GSE == i) %>% dplyr::select(-GSE))))
+
+  cat("\n\n")
+}
+```
+
+### Summary table
+Compute mean AUC and bootstrapped 95% CI
+```{r suumary table Progression}
+# Seletct signatures and associated AUC
+PTB_progress_auc_summary <- ssgsea_progress_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+cbind(Signature=sapply(PTB_progress_auc_summary, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_progress_auc_summary, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) %>% DT::datatable()
+
+```
+
+### Heatmap{.tabset}
+
+#### Without Grouping
+
+```{r progression heatmap without grouping, fig.width=6, fig.height = 10}
+heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = FALSE) + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + ggtitle("Heatmap of AUC for predicting TB progression")
+```
+
+#### With Group
+
+```{r progression heatmap with grouping, fig.width=6, fig.height = 10}
+heatmap_auc(ssgsea_progress_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for predicting TB progression") + xlab("Datasets") + theme(axis.title.x = element_text(angle=45,vjust=1.3,hjust=-0.2,size=12,face="bold")) + xlab("Datasets")
+
+```
+
+# Session Information
+
+```{r session information}
+sessionInfo()
+```
+

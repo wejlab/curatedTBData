@@ -11,13 +11,14 @@ setGeneric(name="Normalization", function(theObject,...){
 })
 
 # theObject <- GSE39939_sobject
+# Normalization for microarray
 #' @rdname Normalization-methods
 setMethod("Normalization",
           signature="SummarizedExperiment",
 
           function(theObject, method = "quantile", ...){
 
-            # check whether the object has been normalized.
+            # check whether the object is derived from Affymetrix.
             norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"),
                               collapse="|")
             if (length(grep(norm_GSE,assayNames(theObject))) == 1){
@@ -27,7 +28,7 @@ setMethod("Normalization",
             }
 
             # Remove outliers for microarray????
-            ################################# Function to be inserted ############
+            ############## Function to be inserted ############
 
             # set counts less than 10 to be 10.
             counts <- assays(theObject)[[1]]
