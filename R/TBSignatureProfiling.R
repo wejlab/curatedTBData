@@ -196,6 +196,14 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
     sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
       score <- SummarizedExperiment::colData(SE_scored)[i][,1]
+
+      # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
+      if (length(unique(score))==1){
+        dat <- data.frame(Signature=i,P.value=NA,AUC=NA)
+
+        return(dat)
+      }
+
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
       aucs <- max(pred$AUC, 1 - pred$AUC)
@@ -217,6 +225,14 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
     sig_result <- bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
+
+      # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
+      if (length(unique(score))==1){
+        dat <- data.frame(i,NA,NA,NA,NA)
+        colnames(dat) <- c("Signature","P.value","AUC",
+                           paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+        return(dat)
+      }
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
       aucs <- max(pred$AUC, 1 - pred$AUC)
@@ -236,9 +252,9 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
       bootCI <- na.omit(bootCI)
 
-      LowerAUC <- stats::quantile(bootCI,prob=lower)
-      UpperAUC <- stats::quantile(bootCI,prob=upper)
-      dat <- data.frame(i,round(pvals,4),round(aucs,4),
+      LowerAUC <- stats::quantile(bootCI, prob=lower, na.rm=TRUE)
+      UpperAUC <- stats::quantile(bootCI, prob=upper, na.rm=TRUE)
+      dat <- data.frame(i,round(pvals,4), round(aucs,4),
                         round(LowerAUC,4), round(UpperAUC,4))
       colnames(dat) <- c("Signature","P.value","AUC",
                          paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
@@ -272,7 +288,9 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
   aucs_result_dat <- do.call(rbind,aucs_result)
 
   # re-order data based on their median AUC
-  aucs_result_dat_median <- aucs_result_dat %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(median) %>% dplyr::arrange(desc(AUC))
+  # Remove NA value
+  aucs_result_dat1 <- na.omit(aucs_result_dat)
+  aucs_result_dat_median <- aucs_result_dat1 %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(median) %>% dplyr::arrange(desc(AUC))
 
   # New addition: order signatures based on median AUC values
 
@@ -309,6 +327,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
   upper <- 1-lower
 
   x <- unlist(data[,colName])
+  x <- na.omit(x) # Remove NA's in PLAGE method
+
   names(x) <- NULL
   n <- length(x)
 
@@ -326,7 +346,7 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
     deltastar <-  bsmeans - xbar
 
     # Find the 0.0.25 and 0.975 quantile for deltastar
-    d <-  quantile(deltastar, c(lower, upper))
+    d <-  quantile(deltastar, c(lower, upper),na.rm=TRUE)
 
     # Calculate the confidence interval for the mean.
     ci  <-  xbar - c(d[2], d[1])
@@ -339,7 +359,7 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
   }
 
   if (method == "percentile"){
-    ci_percent <- quantile(bsmeans, c(lower, upper))
+    ci_percent <- quantile(bsmeans, c(lower, upper), na.rm=TRUE)
     ci_percent <- data.frame(xbar,ci_percent[1], ci_percent[2])
     colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
     row.names(ci_percent) <- NULL
