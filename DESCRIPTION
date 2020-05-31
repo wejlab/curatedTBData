@@ -42,6 +42,7 @@ Suggests:
     illuminaHumanv4.db,
     illuminaHumanv3.db,
     magick,
+    singscore,
     sva,
     TBSignatureProfiler,
     testthat

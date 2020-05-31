@@ -147,7 +147,7 @@ for (i in names(TBsignatures)){
 ### Summary Table for AUC and its Confidence Interval
 
 Compute mean AUC and bootstrapped 95% CI
-```{r suumary table PTB vs. OD}
+```{r summary table PTB vs. OD}
 # Seletct signatures and associated AUC
 PTB_OD_auc_summary <- ssgsea_PTB_OD_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
@@ -282,7 +282,7 @@ for (i in names(TBsignatures)){
 
 ### Summary Table for AUC and its Confidence Interval
 
-```{r suumary table PTB vs. OD Singscore}
+```{r summary table PTB vs. OD Singscore}
 # Seletct signatures and associated AUC
 PTB_OD_auc_summary_singscore <- singscore_PTB_OD_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
@@ -387,7 +387,7 @@ for (i in names(TBsignatures)){
 
 ### Summary Table for AUC and its Confidence Interval
 
-```{r suumary table PTB vs. OD PLAGE}
+```{r summary table PTB vs. OD PLAGE}
 # Seletct signatures and associated AUC
 PTB_OD_auc_summary_plage <- plage_PTB_OD_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
