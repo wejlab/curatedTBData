@@ -197,7 +197,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
     sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
       score <- SummarizedExperiment::colData(SE_scored)[i][,1]
 
-      # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
+      # Deal with scores that have constant value (mostly from Sloot_HIV_2)
       if (length(unique(score))==1){
         dat <- data.frame(Signature=i,P.value=NA,AUC=NA)
 
@@ -241,6 +241,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
         index <- sample(1:length(score), replace = TRUE)
         tmp_score <- score[index]
         tmp_annotationData <- annotationData[index]
+
         # Consider when resampling only has 1 cases, remove it
         if(length(unique(tmp_annotationData)) == 2){
           tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
@@ -329,9 +330,17 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
   x <- unlist(data[,colName])
   x <- na.omit(x) # Remove NA's in PLAGE method
 
+
   names(x) <- NULL
   n <- length(x)
+  if (n==1){
+    xbar <- x
+    ci <- data.frame(xbar,NA, NA)
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    row.names(ci) <- NULL
 
+    return(ci)
+  }
   # sample mean
   xbar  <-  mean(x)
 
