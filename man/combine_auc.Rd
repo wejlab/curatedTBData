@@ -8,7 +8,8 @@ combine_auc(
   SE_scored_list,
   annotationColName = "TBStatus",
   signatureColNames,
-  num.boot = NULL
+  num.boot = NULL,
+  percent = 0.95
 )
 }
 \arguments{
@@ -19,11 +20,9 @@ combine_auc(
 \item{signatureColNames}{A character/vector contains name of gene signature.}
 
 \item{num.boot}{Number of bootstrapping.}
-
-\item{output}{A character specifies types of output, either data.frame or datatable from `DT`}
 }
 \value{
-A data frame/datatable with features including signatures, p-value, and AUC for each signature across datasets.
+A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 }
 \description{
 Combine results from list. Calculate p-value and AUC values

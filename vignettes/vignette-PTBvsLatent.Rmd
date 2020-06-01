@@ -1,0 +1,614 @@
+---
+title: "curatedTBData - PTB vs Latent"
+author: "Xutao Wang"
+output:
+  BiocStyle::html_document:
+    toc_float: true
+  BiocStyle::pdf_document: default
+package: BiocStyle
+vignette: >
+  %\VignetteIndexEntry{curatedTBData}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r install curatedTBData, eval = FALSE}
+devtools::install_github("xutao-wang/curatedTBData")
+```
+
+```{r libraries, message=FALSE}
+library(BiocParallel)
+library(dplyr)
+library(edgeR)
+library(GEOquery)
+library(ggplot2)
+library(ggridges)
+library(gridExtra)
+library(limma)
+library(MultiAssayExperiment)
+library(plyr)
+library(SummarizedExperiment)
+library(TBSignatureProfiler)
+
+devtools::load_all()
+library(curatedTBData)
+```
+
+This package requires large memory to process data. Please increase R script memory before running this vignette. 
+[Increase memory for Macs](https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached)
+Step 1: Open terminal
+Step 2:
+```{r, engine='bash', eval=FALSE}
+cd ~
+touch .Renviron
+open .Renviron
+```
+Step 3: Save the following as the first line of .Renviron:
+```{r, engine='bash', eval=FALSE}
+R_MAX_VSIZE=50Gb 
+```
+
+# `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
+
+Insert introduction/background infrmation about this data package
+
+# Create SummarizedExperiment/MultiAssayExperiment Object
+
+# Load available SummarizedExperiment/MultiAssayExperiment Objects
+
+We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
+
+```{r load a list of datasets}
+# To get a single data, run the following:
+# data(package="curatedTBData")
+# data(GSE39939_sobject)
+
+list_files <- data(package="curatedTBData")[["results"]][,"Item"]
+
+# Get a list of all data
+data(list=list_files) # Takes some time...
+strobject <- ls(pattern="*object$")
+
+# Create a list for loaded data for metadata analysis
+objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
+objects_name <- gsub("_.*","",strobject)
+names(objects_list) <- objects_name
+
+#####################################################
+## Create summary table for data with their sequencing platform
+rna_seq_name <- which(sapply(objects_list, function(x) class(x)) == "MultiAssayExperiment") %>% names()
+microarray_name <- which(sapply(objects_list, function(x) class(x)) != "MultiAssayExperiment") %>% names()
+data_type <- data.frame(GSE = c(rna_seq_name,microarray_name), Type = c(rep("RNA-seq",length(rna_seq_name)),rep("Microarray",length(microarray_name))), stringsAsFactors = F)
+index_norm <- which(data_type$GSE %in% c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"))
+
+data_type[index_norm,"Type"] <- "NormalizedMicroarray"
+
+```
+
+# Subsetting Objects
+
+The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` is the coordination of the meta-data and assays when subsetting.
+
+## Subsetting for single objects
+
+Both objects have similar method used for subsetting column information. For example, we want to select samples with only active TB
+```{r subsetting single object example}
+# subsetting samples from objects with TBStatus: PTB
+GSE39939_sobject[, GSE39939_sobject$TBStatus == "PTB"]
+# subsetting samples from objects with TBStatus: PTB
+GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
+```
+
+## Subsetting for multiple objects based on multiple conditions
+
+Since not all datasets contain information for each TB status. Next we want to select out objects that contain samples with only positive TB (PTB) and latent TB (Latent). In this case, we can use `SubsetTBStatus` function from curatedTBData. For either a list of datasets or a single dataset. 
+```{r subsetting multiple objects example}
+objects_list_test <-  lapply(objects_list, function(x)
+  SubsetTBStatus(x,"TBStatus",c("Latent","PTB"), experiment_type = "all")) %>% plyr::compact() 
+
+# 21/42 objects contain samples from PTB and Latent
+length(objects_list_test) 
+```
+
+# Normalization
+
+For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package before matching probesets to gen symbol. 
+Steps take: 
+1. remove outliers using `arrayQualityMetrics`.??? Have not included yet
+2. Set intensity values < 10 set to 10
+3. log2 transformed the data.
+4. Normalize data (RMA for Affymetrix microarray, quantile normalization for other microarray).
+
+## Between-sample normalization for Illumina microarray
+
+```{r}
+# add the normalized data as a new assay in the SummarizedExperiment 
+# set all counts less than 0 to be 1
+GSE39939_sobject_norm <- Normalization(GSE39939_sobject, method = "quantile")
+```
+Boxplot for non-normalized microarray data
+```{r, fig.width = 8, fig.height = 8}
+boxplot(log(assays(GSE39939_sobject_norm)[["GSE39939_Non_normalized_counts"]][,1:20], base=2))
+# display the boxplot in log2 for selected samples
+```
+Boxplot for microarray data after quantile normalization
+```{r, fig.width = 8, fig.height = 8}
+boxplot(assays(GSE39939_sobject_norm)[["NormalizedData"]][,1:20])
+# display the boxplot in log2 for selected samples
+```
+
+## Betwwen-sample normalization for RNA-seq
+
+```{r}
+# Add the normalized data as a new assay in the MultiAssayExperiment. 
+# Use experiment_type = "assay_reprocess" for reprocess RNA-seq
+GSE107991_mobject_norm <- Normalization(GSE107991_mobject, experiment_type = "assay_raw", method = "TMM")
+```
+
+Boxplot for non-normalized RNA-seq data
+```{r, fig.width = 8, fig.height = 8}
+# display the boxplot in log2
+boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20]+0.0001, base = 2))
+```
+
+Boxplot for normalized RNA-seq data
+```{r, fig.width = 8, fig.height = 8}
+# display the boxplot in log2
+# TMM reduces maximum value
+boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])[["NormalizedData"]][,1:20])
+```
+
+# Match ProbeID to Gene symbol
+
+For objects that contain probe information, we match them to gene symbol. We collapse probe information by taking their mean values if they mapped to the same gene, and expand probe information for non-uniqueness mapping. In such cases, we use MultiAssayExperiment Objects to store information for each data.
+
+```{r}
+# Match Probe ID using raw data
+# Specificy experiment_type = "assay_raw_norm" for matching probe ID using normalized data (if applicable)
+MatchProbe(GSE39939_sobject, experiment_type = "assay_raw")
+MatchProbe(GSE107991_mobject, experiment_type = "assay_raw")
+```
+
+# Normalization to list of datasets
+
+First of all, we create reate a list of object with normalized reads and probesets mapped to symbols. Match probe ID to symbol using either raw data or normalized data (if applicable) .
+Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
+
+```{r normalized/matched sample, cache=TRUE, results="hide",eval=FALSE}
+#Initialize parallel
+param <- SerialParam(progressbar=TRUE)
+# Normalization. For RNA-seq data, we use raw data from online for normalization (Not the self-processed data)
+# Use online raw data by specifying the experiment_type=assay_raw
+object_norm <- bplapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw"),BPPARAM = param) 
+
+# Match Probe to gene symbols
+# Use the normalized data from assay_raw by specifying the experiment_type=assay_raw_norm
+object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"),BPPARAM = param)
+
+# Remove samples with TBStatus == NA
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
+
+# Define the list of TB signatures
+TBsignatures <- TBSignatureProfiler::TBsignatures
+```
+
+```{r, results="hide",include=FALSE}
+#Initialize parallel
+param <- SerialParam(progressbar=TRUE)
+
+object_match1 <- readRDS("~/Desktop/object_match1.RDS")
+# Remove samples with TBStatus == NA
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
+
+# Define the list of TB signatures
+TBsignatures <- TBSignatureProfiler::TBsignatures
+```
+
+# Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`
+
+## ssGSEA {.tabset}
+
+`TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetTBStatus`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
+Workflow of ssGSEA:\
+1. Transform sample-specific gene expression value into absolute rank. For gene $i$ and sample $j$, the rank is: $|r_{ij}|$. **The list is then ordered from the highest rank to the lowest**. \
+
+2. After getting the ranked data, calculate random walk statistics for each sample. 
+$$v_{jk}(\ell) = \frac{\sum_{i=1}^\ell |r_{ij}|^\tau I(g(i)\in\gamma_k)}{\sum_{i=1}^p|r_{ij}|^\tau I(g(i)\in\gamma_k)}-\frac{\sum_{i=1}^\ell I(g(i)\notin \gamma_k)}{p-|\gamma_k|}, \quad\ell=1,\dots,p\\
+                ES_{jk} =\sum_{\ell=1}^p v_{jk}(\ell)$$
+$\tau=0.25$.\
+$p=$ Total number of genes.\
+$|\gamma_k|$= Number of genes within gene set $k$.\
+
+3. Re-scale the enrichment scores (ES) for each sample
+$$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{nk}\}}$$
+
+### ssGSEA Calculation
+
+```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
+# Select sample contain information about PTB and Latent
+# Modify the list to make it compatible with TBSignatureProfiler
+
+multi_set_PTB_Latent <- lapply(object_match, function(x)
+  SubsetTBStatus(x, annotationColName = "TBStatus",diseases = c("Latent","PTB"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+
+ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE,
+                                  parallel.sz = 14))
+
+
+# Obtain p.value, AUC
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
+
+# Obtain signature gene rank
+# sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
+
+# Filter TB signatures with genes less than or equal to 16
+# TBsignatures_sub <- TBsignatures[lapply(TBsignatures, function(x) length(x)<=16) %>% unlist]
+```
+
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. Latent, cache=TRUE, results = "asis", fig.width=30, fig.height = 32, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(ssgsea_PTB_Latent, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
+
+### Boxplots signature rank{.tabset}
+
+```{r Boxplot for each signature rank,include=FALSE, results = "asis", fig.width=50, fig.height = 50, fig.wide=TRUE,eval=FALSE}
+for (i in names(TBsignatures_sub)){
+
+  cat("####", i, "\n")
+  
+  get_rank_boxplot(sig_list,i)
+  
+  cat("\n\n")
+}
+```
+
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. Latent, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(ssgsea_PTB_Latent_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for the performance of each signature
+Compute mean AUC and bootstrapped 95% CI
+```{r summary table PTB vs. Latent}
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary_ssgsea <- ssgsea_PTB_Latent_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+ssgsea_PTB_Latent_auc_CI <- cbind(Signature=sapply(PTB_Latent_auc_summary_ssgsea, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) )
+ssgsea_PTB_Latent_auc_CI %>% DT::datatable()
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot
+
+```{r AUC ridge plot for PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. Latent
+get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent") + theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+#### Heatmap{.tabset}
+
+##### Without grouping
+
+```{r PTB vs. Latent heatmap without grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+GSE_sig <- readxl::read_excel("~/Desktop/RA work/build_TB_data/Signatures/Signature_data_cur.xlsx",sheet = "Sheet2")
+
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = FALSE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
+
+##### With grouping
+
+```{r PTB vs. Latent heatmap with grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
+
+## Singscore{.tabset}
+
+### Calculate Singscore
+
+```{r singscore PTB vs Latent, results = "hide"}
+singscore_sobject <- function(sobject,TB_sig){
+  param <- SerialParam(progressbar=TRUE)
+  sobject_new <- sobject
+  rowData(sobject_new) <- NULL
+  dat <- na.omit(assay(sobject))
+  
+  rankData <- singscore::rankGenes(dat)
+  score_list <- bplapply(TB_sig, function(i) suppressWarnings(singscore::simpleScore(rankData, upSet = i, knownDirection = FALSE)$TotalScore), BPPARAM=param)
+  score_df <- do.call(cbind,score_list)
+  colData(sobject_new) <- DataFrame(colData(sobject_new),score_df)
+  
+  return(sobject_new)
+}
+
+singscore_PTB_Latent <- lapply(multi_set_PTB_Latent, function(x)
+  singscore_sobject(x,TBsignatures))
+
+# Obtain p.value/ AUC
+singscore_PTB_Latent_combine <- combine_auc(singscore_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 50, percent = 0.95)
+
+```
+
+### Boxplot for singscore{.tabset}
+
+```{r, results = "asis", message = FALSE, fig.width=30, fig.height = 32, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(singscore_PTB_Latent, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. Latent Singscore, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(singscore_PTB_Latent_combine %>% dplyr::filter(Signature == i) %>% dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for AUC and its Confidence Interval
+
+```{r summary table PTB vs. Latent Singscore}
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary_singscore <- singscore_PTB_Latent_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+singscore_PTB_Latent_auc_CI <- cbind(Signature=sapply(PTB_Latent_auc_summary_singscore, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_Latent_auc_summary_singscore, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) )
+singscore_PTB_Latent_auc_CI %>% DT::datatable()
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot{.tabset}
+
+##### Single Ridge Plot
+
+```{r, fig.width=8, fig.height = 15, cache=TRUE}
+# Ridge plot for AUCs distribution across datasets
+# PTB vs. OD
+get_auc_distribution(singscore_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent (Singscore)") + ggplot2::theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+##### ssGSEA as reference
+
+```{r AUC ridge plot for Singscore vs ssGSEA A, fig.width=8, fig.height = 15, cache=TRUE}
+# blue: Singscore
+# red: ssGSEA
+myColors <- RColorBrewer::brewer.pal(3,"Set1")
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "ssGSEA" 
+d2 <- singscore_PTB_Latent_combine
+d2$type <- "Singscore" 
+
+d3 <- rbind(d1,d2)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = myColors[c(2,1)]) 
+
+```
+
+##### Singscore as reference
+
+```{r AUC ridge plot for Singscore vs ssGSEA B, fig.width=8, fig.height = 15, cache=TRUE}
+# blue: Singscore
+# red: ssGSEA
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "ssGSEA" 
+d2 <- singscore_PTB_Latent_combine
+d2$type <- "Singscore" 
+
+# change the level of sigantrures by switching the order of rbind
+d3_B <- rbind(d2,d1)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3_B,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Comparison", values = myColors[c(2,1)]) 
+
+```
+
+#### Heatmap
+```{r PTB vs. Latent heatmap singscore, fig.width=10, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(singscore_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent (Singscore)")
+```
+
+## PLAGE{.tabset}
+
+### Calculate PLAGE
+
+```{r calculate PLAGE for PTB vs Latent, results="hide"}
+# genes with constant expression across samples will be NaN after standardization.
+plage_PTB_Latent <- lapply(multi_set_PTB_Latent,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "PLAGE",
+                                  combineSigAndAlgorithm = TRUE,
+                                  parallel.sz = 14))
+
+plage_PTB_Latent_combine <- combine_auc(plage_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
+```
+
+### Boxplot for singscore{.tabset}
+
+```{r, results = "asis", message = FALSE, fig.width=30, fig.height = 32, fig.wide=TRUE}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(plage_PTB_Latent, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for AUC and its Confidence Interval
+
+```{r summary table PTB vs. Latent PLAGE}
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary_plage <- plage_PTB_Latent_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+plage_PTB_Latent_auc_CI <- cbind(Signature=sapply(PTB_Latent_auc_summary_plage, function(x) x$Signature[1]),
+      do.call(rbind,lapply(PTB_Latent_auc_summary_plage, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) ) 
+
+plage_PTB_Latent_auc_CI %>% DT::datatable()
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Ridge Plot{.tabset}
+
+##### Single Ridge Plot
+
+```{r, fig.width=8, fig.height = 15}
+# Ridge plot for AUCs distribution across datasets
+get_auc_distribution(plage_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent (plage)") + ggplot2::theme(axis.text.x = ggplot2::element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
+                 axis.text.y = ggplot2::element_text(size=12, angle = 0, hjust = 0.5))
+
+```
+
+##### ssGSEA as reference
+
+```{r AUC ridge plot for PLAGE vs ssGSEA (A), fig.width=8, fig.height = 15, cache=TRUE}
+myColors <- RColorBrewer::brewer.pal(3,"Set1")
+
+d1 <- ssgsea_PTB_Latent_combine
+d1$type <- "ssGSEA" 
+d2 <- plage_PTB_Latent_combine
+d2$type <- "PLAGE" 
+
+d_singscore <- singscore_PTB_Latent_combine
+d_singscore$type <- "Singscore"
+
+d3 <- rbind(d1,d2)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Method", values = myColors[c(3,1)]) 
+
+```
+
+##### PLAGE as reference
+
+```{r AUC ridge plot for PLAGE vs ssGSEA (B), fig.width=8, fig.height = 15, cache=TRUE}
+d3_B <- rbind(d2,d1)
+# add 50% AUC line
+aucs_result_dat_lines <- data.frame(Signature = d1$Signature,x0=0.5)
+
+ggplot(d3_B,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Method", values = myColors[c(3,1)]) 
+
+```
+
+##### ssGSEA as reference for all three methods
+
+```{r, fig.width=8, fig.height = 15}
+d_all <- rbind(d1,d2,d_singscore)
+
+ggplot(d_all,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+                                                   yend = as.numeric(Signature) + .9), color = "black") + theme_bw() + scale_color_manual(name = "Method", values = myColors[c(3,2,1)]) 
+
+```
+
+#### Heatmap
+```{r PTB vs. Latent heatmap plage, fig.width=10, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(plage_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent (PLAGE)")
+```
+
+
+```{r,eval=FALSE,include=FALSE}
+combine_auc_CI <- function(auc_CI_data,method){
+  
+  data <-  auc_CI_data[,-1]
+  data_new <-  sapply(1:ncol(data), function(x) formatC( round( data[,x], 3 ), format='f', digits=3 ))
+  result = data.frame(auc_CI_data[,1],paste0(data_new[,1]," (",data_new[,2],",",data_new[,3],")"))
+  colnames(result) = c("Signature",method)
+  return(result)
+}
+ssgsea1 = ssgsea_PTB_Latent_auc_CI %>% dplyr::arrange(desc(`Mean AUC`))
+
+singscore1 = singscore_PTB_Latent_auc_CI
+plage1 = plage_PTB_Latent_auc_CI
+
+final = combine_auc_CI(ssgsea1,"ssGSEA") %>% left_join(combine_auc_CI(singscore1,"Singscore"),by = c("Signature" = "Signature")) %>% left_join(combine_auc_CI(plage1,"PLAGE"),by = c("Signature" = "Signature"))
+final
+data.frame(final$Signature,final$bet,final$ssGSEA,final$bet, final$Singscore,final$bet,final$PLAGE,line="\\") %>% View()
+
+```
+
+# Session Information
+```{r session info}
+sessionInfo()
+```

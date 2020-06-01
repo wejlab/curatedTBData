@@ -34,7 +34,7 @@ setMethod("MatchProbe",
 
               ### A special case for those normalized data with unique gene symbol as row names GSEXXXX
               ## Matching process has already done
-              mobject1 <- new("Mobject", assay_reprocess = theObject@assays[[experiment_type]], assay_raw = theObject@assays[[experiment_type]],
+              mobject1 <- new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[experiment_type]], assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
                               row_data = data.frame(theObject@elementMetadata), primary = data.frame(theObject@colData),
                               meta_data = theObject@metadata[[1]])
               simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
@@ -43,7 +43,7 @@ setMethod("MatchProbe",
             }
 
             # For regular cases
-            row_data <- SummarizedExperiment::rowData(theObject) %>% data.frame()
+            row_data <- SummarizedExperiment::rowData(theObject) %>% as.data.frame()
 
             if (!any(colnames(row_data)=="SYMBOL_NEW")){
               stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
@@ -51,7 +51,7 @@ setMethod("MatchProbe",
             if (!any(colnames(row_data)=="ID_REF")){
               stop("RowData of the input Summarized Experiment Object does not have ID_REF column, add ID_REF column that includes probe IDs.")
             }
-            if (!all(row.names(assays(theObject)[[1]])==row_data$ID_REF)){
+            if (!all(row.names(SummarizedExperiment::assays(theObject)[[1]])==row_data$ID_REF)){
               stop("Input Summarized Experiment Object row names are not exactly the same with ID_REF from row Data, consider change")
             }
             # Add new column to the expression matrix
@@ -64,14 +64,19 @@ setMethod("MatchProbe",
             }
 
             # Create expression matrix with gene symbol, take mean values for same genes
-            sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
+            # Where the function spends most of the time, use dtplyr to speed up. Reduce ~1/3 time using dtplyr
+
+            #sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
+            sobject_exprs_new1 <- sobject_exprs_new
+
+            sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% as.data.frame()
             row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
             sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
 
             ## Create MultiAssayExperiment object Use methods from CreateSobject
             # assay_reprocess changes to name of assay_reduce in here
-            mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = theObject@assays[[experiment_type]],
+            mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
                             row_data = data.frame(theObject@elementMetadata), primary = data.frame(theObject@colData),
                             meta_data = theObject@metadata[[1]])
 
@@ -95,7 +100,7 @@ setMethod("MatchProbe",
 
               sobject_ori <- MultiAssayExperiment::experiments(theObject)[["assay_raw"]]
               sobject_exprs <- MultiAssayExperiment::assays(sobject_ori)[[assay_name]]
-              row_data <- SummarizedExperiment::rowData(sobject_ori) %>% data.frame()
+              row_data <- SummarizedExperiment::rowData(sobject_ori) %>% as.data.frame()
               if (!any(colnames(row_data)=="SYMBOL_NEW")){
                 stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
               }
@@ -117,7 +122,9 @@ setMethod("MatchProbe",
               }
 
               # Create expression matrix with gene symbol, take mean values for same genes
-              sobject_exprs_symbol <- sobject_exprs_new %>% group_by(SYMBOL) %>% summarise_all(mean) %>% data.frame()
+              # sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
+              sobject_exprs_new1 <- sobject_exprs_new
+              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% as.data.frame()
               row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()

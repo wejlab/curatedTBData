@@ -11,7 +11,7 @@ heatmap_auc(combine_dat, GSE_sig, signatureColNames, facet = FALSE)
 
 \item{GSE_sig}{A dataframe contains information about eacch signature and its traning dataset name.}
 
-\item{signatureColNames}{A character vector. Expect to be in the format "Name_type_number". e.g. "Anderson_OD_51"}
+\item{signatureColNames}{A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"}
 
 \item{facet}{Logic. True if want to group signatures into groups. Default is FLASE.}
 }

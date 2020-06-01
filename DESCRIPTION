@@ -9,10 +9,11 @@ Description: More about what it does (maybe more than one line)
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 4.0)
+Depends: R (>= 3.6.0)
 Imports:
     BiocManager,
     BiocStyle,
+    BiocParallel,
     dplyr,
     GEOquery,
     ggplot2,
@@ -33,13 +34,15 @@ Imports:
 Suggests:
     AgiMicroRna,
     affy,
-    BiocParallel,
     DT,
     edgeR,
+    GSVA,
     hgu133plus2.db,
     hrbrthemes,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
+    magick,
+    singscore,
     sva,
     TBSignatureProfiler,
     testthat
