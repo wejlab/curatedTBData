@@ -154,13 +154,13 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
               annotationColName = "annotationNameLevels",
               rotateLabels = FALSE,
               fill_colors = myColors)
-            p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size=26, face="bold"),
+            p1 <- p + ggplot2::theme(plot.title = element_text(size=26, face="bold"),
                             strip.text = element_text(size=26, face="bold"),
                             legend.title = element_blank(),
                             legend.position = "none",
-                            legend.text = ggplot2::element_text(size=20),
-                            axis.text.x = ggplot2::element_text(colour="Black", size=24, hjust = 0.5, face="bold"),
-                            axis.text.y = ggplot2::element_text(size=22, angle = 0, hjust = 0.5))
+                            legend.text = element_text(size=20),
+                            axis.text.x = element_text(colour="Black", size=24, hjust = 0.5, face="bold"),
+                            axis.text.y = element_text(size=22, angle = 0, hjust = 0.5))
 
             return(p1)
 
@@ -171,26 +171,39 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 ################################################
 
 #' Obtain pvalue, emprirical AUC, and 95% CI for each signature using two-sample t-test, ROCit::rocit, and bootstraping
-#' @name get_stats
+#' @name get_auc_stats
 #' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
-#' @param output A character specifies types of output, either data.frame or datatable from `DT`
 #' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
-get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
-                      num.boot=NULL, output="data.frame"){
+get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
+                      num.boot=NULL, percent=0.95){
+
   # check signatureColNames
   index <- na.omit(match(signatureColNames,colnames(SummarizedExperiment::colData(SE_scored))))
   signatureColNames <-  colnames(SummarizedExperiment::colData(SE_scored))[index]
 
   annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][,1] %>% as.character() %>% as.factor()
 
+  # Get lower and upper quantile
+  lower <- (1-percent)/2
+  upper <- 1-lower
+
+  # get AUC value for each signature along with corresponding datasets
   if (is.null(num.boot)){
 
     sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
       score <- SummarizedExperiment::colData(SE_scored)[i][,1]
+
+      # Deal with scores that have constant value (mostly from Sloot_HIV_2)
+      if (length(unique(score))==1){
+        dat <- data.frame(Signature=i,P.value=NA,AUC=NA)
+
+        return(dat)
+      }
+
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
       aucs <- max(pred$AUC, 1 - pred$AUC)
@@ -201,18 +214,25 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
 
     result <- data.frame(do.call(rbind, sig_result))
     row.names(result) <- NULL
-    if(output == "DataTabble"){
-      return(DT::datatable(result))
-    }
-    else{
-      return(result)
-    }
+
+    return(result)
 
   }
-  else{
 
-    sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
+  else{
+    # Initialize parallel
+    param <- SerialParam(progressbar=TRUE)
+
+    sig_result <- bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
+
+      # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
+      if (length(unique(score))==1){
+        dat <- data.frame(i,NA,NA,NA,NA)
+        colnames(dat) <- c("Signature","P.value","AUC",
+                           paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+        return(dat)
+      }
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
       aucs <- max(pred$AUC, 1 - pred$AUC)
@@ -221,6 +241,7 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
         index <- sample(1:length(score), replace = TRUE)
         tmp_score <- score[index]
         tmp_annotationData <- annotationData[index]
+
         # Consider when resampling only has 1 cases, remove it
         if(length(unique(tmp_annotationData)) == 2){
           tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
@@ -232,26 +253,23 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
 
       bootCI <- na.omit(bootCI)
 
-      LowerAUC <- stats::quantile(bootCI,prob=0.05)
-      UpperAUC <- stats::quantile(bootCI,prob=0.95)
-      data.frame(Signature=i,P.value=round(pvals,4),`neg10xLog(P.value)` = round(-10 * log(pvals), 4),
-                 AUC=round(aucs,4), LowerAUC=round(LowerAUC,4), UpperAUC=round(UpperAUC,4))
+      LowerAUC <- stats::quantile(bootCI, prob=lower, na.rm=TRUE)
+      UpperAUC <- stats::quantile(bootCI, prob=upper, na.rm=TRUE)
+      dat <- data.frame(i,round(pvals,4), round(aucs,4),
+                        round(LowerAUC,4), round(UpperAUC,4))
+      colnames(dat) <- c("Signature","P.value","AUC",
+                         paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+      dat
+    }, SE_scored, annotationData, lower, upper,BPPARAM = param)
 
-    }, SE_scored, annotationData)
-    result <- data.frame(do.call(rbind, sig_result))
+    result <- do.call(rbind, sig_result)
     row.names(result) <- NULL
-    if(output == "DataTabble"){
-      return(DT::datatable(result))
-    }
-    else{
-      return(result)
-    }
 
+    return(result)
 
   }
 
 }
-
 ################################
 #' Combine results from list. Calculate p-value and AUC values
 #' @name combine_auc
@@ -259,26 +277,28 @@ get_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNam
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
-#' @param output A character specifies types of output, either data.frame or datatable from `DT`
-#' @return A data frame/datatable with features including signatures, p-value, and AUC for each signature across datasets.
+#' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
-                        num.boot=NULL){
-  aucs_result <- lapply(SE_scored_list, function(x){
-    get_stats(x,annotationColName = annotationColName,
-                signatureColNames = signatureColNames,
-                num.boot = num.boot)
-  }
-    )
+                        num.boot=NULL, percent=0.95){
+  param <- SerialParam(progressbar=TRUE)
+  aucs_result <- bplapply(SE_scored_list, function(x){
+    get_auc_stats(x,annotationColName,
+                signatureColNames,num.boot, percent)
+  },BPPARAM = param)
   aucs_result_dat <- do.call(rbind,aucs_result)
 
   # re-order data based on their median AUC
-  aucs_result_dat_median <- aucs_result_dat %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(median) %>% dplyr::arrange(desc(AUC))
+  # Remove NA value
+  aucs_result_dat1 <- na.omit(aucs_result_dat)
+  aucs_result_dat_median <- aucs_result_dat1 %>% dplyr::group_by(Signature) %>% dplyr::summarise_all(median) %>% dplyr::arrange(desc(AUC))
 
   # New addition: order signatures based on median AUC values
 
   Signature_order <- as.character(aucs_result_dat_median$Signature)
+
   # Re-order gene siganture, re-level
+  # this step is to let ridge plot ordered based on median value
   aucs_result_dat$Signature <- factor(aucs_result_dat$Signature, levels = Signature_order)
 
   # label name of each dataset as "GSE"
@@ -287,6 +307,76 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
   return(aucs_result_dat)
 }
 
+
+##############################################################################
+#' Combine results from list. Calculate p-value and AUC values
+#' @name bootstrap_mean_CI
+#' @param data A data frame contains the interested numeric vector .
+#' @param percent A number indicates the percentage of confidence interval.
+#' @param method A character indicates the method used for computing bootstrap confidence interval. By default, this is set to `empirical`.
+#'
+#' @param num.boot Number of bootstrap times.
+#' @return A data frame with lower and upper bootstrap confidence interval.
+#' @export
+#'
+bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile","empirical"), num.boot){
+
+  if(missing(method)){method="empirical"}
+  method <- match.arg(method)
+  # cat("The method used for bootstrap confidence interval is ",method)
+  lower <- (1-percent)/2
+  upper <- 1-lower
+
+  x <- unlist(data[,colName])
+  x <- na.omit(x) # Remove NA's in PLAGE method
+
+
+  names(x) <- NULL
+  n <- length(x)
+  if (n==1){
+    xbar <- x
+    ci <- data.frame(xbar,NA, NA)
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    row.names(ci) <- NULL
+
+    return(ci)
+  }
+  # sample mean
+  xbar  <-  mean(x)
+
+  # random resamples from x
+  bootstrapsample <- sapply(1:num.boot, function(i) sample(x,n, replace=TRUE))
+
+  # Compute the means x∗
+  bsmeans <-  colMeans(bootstrapsample)
+
+  if (method == "empirical"){
+    # Compute deltastar for each bootstrap sample
+    deltastar <-  bsmeans - xbar
+
+    # Find the 0.0.25 and 0.975 quantile for deltastar
+    d <-  quantile(deltastar, c(lower, upper),na.rm=TRUE)
+
+    # Calculate the confidence interval for the mean.
+    ci  <-  xbar - c(d[2], d[1])
+
+    ci <- data.frame(xbar,ci[1], ci[2])
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    row.names(ci) <- NULL
+
+    return(ci)
+  }
+
+  if (method == "percentile"){
+    ci_percent <- quantile(bsmeans, c(lower, upper), na.rm=TRUE)
+    ci_percent <- data.frame(xbar,ci_percent[1], ci_percent[2])
+    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    row.names(ci_percent) <- NULL
+
+    return(ci_percent)
+  }
+
+}
 ##############################################################################
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
@@ -295,18 +385,17 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
 #' @return Ridge plot with median line
 #'
 #' @examples
-#' aucs_result <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=rnorm(3))
+#' aucs_result <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=ruinf(3,0,0.5))
 #' p_ridge <- get_auc_distribution(aucs_result)
 #' @export
 get_auc_distribution <- function(aucs_result){
-  library(ggplot2)
+
   library(gridExtra)
-  library(ggridges)
 
   # add 50% AUC line
   aucs_result_dat_lines <- data.frame(Signature = aucs_result$Signature,x0=0.5)
 
-  p_ridge <- ggplot(aucs_result,aes(x=AUC,y=Signature)) + geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
+  p_ridge <- ggplot2::ggplot(aucs_result,aes(x=AUC,y=Signature)) + ggridges::geom_density_ridges(jittered_points=TRUE,alpha=0.7,quantile_lines = TRUE, quantiles = 2) + geom_segment(data = aucs_result_dat_lines, aes(x = x0, xend = x0, y = as.numeric(Signature),
                                                    yend = as.numeric(Signature) + .9), color = "red")
   return(p_ridge)
 }
@@ -333,7 +422,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
   data_wide <- tidyr::spread(dat, Signature, AUC)
   row.names(data_wide) <- data_wide$GSE
   dat_input <- data_wide[,-1] %>% as.matrix
-  dat_input[is.na(dat_input)] <- 0.5
+  dat_input[is.na(dat_input)] <- NA
 
   # Clustering AUC values
   dd <- dist(dat_input)
@@ -341,7 +430,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
   dat_input1 <-dat_input[hc$order,]
 
   # Get mean AUC for each dataset
-  dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1))
+  dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1, na.rm = TRUE))
 
   # Trasform into long format
   datta <- reshape2::melt(dat_input1)
@@ -360,14 +449,14 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
   # Label signature type
   sig_type_temp <- sig_type_temp2 <- sapply(strsplit(signatureColNames,"_"), function(x) x[2])
   sig_type <- suppressWarnings(sig_type_temp[which(is.na(as.numeric(sig_type_temp2)))]) %>% unique()
-  datta$sig_typek <- "Normal"
+  datta$sig_typek <- "Disease"
 
   for (i in sig_type){
     datta$sig_typek[grep(i,datta$Var2)] <- i
   }
   datta$sig_typek[grep("Avg",datta$Var2)] <- "Avg"
 
-  datta$sig_typek <- factor(datta$sig_typek, levels = c("Avg",sig_type,"Normal"))
+  datta$sig_typek <- factor(datta$sig_typek, levels = c("Avg",sig_type,"Disease"))
 
   datta[as.numeric(index),"trian"] <- TRUE
   frames2 <-  frames <- datta[datta$trian, c("Var1", "Var2","sig_typek")]
