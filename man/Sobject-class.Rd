@@ -12,9 +12,9 @@ Create SummarizedExperiment object
 \describe{
 \item{\code{assay}}{A matrix contatins gene expression data}
 
-\item{\code{row_data}}{A DataFrame contains gene information}
+\item{\code{row_data}}{A DataFrame class contains gene information}
 
-\item{\code{column_data}}{A DataFrame contains sample information}
+\item{\code{column_data}}{A DataFrame class contains sample information}
 
 \item{\code{meta_data}}{A MIAME class contains experiment information}
 }}

@@ -37,20 +37,17 @@ library(curatedTBData)
 ```
 
 ```{r load a list of datasets, eval=FALSE}
-# To get a single data, run the following:
-# data(package="curatedTBData")
-# data(GSE39939_sobject)
+# To get a summary table for all the studies:
+# data("DataSummary",package="curatedTBData")
 
-list_files <- data(package="curatedTBData")[["results"]][,"Item"]
+# Load single data
+# get_curatedTBData("GSE39939")
+
+# Load Multiple Studies
+# get_curatedTBData(c("GSE39939","GSE107993"))
 
 # Get a list of all data
-data(list=list_files) # Takes some time...
-strobject <- ls(pattern="*object$")
-
-# Create a list for loaded data for metadata analysis
-objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
-objects_name <- gsub("_.*","",strobject)
-names(objects_list) <- objects_name
+objects_list <- get_curatedTBData(geo_access="All")
 
 ```
 
@@ -167,11 +164,13 @@ Compute mean AUC and bootstrapped 95% CI
 PTB_progress_auc_summary <- ssgsea_progress_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
 # Get summarized table and bootstrap 95% Confidence Interval
-cbind(Signature=sapply(PTB_progress_auc_summary, function(x) x$Signature[1]),
+ssgsea_progress_auc_CI <- cbind(Signature=sapply(PTB_progress_auc_summary, function(x) x$Signature[1]),
       do.call(rbind,lapply(PTB_progress_auc_summary, function(x){
   bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
 }
-)) ) %>% DT::datatable()
+)) ) 
+
+ssgsea_progress_auc_CI %>% DT::datatable()
 
 ```
 
@@ -258,11 +257,13 @@ for (i in names(TBsignatures)){
 progress_auc_summary_singscore <- singscore_progress_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
 # Get summarized table and bootstrap 95% Confidence Interval
-cbind(Signature=sapply(progress_auc_summary_singscore, function(x) x$Signature[1]),
+singscore_progress_auc_CI <- cbind(Signature=sapply(progress_auc_summary_singscore, function(x) x$Signature[1]),
       do.call(rbind,lapply(progress_auc_summary_singscore, function(x){
   bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
 }
-)) ) %>% DT::datatable()
+)) ) 
+
+singscore_progress_auc_CI %>% DT::datatable()
 
 ```
 
@@ -358,11 +359,13 @@ for (i in names(TBsignatures)){
 progress_auc_summary_plage <- plage_progress_combine %>% dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
 
 # Get summarized table and bootstrap 95% Confidence Interval
-cbind(Signature=sapply(progress_auc_summary_plage, function(x) x$Signature[1]),
+plage_progress_auc_CI <- cbind(Signature=sapply(progress_auc_summary_plage, function(x) x$Signature[1]),
       do.call(rbind,lapply(progress_auc_summary_plage, function(x){
   bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
 }
-)) ) %>% DT::datatable()
+)) ) 
+
+plage_progress_auc_CI %>% DT::datatable()
 
 ```
 
@@ -427,6 +430,27 @@ ggplot(d_all,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_p
 heatmap_auc(plage_progress_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for progression (PLAGE)")
 ```
 
+```{r,eval=FALSE,include=FALSE}
+combine_auc_CI <- function(auc_CI_data,method){
+  
+  data <-  auc_CI_data[,-1]
+  data_new <-  sapply(1:ncol(data), function(x) formatC( round( data[,x], 3 ), format='f', digits=3 ))
+  result = data.frame(auc_CI_data[,1],paste0(data_new[,1]," (",data_new[,2],",",data_new[,3],")"))
+  colnames(result) = c("Signature",method)
+  return(result)
+}
+ssgsea1 = ssgsea_progress_auc_CI %>% dplyr::arrange(desc(`Mean AUC`))
+
+singscore1 = singscore_progress_auc_CI
+plage1 = plage_progress_auc_CI
+
+final = combine_auc_CI(ssgsea1,"ssGSEA") %>% left_join(combine_auc_CI(singscore1,"Singscore"),by = c("Signature" = "Signature")) %>% left_join(combine_auc_CI(plage1,"PLAGE"),by = c("Signature" = "Signature"))
+final$bet="&"
+
+data.frame(final$Signature,final$bet,final$ssGSEA,final$bet, final$Singscore,final$bet,final$PLAGE) %>% View()
+a = strsplit(final$Signature,"_")
+paste0(a[[1]],collapse = "*\_")
+```
 
 
 # Session Information
