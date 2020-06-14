@@ -12,11 +12,11 @@ Create MultiAssay Experiment object
 \describe{
 \item{\code{assay_reprocess}}{A matrix contatins gene expression data}
 
-\item{\code{assay_raw}}{Another matrix contatins gene expression data}
+\item{\code{assay_raw}}{A matrix contatins gene expression data}
 
-\item{\code{row_data}}{A data.frame contains gene expression data with different dimensions}
+\item{\code{row_data}}{A DataFrame class contains gene expression data with different dimensions}
 
-\item{\code{primary}}{A data.frame contains sample information}
+\item{\code{primary}}{A DataFrame class contains sample information}
 
 \item{\code{meta_data}}{A MIAME class contains experiment information}
 }}

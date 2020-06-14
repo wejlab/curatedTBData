@@ -221,9 +221,9 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
   else{
     # Initialize parallel
-    param <- SerialParam(progressbar=TRUE)
+    param <- BiocParallel::SerialParam(progressbar=TRUE)
 
-    sig_result <- bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
+    sig_result <- BiocParallel::bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
 
       # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
@@ -281,8 +281,8 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
                         num.boot=NULL, percent=0.95){
-  param <- SerialParam(progressbar=TRUE)
-  aucs_result <- bplapply(SE_scored_list, function(x){
+  param <- BiocParallel::SerialParam(progressbar=TRUE)
+  aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
     get_auc_stats(x,annotationColName,
                 signatureColNames,num.boot, percent)
   },BPPARAM = param)

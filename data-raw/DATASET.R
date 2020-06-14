@@ -4,7 +4,7 @@ usethis::use_data("DATASET")
 
 library(purrr)
 library(devtools)
-############ Function to adgere a list of summarized experiment data ############
+############ Function to add a list of summarized experiment data ############
 add_new_data <- function(edit_files){
   library(purrr)
   library(devtools)
@@ -81,3 +81,20 @@ add_new_data_mobject("GSE79362_mobject.RDS")
 #----------------------------------------------------.
 # Edit GSE94438 on Apr. 5th
 add_new_data_mobject("GSE94438_mobject.RDS")
+
+#----------------------------------------------------.
+# store Objects into indivual matrix
+
+f1 <-  list.files("data-raw")
+f2 <-  f1[grep("GSE",f1)]
+total <- lapply(f2, function(x) readRDS(paste0("data-raw/",x)))
+names(total) <- f2
+
+purrr::walk2(total, names(total), function(obj, name) {
+  assign(name, obj)
+  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
+})
+
+DataSummary <- readRDS("data-raw/DataSummary.RDS")
+use_data(DataSummary,compress = "xz", overwrite = TRUE)
+

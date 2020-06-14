@@ -63,29 +63,17 @@ Insert introduction/background infrmation about this data package
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
 
 ```{r load a list of datasets}
-# To get a single data, run the following:
-# data(package="curatedTBData")
-# data(GSE39939_sobject)
+# To get a summary table for all the studies:
+# data("DataSummary",package="curatedTBData")
 
-list_files <- data(package="curatedTBData")[["results"]][,"Item"]
+# Load single data
+# get_curatedTBData("GSE39939")
+
+# Load Multiple Studies
+# get_curatedTBData(c("GSE39939","GSE107993"))
 
 # Get a list of all data
-data(list=list_files) # Takes some time...
-strobject <- ls(pattern="*object$")
-
-# Create a list for loaded data for metadata analysis
-objects_list <- lapply(strobject, function(x) get(x)) # Takes some time...
-objects_name <- gsub("_.*","",strobject)
-names(objects_list) <- objects_name
-
-#####################################################
-## Create summary table for data with their sequencing platform
-rna_seq_name <- which(sapply(objects_list, function(x) class(x)) == "MultiAssayExperiment") %>% names()
-microarray_name <- which(sapply(objects_list, function(x) class(x)) != "MultiAssayExperiment") %>% names()
-data_type <- data.frame(GSE = c(rna_seq_name,microarray_name), Type = c(rep("RNA-seq",length(rna_seq_name)),rep("Microarray",length(microarray_name))), stringsAsFactors = F)
-index_norm <- which(data_type$GSE %in% c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"))
-
-data_type[index_norm,"Type"] <- "NormalizedMicroarray"
+objects_list <- get_curatedTBData(geo_access="All")
 
 ```
 
@@ -98,8 +86,11 @@ The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` 
 Both objects have similar method used for subsetting column information. For example, we want to select samples with only active TB
 ```{r subsetting single object example}
 # subsetting samples from objects with TBStatus: PTB
+GSE39939_sobject <- objects_list$GSE39939
 GSE39939_sobject[, GSE39939_sobject$TBStatus == "PTB"]
+
 # subsetting samples from objects with TBStatus: PTB
+GSE107991_mobject <- objects_list$GSE107991
 GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
 ```
 
@@ -480,6 +471,15 @@ heatmap_auc(singscore_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = 
 
 ## PLAGE{.tabset}
 
+This multi-sample gene score methods use singular value decomposition (SVD).
+Breif steps about PLAGE (Pathway Level Analysis of Gene Expression):
+
+1. Each gene's transcriptional response was centered to have a mean zero. R code: `t(scale(t(exprs)))`
+2. Subset gene set and perform SVD on the reduced matrix
+3. select first column of right singular vectors (\boldsymbol{v_1}) as the sample scores.
+
+Biological meaning of the first eigengene: record pattern that is shared by most of genes.
+
 ### Calculate PLAGE
 
 ```{r calculate PLAGE for PTB vs Latent, results="hide"}
@@ -571,7 +571,7 @@ ggplot(d3_B,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_po
 
 ```
 
-##### ssGSEA as reference for all three methods
+##### ssGSEA as reference for all fours methods
 
 ```{r, fig.width=8, fig.height = 15}
 d_all <- rbind(d1,d2,d_singscore)
@@ -582,11 +582,11 @@ ggplot(d_all,aes(x=AUC,y=Signature,color=type)) + geom_density_ridges(jittered_p
 ```
 
 #### Heatmap
+
 ```{r PTB vs. Latent heatmap plage, fig.width=10, fig.height = 15, fig.wide=TRUE}
 # Import signature and data information
 heatmap_auc(plage_PTB_Latent_combine, GSE_sig, names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent (PLAGE)")
 ```
-
 
 ```{r,eval=FALSE,include=FALSE}
 combine_auc_CI <- function(auc_CI_data,method){
@@ -605,7 +605,6 @@ plage1 = plage_PTB_Latent_auc_CI
 final = combine_auc_CI(ssgsea1,"ssGSEA") %>% left_join(combine_auc_CI(singscore1,"Singscore"),by = c("Signature" = "Signature")) %>% left_join(combine_auc_CI(plage1,"PLAGE"),by = c("Signature" = "Signature"))
 final
 data.frame(final$Signature,final$bet,final$ssGSEA,final$bet, final$Singscore,final$bet,final$PLAGE,line="\\") %>% View()
-
 ```
 
 # Session Information

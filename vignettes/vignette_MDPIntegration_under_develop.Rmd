@@ -63,12 +63,6 @@ object_match1 <- lapply(object_norm, function(x) MatchProbe(x, experiment_type =
 
 # Remove samples with TBStatus == NA
 object_match <- lapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"])
-
-# Add new list of signatures
-TBsignatures <- TBSignatureProfiler::TBsignatures
-TBsignatures$'Suliman_RISK_4' <- c("GAS6","SEPT4","CD1C","BLK")
-TBsignatures$"Suliman_4" <- c("ANKRD22", "C1QC", "OSBPL10", "TRAV27") 
-TBsignatures$'Leong_RISK_29'<- c("SRBD1", "ZNF419", "SH2D1B", "CTSA", "GSTA4", "AGAP9", "MOB3C", "WARS", "LUC7L", "ZNRF1", "CIRBP", "PRSS53", "APOL6", "TCN2", "MDN1", "SNRNP70", "SLC3A1", "NAGA", "SPDYE5", "SPSB1", "CCDC14", "IL31RA", "DERA", "FUT4", "NEIL1", "ENO3", "CCDC78", "HM13", "ZNF202")
 ```
 
 ## Molecular Degree of Perturbation Analysis{.tabset}
@@ -143,8 +137,8 @@ boxplot(assays(result)[[2]])
 Recall the list of studies that have control samples. We could either pick up some data from the data for batch correction or use all of them. Next we will use all the available 21 studies. Function `CombineObjects` enables us to combine studies from different sources/platforms by intersecting commone genes from each dataset. The output data can be used for batch correction.
 ```{r Batch corrected of MDP/ssGSEA, cache=TRUE, message = FALSE, warning = FALSE, results = "hide"}
 # Batch correction
-# remove GSE74092 becuase it only has about matched gene symbol
-# because GSE74092 used quantitative PCR because they did not have enough coverage to capture all genes
+# remove GSE74092 becuase it only has 379 rows (Some are NA's)
+# because GSE74092 used quantitative PCR so they did not have enough coverage to capture all genes
 MDP_batch <- CombineObjects(object_match, gse_name = MDP_control_name[-which(MDP_control_name %in% "GSE74092")], experiment_type = "assay_reduce") 
 
 # Batch Correction
