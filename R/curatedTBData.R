@@ -480,12 +480,17 @@ setMethod("CreateObject",
 
 #' Combine individual data to SummarizedExperiment/MultiAssayExperiment object
 #' @name get_curatedTBData
-#' @param geo_access A character/vector that contains geo accession number. If NULL, get all avaible studies.
+#' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
 #' @return A list of SummarizedExperiment/MultiAssayExperiment objects
+#' @examples
+#' get_curatedTBData("GSE39939")
+#' get_curatedTBData(c("GSE39939","GSE107993"))
+#' get_curatedTBData("All")
 #' @export
 get_curatedTBData <- function(geo_access){
   # Initialize parallelization
   param <- BiocParallel::SerialParam(progressbar=TRUE)
+
   if (geo_access[1] == "All") {
     # Get all available studies
     file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
@@ -507,17 +512,19 @@ get_curatedTBData <- function(geo_access){
       objs <- ls(pos = ".GlobalEnv")
       rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
 
+      # Check whether assemble into Summarized or MultiAssayExperiment Object
+      # If no reporcess, then goes to SummarizedExperiment
 
-      # Check whether assemble into Summarized/MultiAssayExperiment Object
-
-      check_type <- grep("reprocess",data_load) # If no reporcess, then goes to SummarizedExperiment
-
+      check_type <- grep("reprocess",data_load)
       if(length(check_type) == 0){ # combine into SummarizedExperiment
 
         sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
                         column_data  = data_list$column_data, meta_data = data_list$meta_data)
 
         sobject1_final <- CreateObject(sobject1)
+
+        # Give assay name in SummarizedExperiment Object
+        names(SummarizedExperiment::assays(sobject1_final)) <- names(geo_index_list)[x]
 
 
         return(sobject1_final)
@@ -544,6 +551,7 @@ get_curatedTBData <- function(geo_access){
   }
 
   else{
+
     file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
     geo_index_list <- lapply(geo_access, function(x) grep(x,file_names_full))
     names(geo_index_list) <- geo_access
@@ -581,6 +589,9 @@ get_curatedTBData <- function(geo_access){
                           column_data  = data_list$column_data, meta_data = data_list$meta_data)
 
           sobject1_final <- CreateObject(sobject1)
+
+          # Give assay name in SummarizedExperiment Object
+          names(SummarizedExperiment::assays(sobject1_final)) <- names(geo_index_list)[x]
 
           return(sobject1_final)
 

@@ -103,8 +103,7 @@ ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 
 # Obtain p.value, AUC
@@ -368,8 +367,7 @@ plage_PTB_OD <- lapply(multi_set_PTB_OD,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "PLAGE",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 plage_PTB_OD_combine <- combine_auc(plage_PTB_OD, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
 ```

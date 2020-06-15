@@ -7,7 +7,7 @@
 CombineObjects(
   object_list,
   gse_name = NULL,
-  experiment_type = c("assay_reduce", "assay_reprocess_norm")
+  experiment_type = c("assay_reduce", "assay_reprocess", "assay_reprocess_norm")
 )
 }
 \arguments{
@@ -22,4 +22,11 @@ A SummarizedExperiment Object contains combined data from several objects.
 }
 \description{
 Combine samples with common genes from selected studies, usually run after `MatchProbe`
+}
+\examples{
+gse_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
+data_list <-  curatedTBData::get_curatedTBData(gse_name)
+object_norm <- lapply(data_list, function(x) curatedTBData::Normalization(x, experiment_type = "assay_raw"))
+object_match <- lapply(object_norm, function(x) curatedTBData::MatchProbe(x, experiment_type = "assay_raw_norm"))
+CombineObjects(object_match, gse_name, experiment_type="assay_reduce")
 }

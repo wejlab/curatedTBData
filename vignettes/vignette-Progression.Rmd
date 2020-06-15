@@ -100,8 +100,7 @@ ssgsea_progress <- lapply(multi_set_progress,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 # Obtain p.value, AUC
 ssgsea_progress_combine <- combine_auc(ssgsea_progress, annotationColName = "Progression", signatureColNames = names(TBsignatures), num.boot=50)
@@ -333,8 +332,7 @@ plage_progress <- lapply(multi_set_progress,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "PLAGE",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 plage_progress_combine <- combine_auc(plage_progress, annotationColName = "Progression", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
 ```

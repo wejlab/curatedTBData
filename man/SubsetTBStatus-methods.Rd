@@ -4,11 +4,7 @@
 \alias{SubsetTBStatus}
 \alias{SubsetTBStatus,SummarizedExperiment-method}
 \alias{SubsetTBStatus,MultiAssayExperiment-method}
-\title{Subsetting objects based on single/multiple conditions
-Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
-experiment=NULL in default
-Output is in the form of SummarizedExperiment format for TBsignatureProfier
-through indication of which assay you are going to work with.}
+\title{Subsetting objects based on single/multiple conditions}
 \usage{
 SubsetTBStatus(theObject, ...)
 
@@ -28,14 +24,13 @@ SubsetTBStatus(theObject, ...)
 
 \item{annotationColName}{A character indicates feature of interest in the object's column data.}
 
-\item{diseases}{A vector indicates conditions want to subset.}
+\item{diseases}{A vector indicates (disease)conditions want to subset.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.
+Choices for experiment_type are: "all", "assay_raw", "assay_reprocess", "assay_reduce".
+When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
+When experiment_type is "assay_reduce" or "assay_reprocess". Perform subsetting on matrix with experiment name "assay_reduce"/"assay_reprocess" respectively, output is in the form of SummarizedExperiment object.}
 }
 \description{
 Subsetting objects based on single/multiple conditions
-Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
-experiment=NULL in default
-Output is in the form of SummarizedExperiment format for TBsignatureProfier
-through indication of which assay you are going to work with.
 }
