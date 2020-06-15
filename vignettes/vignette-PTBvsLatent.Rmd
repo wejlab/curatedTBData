@@ -75,6 +75,7 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access="All")
 
+
 ```
 
 # Subsetting Objects
@@ -101,7 +102,7 @@ Since not all datasets contain information for each TB status. Next we want to s
 objects_list_test <-  lapply(objects_list, function(x)
   SubsetTBStatus(x,"TBStatus",c("Latent","PTB"), experiment_type = "all")) %>% plyr::compact() 
 
-# 21/42 objects contain samples from PTB and Latent
+# 22/42 studies contain samples from PTB and Latent
 length(objects_list_test) 
 ```
 
@@ -123,12 +124,12 @@ GSE39939_sobject_norm <- Normalization(GSE39939_sobject, method = "quantile")
 ```
 Boxplot for non-normalized microarray data
 ```{r, fig.width = 8, fig.height = 8}
-boxplot(log(assays(GSE39939_sobject_norm)[["GSE39939_Non_normalized_counts"]][,1:20], base=2))
+boxplot(log(assays(GSE39939_sobject_norm)[[1]][,1:20], base=2))
 # display the boxplot in log2 for selected samples
 ```
 Boxplot for microarray data after quantile normalization
 ```{r, fig.width = 8, fig.height = 8}
-boxplot(assays(GSE39939_sobject_norm)[["NormalizedData"]][,1:20])
+boxplot(assays(GSE39939_sobject_norm)[[2]][,1:20])
 # display the boxplot in log2 for selected samples
 ```
 
@@ -172,18 +173,19 @@ Matching probes to symbol using raw data is straight-forward, we use the normali
 ```{r normalized/matched sample, cache=TRUE, results="hide",eval=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
-# Normalization. For RNA-seq data, we use raw data from online for normalization (Not the self-processed data)
-# Use online raw data by specifying the experiment_type=assay_raw
-object_norm <- bplapply(objects_list, function(x) Normalization(x, experiment_type = "assay_raw"),BPPARAM = param) 
+# Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed data) by specifying the experiment_type=assay_raw
+
+object_norm <- bplapply(objects_list, function(x) Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM", experiment_type = "assay_raw"), BPPARAM = param) 
+
 
 # Match Probe to gene symbols
 # Use the normalized data from assay_raw by specifying the experiment_type=assay_raw_norm
-object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"),BPPARAM = param)
+object_match1 <- bplapply(object_norm, function(x) MatchProbe(x, experiment_type = "assay_raw_norm"), BPPARAM = param)
 
 # Remove samples with TBStatus == NA
-object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"], BPPARAM = param)
 
-# Define the list of TB signatures
+# Import the list of TB signatures from TBSignatureProfiler
 TBsignatures <- TBSignatureProfiler::TBsignatures
 ```
 
@@ -191,7 +193,7 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
 
-object_match1 <- readRDS("~/Desktop/object_match1.RDS")
+object_match1 <- readRDS("~/Desktop/object_match1_new.RDS")
 # Remove samples with TBStatus == NA
 object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"],BPPARAM = param)
 
@@ -231,8 +233,7 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 
 # Obtain p.value, AUC
@@ -489,8 +490,7 @@ plage_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "PLAGE",
-                                  combineSigAndAlgorithm = TRUE,
-                                  parallel.sz = 14))
+                                  combineSigAndAlgorithm = TRUE))
 
 plage_PTB_Latent_combine <- combine_auc(plage_PTB_Latent, annotationColName = "TBStatus", signatureColNames = names(TBsignatures), num.boot = 60, percent = 0.95)
 ```

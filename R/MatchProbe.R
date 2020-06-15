@@ -35,7 +35,7 @@ setMethod("MatchProbe",
               ### A special case for those normalized data with unique gene symbol as row names GSEXXXX
               ## Matching process has already done
               mobject1 <- new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[experiment_type]], assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
-                              row_data = data.frame(theObject@elementMetadata), primary = data.frame(theObject@colData),
+                              row_data = DataFrame(theObject@elementMetadata), primary = DataFrame(theObject@colData),
                               meta_data = theObject@metadata[[1]])
               simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
               return(simpleMultiAssay)
@@ -77,7 +77,7 @@ setMethod("MatchProbe",
             ## Create MultiAssayExperiment object Use methods from CreateSobject
             # assay_reprocess changes to name of assay_reduce in here
             mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
-                            row_data = data.frame(theObject@elementMetadata), primary = data.frame(theObject@colData),
+                            row_data = DataFrame(theObject@elementMetadata), primary = DataFrame(theObject@colData),
                             meta_data = theObject@metadata[[1]])
 
             simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")

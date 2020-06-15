@@ -87,7 +87,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
 
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
-              sig_data_gse <- sig_data %>% filter(GSE == x)
+              sig_data_gse <- sig_data %>% dplyr::filter(GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
                                                           levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
 

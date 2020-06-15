@@ -1,13 +1,12 @@
 #' Subsetting objects based on single/multiple conditions
-#' Output should be in the orginal format either summarizedExperiment or MultiAlssayExperiment
-#' experiment=NULL in default
-#' Output is in the form of SummarizedExperiment format for TBsignatureProfier
-#' through indication of which assay you are going to work with.
 #' @name SubsetTBStatus
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
-#' @param diseases A vector indicates conditions want to subset.
+#' @param diseases A vector indicates (disease)conditions want to subset.
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
+#' Choices for experiment_type are: "all", "assay_raw", "assay_reprocess", "assay_reduce".
+#' When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
+#' When experiment_type is "assay_reduce" or "assay_reprocess". Perform subsetting on matrix with experiment name "assay_reduce"/"assay_reprocess" respectively, output is in the form of SummarizedExperiment object.
 #' @param ... Extra named arguments passed to function.
 #' @rdname SubsetTBStatus-methods
 #' @exportMethod SubsetTBStatus
@@ -27,7 +26,6 @@ setMethod("SubsetTBStatus",
           #             ". Disease type is not recognized"
           #    ))
           #  }
-
             n <- length(diseases)
             theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% diseases]
             annotation <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
@@ -134,10 +132,15 @@ setMethod("SubsetTBStatus",
 #' @param gse_name A character/vector (GEO accession number) contains object name want to combine.
 #' @param experiment_type A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
-#'
+#' @examples
+#' gse_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
+#' data_list <-  curatedTBData::get_curatedTBData(gse_name)
+#' object_norm <- lapply(data_list, function(x) curatedTBData::Normalization(x, experiment_type = "assay_raw"))
+#' object_match <- lapply(object_norm, function(x) curatedTBData::MatchProbe(x, experiment_type = "assay_raw_norm"))
+#' CombineObjects(object_match, gse_name, experiment_type="assay_reduce")
 #' @export
 CombineObjects <- function(object_list,gse_name=NULL,
-                           experiment_type = c("assay_reduce","assay_reprocess_norm")){
+                           experiment_type = c("assay_reduce","assay_reprocess","assay_reprocess_norm")){
 
   experiment_type <- match.arg(experiment_type)
 
@@ -152,7 +155,7 @@ CombineObjects <- function(object_list,gse_name=NULL,
   # Combine sample with common genes from selected objects.
   # Input data type should be data.frame
   dat_exprs_combine <- Reduce(
-    function(x, y) merge(x, y, by = "id", all = F),
+    function(x, y) merge(x, y, by = "id", all = FALSE),
     lapply(dat_exprs_match, function(x) { x$id <- rownames(x); x }))
   row.names(dat_exprs_combine) <- dat_exprs_combine$id
   dat_exprs_count <- dat_exprs_combine[,-1]
@@ -178,26 +181,4 @@ CombineObjects <- function(object_list,gse_name=NULL,
                                                        colData = col_info)
   return(result)
 
-}
-
-#' Remove empty objects from list contains both SummariexExperiment and MultiAssayExpriment objects.
-#' @name remove_empty_object
-#' @param k A list contains both SummariexExperiment/MultiAssayExpriment objects.
-#' @return A list contains non-empty SummariexExperiment/MultiAssayExpriment object.
-#'
-#' @export
-remove_empty_object <- function(k){
-  x <- k
-  for (i in which(sapply(x, function(x) class(x) == "SummarizedExperiment"))){
-    if(nrow(colData(x[[i]]))==0){
-      x[[i]] <- NA
-    }
-  }
-  for (j in which(sapply(x, function(x) class(x) == "MultiAssayExperiment"))){
-    if(length(experiments(x[[j]]))==0){
-      x[[j]] <- NA
-    }
-  }
-  x <- x[!is.na(x)]
-  return(x)
 }

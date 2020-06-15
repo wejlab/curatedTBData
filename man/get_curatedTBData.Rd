@@ -7,11 +7,16 @@
 get_curatedTBData(geo_access)
 }
 \arguments{
-\item{geo_access}{A character/vector that contains geo accession number. If NULL, get all avaible studies.}
+\item{geo_access}{A character/vector that contains geo accession number. If All, get all avaible studies.}
 }
 \value{
 A list of SummarizedExperiment/MultiAssayExperiment objects
 }
 \description{
 Combine individual data to SummarizedExperiment/MultiAssayExperiment object
+}
+\examples{
+get_curatedTBData("GSE39939")
+get_curatedTBData(c("GSE39939","GSE107993"))
+get_curatedTBData("All")
 }
