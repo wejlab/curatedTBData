@@ -60,17 +60,17 @@ Insert introduction/background infrmation about this data package
 
 # Load available SummarizedExperiment/MultiAssayExperiment Objects
 
-We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets
+We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets. The pakcage function `get_curatedTBData` takes single or vector character string of GEO accession as input, and load the correpsonding curatedTBData in either the form of  `SummarizedExperiment` or `MultiAssayExperiment`. 
 
 ```{r load a list of datasets}
 # To get a summary table for all the studies:
 # data("DataSummary",package="curatedTBData")
 
 # Load single data
-# get_curatedTBData("GSE39939")
+get_curatedTBData("GSE39939")
 
 # Load Multiple Studies
-# get_curatedTBData(c("GSE39939","GSE107993"))
+get_curatedTBData(c("GSE39939","GSE107993"))
 
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access="All")

@@ -23,6 +23,9 @@ setMethod("Normalization",
 
           function(theObject, geo_access = NULL, microarray_method = "quantile", RNAseq_method = "TMM", ...){
 
+            # Import Data Summarized table into the function
+            DataSummary <- get(data("DataSummary",package="curatedTBData"))
+
             if (microarray_method == "SCAN"){
 
                 ### Do some thing here
@@ -33,7 +36,7 @@ setMethod("Normalization",
             else{
               # Check whether the object is derived from Affymetrix or GSEXXXXX.
 
-              norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055" ,"GSEXXXXX"),
+              norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055","GSEXXXXX"),
                                 collapse="|")
               if (length(grep(norm_GSE,SummarizedExperiment::assayNames(theObject))) == 1){
                 SummarizedExperiment::assays(theObject)[["NormalizedData"]] <- SummarizedExperiment::assays(theObject)[[1]]
@@ -62,7 +65,7 @@ setMethod("Normalization",
 #' @rdname Normalization-methods
 setMethod("Normalization",
           signature = "MultiAssayExperiment",
-          function(theObject, microarray_method = "quantile", RNAseq_method = "TMM",
+          function(theObject, geo_access = NULL, microarray_method = "quantile", RNAseq_method = "TMM",
                    experiment_type = c("assay_raw","assay_reprocess")){
 
             # Identify Normalization method
