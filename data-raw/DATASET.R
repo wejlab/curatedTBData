@@ -90,11 +90,17 @@ f2 <-  f1[grep("GSE",f1)]
 total <- lapply(f2, function(x) readRDS(paste0("data-raw/",x)))
 names(total) <- f2
 
+# examples for import individual data
+total = lapply(c("GSE25534_row_data.RDS", "GSE25534_assay_raw_counts.RDS"), function(x) readRDS(paste0("data-raw/",x)))
+names(total) = c("GSE25534_row_data.RDS", "GSE25534_assay_raw_counts.RDS")
+
 purrr::walk2(total, names(total), function(obj, name) {
   assign(name, obj)
   do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
 })
 
-DataSummary <- readRDS("data-raw/DataSummary.RDS")
+# Save Summary table
+DataSummary <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx")
+library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 

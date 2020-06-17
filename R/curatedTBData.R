@@ -526,7 +526,6 @@ get_curatedTBData <- function(geo_access){
         # Give assay name in SummarizedExperiment Object
         names(SummarizedExperiment::assays(sobject1_final)) <- names(geo_index_list)[x]
 
-
         return(sobject1_final)
 
       }
