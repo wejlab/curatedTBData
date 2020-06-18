@@ -97,10 +97,10 @@ GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
 
 ## Subsetting for multiple objects based on multiple conditions
 
-Since not all datasets contain information for each TB status. Next we want to select out objects that contain samples with only positive TB (PTB) and latent TB (Latent). In this case, we can use `SubsetTBStatus` function from curatedTBData. For either a list of datasets or a single dataset. 
+Since not all datasets contain information for each TB status. Next we want to select out objects that contain samples with only positive TB (PTB) and latent TB (Latent). In this case, we can use `Subset_curatedTBData` function from curatedTBData. For either a list of datasets or a single dataset. 
 ```{r subsetting multiple objects example}
 objects_list_test <-  lapply(objects_list, function(x)
-  SubsetTBStatus(x,"TBStatus",c("Latent","PTB"), experiment_type = "all")) %>% plyr::compact() 
+  Subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_type = "all")) %>% plyr::compact() 
 
 # 22/42 studies contain samples from PTB and Latent
 length(objects_list_test) 
@@ -205,7 +205,7 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 
 ## ssGSEA {.tabset}
 
-`TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `SubsetTBStatus`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
+`TBSignatureprofiler` is a package to evaluate the the performance of signatures across curated TB data. We subset samples with PTB and Latent TB status for binary classification using function `Subset_curatedTBData`, and implement single-sample Gene Set Enrichment Analysis (ssGSEA) scoring algorithm to compute gene scores for each signature.
 Workflow of ssGSEA:\
 1. Transform sample-specific gene expression value into absolute rank. For gene $i$ and sample $j$, the rank is: $|r_{ij}|$. **The list is then ordered from the highest rank to the lowest**. \
 
@@ -226,7 +226,7 @@ $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{n
 # Modify the list to make it compatible with TBSignatureProfiler
 
 multi_set_PTB_Latent <- lapply(object_match, function(x)
-  SubsetTBStatus(x, annotationColName = "TBStatus",diseases = c("Latent","PTB"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+  Subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                     function(x) TBSignatureProfiler::runTBsigProfiler(input = x,

@@ -385,25 +385,33 @@ create_standard_ColData <- function(col_data){
 #' @rdname Sobject-class
 #' @importClassesFrom Biobase MIAME
 #' @exportClass Sobject
-Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "DataFrame",
-                                         column_data  = "DataFrame", meta_data = "MIAME"),
-                    prototype=list(assay = matrix(c(1, 2, 3, 11, 12, 13), nrow = 2, ncol = 3, byrow = TRUE,
-                                                  dimnames = list(c("111_at", "222_at"),
-                                                                  c("S.1", "S.2", "S.3"))),
-                                   row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),Symbol=c("A1BC","ZAC"),row.names = c("111_at", "222_at")),
-                                   column_data = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female"),TBStatus=c("PTB","Latent", "Control"),row.names = c("S.1", "S.2", "S.3")),
-                                   # Create  new class in biobase
-                                   meta_data = new('MIAME', name="XXXXX", lab="XXXXXX", contact="XXXXX", title="A title",abstract="An abstract",
-                                                   url="XXXXXXX", pubMedIds = '0000000', other=list(Platform = '000000'))),
-                    validity = function(object){
-                      # cat("We are in valid object \n")
-                      if(!all(row.names(object@assay)==row.names(object@row_data))) {
-                        return("row names in the assay must be the same as row names in the row data")
-                      }
-                      else if (!all(colnames(object@assay)==row.names(object@column_data))) {
-                        return("column names in the assay must be the same as row names in the column data")
-                      }
-                      else {TRUE}
+Sobject <- setClass("Sobject",
+                     slots = c(assay = "matrix",row_data = "DataFrame",
+                     column_data  = "DataFrame", meta_data = "MIAME"),
+                     prototype=list(assay = matrix(c(1, 2, 3, 11, 12, 13),
+                                                   nrow = 2, ncol = 3, byrow = TRUE,
+                                    dimnames = list(c("111_at", "222_at"),
+                                                    c("S.1", "S.2", "S.3"))),
+                                    row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),
+                                                                               Symbol=c("A1BC","ZAC"),
+                                                                               row.names = c("111_at", "222_at")),
+                                    column_data = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female"),
+                                                                                  TBStatus=c("PTB","Latent", "Control"),
+                                                                                  row.names = c("S.1", "S.2", "S.3")),
+                      # Create  new class in biobase
+                      meta_data = new('MIAME', name="XXXXX", lab="XXXXXX", contact="XXXXX",
+                                      title="A title",abstract="An abstract", url="XXXXXXX",
+                                      pubMedIds = '0000000', other=list(Platform = '000000'))),
+                       validity = function(object){
+                                   if(!all(row.names(object@assay)==row.names(object@row_data))) {
+                                   return("row names in the assay must be the same as row names
+                                          in the row data")
+                                   }
+                                  else if (!all(colnames(object@assay)==row.names(object@column_data))) {
+                                  return("column names in the assay must be the same as row names
+                                          in the column data")
+                                   }
+                                   else {TRUE}
                     })
 
 #########################################################
@@ -418,21 +426,32 @@ Sobject <- setClass("Sobject", slots = c(assay = "matrix",row_data = "DataFrame"
 #' @rdname Mobject-class
 #' @importClassesFrom Biobase MIAME
 #' @exportClass Mobject
-Mobject <- setClass("Mobject", slots = c(assay_reprocess = "matrix", assay_raw = "matrix",
-                                         row_data = "DataFrame", primary = "DataFrame", meta_data = "MIAME"),
-                    prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3, byrow = TRUE, dimnames = list(c("AZA","BBD","CCS"),
-                                                                                                              c("S.1","S.2","S.3","S.4"))),
-                                     assay_raw = matrix(c(1, 2, 3, 11, 12, 13), nrow = 2, ncol = 3, byrow = TRUE,
+Mobject <- setClass("Mobject",
+                    slots = c(assay_reprocess = "matrix", assay_raw = "matrix",
+                              row_data = "DataFrame", primary = "DataFrame",
+                              meta_data = "MIAME"),
+                    prototype = list(assay_reprocess = matrix(c(1:12),nrow = 3,
+                                                              byrow = TRUE,
+                                                              dimnames = list(c("AZA","BBD","CCS"),
+                                                                              c("S.1","S.2","S.3","S.4"))),
+                                     assay_raw = matrix(c(1, 2, 3, 11, 12, 13),
+                                                        nrow = 2, ncol = 3, byrow = TRUE,
                                                         dimnames = list(c("111_at", "222_at"),
                                                                         c("S.1", "S.2", "S.3"))),
-                                     row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),Symbol=c("A1BC","ZAC"),row.names = c("111_at", "222_at")),
-                                     primary = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female","Female"),TBStatus=c("PTB","Latent", "Control","PTB"),
-                                                          row.names = c("S.1", "S.2", "S.3","S.4")),
-                                     meta_data = new('MIAME', name="XXXXX", lab="XXXXXX", contact="XXXXX", title="A title",abstract="An abstract",
-                                                     url="XXXXXXX", pubMedIds = '0000000', other=list(Platform = '000000'))),
+                                     row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),
+                                                                                Symbol=c("A1BC","ZAC"),
+                                                                                row.names = c("111_at", "222_at")),
+                                     primary = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female","Female"),
+                                                                               TBStatus=c("PTB","Latent", "Control","PTB"),
+                                                                               row.names = c("S.1", "S.2", "S.3","S.4")),
+                                     meta_data = new('MIAME', name="XXXXX", lab="XXXXXX",
+                                                     contact="XXXXX", title="A title",abstract="An abstract",
+                                                     url="XXXXXXX", pubMedIds = '0000000',
+                                                     other=list(Platform = '000000'))),
                     validity = function(object){
                       if(!all(row.names(object@assay_raw)==(object@row_data$ID_REF))) {
-                        return("row names in the assay must be the same as ID_REF in the row data")
+                        return("row names in the assay must be the same as
+                               ID_REF in the row data")
                       }
                     })
 
@@ -447,13 +466,12 @@ setGeneric(name="CreateObject", function(theObject,...){
 })
 
 #' @rdname CreateObject-methods
-setMethod("CreateObject",
-          signature="Sobject",
-          function(theObject){
-            results <- SummarizedExperiment::SummarizedExperiment(assays = list(theObject@assay),
-                                                                  colData = theObject@column_data,
-                                                                  rowData = theObject@row_data,
-                                                                  metadata = list(theObject@meta_data))
+setMethod("CreateObject", signature="Sobject",
+    function(theObject){
+         results <- SummarizedExperiment::SummarizedExperiment(assays = list(theObject@assay),
+                                                colData = theObject@column_data,
+                                                rowData = theObject@row_data,
+                                                metadata = list(theObject@meta_data))
             return(results)
           }
 )
@@ -463,158 +481,23 @@ setMethod("CreateObject",
           signature="Mobject",
           function(theObject,assay_type = "assay_reprocess"){
             objlist1 <- list(assay_type = theObject@assay_reprocess,
-                             assay_raw = SummarizedExperiment::SummarizedExperiment(theObject@assay_raw,rowData=theObject@row_data))
+                             assay_raw = SummarizedExperiment::SummarizedExperiment(
+                               theObject@assay_raw,rowData=theObject@row_data))
             names(objlist1) <- c(assay_type,"assay_raw")
             assay_reprocess_map <- data.frame(assay = rep(assay_type,ncol(theObject@assay_reprocess)),
-                                              primary = colnames(theObject@assay_reprocess),colname = colnames(theObject@assay_reprocess), stringsAsFactors = FALSE)
+                                              primary = colnames(theObject@assay_reprocess),
+                                              colname = colnames(theObject@assay_reprocess),
+                                              stringsAsFactors = FALSE)
             assay_raw_map <- data.frame(assay = rep("assay_raw",ncol(theObject@assay_raw)),
-                                        primary = colnames(theObject@assay_raw), colname = colnames(theObject@assay_raw), stringsAsFactors = FALSE)
+                                        primary = colnames(theObject@assay_raw),
+                                        colname = colnames(theObject@assay_raw),
+                                        stringsAsFactors = FALSE)
             dfmap1 <- rbind(assay_reprocess_map,assay_raw_map)
 
-            results <- MultiAssayExperiment::MultiAssayExperiment(objlist1, theObject@primary, dfmap1,metadata = list(theObject@meta_data))
+            results <- MultiAssayExperiment::MultiAssayExperiment(
+                                            objlist1,theObject@primary, dfmap1,
+                                            metadata = list(theObject@meta_data))
             return(results)
           }
 )
-
-#########################################################
-
-#' Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-#' @name get_curatedTBData
-#' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
-#' @return A list of SummarizedExperiment/MultiAssayExperiment objects
-#' @examples
-#' get_curatedTBData("GSE39939")
-#' get_curatedTBData(c("GSE39939","GSE107993"))
-#' get_curatedTBData("All")
-#' @export
-get_curatedTBData <- function(geo_access){
-  # Initialize parallelization
-  param <- BiocParallel::SerialParam(progressbar=TRUE)
-
-  if (geo_access[1] == "All") {
-    # Get all available studies
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
-    file_names_full <- file_names_full[grep("GSE",file_names_full)]
-
-    geo_access <- unique(gsub("_.*","",file_names_full))
-    geo_index_list <- lapply(geo_access, function(x) grep(x,file_names_full))
-    names(geo_index_list) <- geo_access
-
-    objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
-
-      # Load Data into the Environment
-      data_load <-  data(list=file_names_full[geo_index_list[[x]]])
-      data_list <- lapply(data_load, function(y) get(y))
-
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),"\\1", data_load)
-
-      # Remove data from environment
-      objs <- ls(pos = ".GlobalEnv")
-      rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
-
-      # Check whether assemble into Summarized or MultiAssayExperiment Object
-      # If no reporcess, then goes to SummarizedExperiment
-
-      check_type <- grep("reprocess",data_load)
-      if(length(check_type) == 0){ # combine into SummarizedExperiment
-
-        sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                        column_data  = data_list$column_data, meta_data = data_list$meta_data)
-
-        sobject1_final <- CreateObject(sobject1)
-
-        # Give assay name in SummarizedExperiment Object
-        names(SummarizedExperiment::assays(sobject1_final)) <- names(geo_index_list)[x]
-
-        return(sobject1_final)
-
-      }
-
-      else { # Combine into MultiAssayExperiment
-
-        mobject1 <- new("Mobject", assay_reprocess = as.matrix(data_list$assay_reprocess),
-                        assay_raw = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                        primary = data_list$column_data,meta_data = data_list$meta_data)
-
-        mobject1_final <- CreateObject(mobject1)
-
-        return(mobject1_final)
-
-      }
-
-    }, BPPARAM = param)
-
-    names(objects_list) <- names(geo_index_list)
-    return(objects_list)
-
-  }
-
-  else{
-
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
-    geo_index_list <- lapply(geo_access, function(x) grep(x,file_names_full))
-    names(geo_index_list) <- geo_access
-
-    # Check whether geo accession is available in the pakcage
-
-    index <-  which(unlist(lapply(geo_index_list, length)) == 0)
-
-    if(length(index)!=0){
-      message(paste0(names(geo_index_list)[index])," is/are unavailable in the package")
-      geo_index_list[index] <- NULL
-    }
-
-    if(length(geo_index_list)==0){stop("No available data found in the paackage")}
-
-    objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
-
-        # Load Data into the Environment
-        data_load <-  data(list=file_names_full[geo_index_list[[x]]])
-        data_list <- lapply(data_load, function(y) get(y))
-
-        names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),"\\1", data_load)
-
-        # Remove data from environment
-        objs <- ls(pos = ".GlobalEnv")
-        rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
-
-        # Check whether assemble into Summarized/MultiAssayExperiment Object
-
-        check_type <- grep("reprocess",data_load) # If no reporcess, then goes to SummarizedExperiment
-
-        if(length(check_type) == 0){ # combine into SummarizedExperiment
-
-          sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                          column_data  = data_list$column_data, meta_data = data_list$meta_data)
-
-          sobject1_final <- CreateObject(sobject1)
-
-          # Give assay name in SummarizedExperiment Object
-          names(SummarizedExperiment::assays(sobject1_final)) <- names(geo_index_list)[x]
-
-          return(sobject1_final)
-
-        }
-
-        else { # Combine into MultiAssayExperiment
-
-          mobject1 <- new("Mobject", assay_reprocess = as.matrix(data_list$assay_reprocess),
-                          assay_raw = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                          primary = data_list$column_data,meta_data = data_list$meta_data)
-
-          mobject1_final <- CreateObject(mobject1)
-
-          return(mobject1_final)
-
-        }
-
-      }, BPPARAM = param)
-
-    names(objects_list) <- names(geo_index_list)
-
-    return(objects_list)
-
-  }
-
-}
 

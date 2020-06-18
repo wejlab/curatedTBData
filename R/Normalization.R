@@ -6,7 +6,7 @@
 #' @param RNAseq_method A character string specifying the normalization method to be used. See `edgeR::calcNormFactors` for RNA sequence data.
 #' The default is "TMM"
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
-#' Choices for experiment_type are "assay_raw" and "assay_reprocess".
+#' Choices for experiment_type are "assay_raw" and "assay_reprocess". The deafult is experiment_type="assay_raw"
 #' If experiment_type is "assay_raw", perform normalization on the assay provided by the authors.
 #' If experiment_type is "assay_reprocess", perform normalization on the reprocessed assay.
 #' @param ... Extra named arguments passed to function.
@@ -21,10 +21,12 @@ setGeneric(name="Normalization", function(theObject,...){
 setMethod("Normalization",
           signature="SummarizedExperiment",
 
-          function(theObject, geo_access = NULL, microarray_method = "quantile", RNAseq_method = "TMM", ...){
+          function(theObject, geo_access = NULL, microarray_method = "quantile",
+                   RNAseq_method = "TMM", ...){
 
             # Import Data Summarized table into the function
             DataSummary <- get(data("DataSummary",package="curatedTBData"))
+            geo_access <- strsplit(SummarizedExperiment::assayNames(theObject),"_")[[1]][1]
 
             if (microarray_method == "SCAN"){
 
@@ -36,10 +38,13 @@ setMethod("Normalization",
             else{
               # Check whether the object is derived from Affymetrix or GSEXXXXX.
 
-              norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055","GSEXXXXX"),
+              norm_GSE <- paste(c("GSE54992","GSE36238","GSE31348","GSE73408","GSE41055"),
                                 collapse="|")
               if (length(grep(norm_GSE,SummarizedExperiment::assayNames(theObject))) == 1){
-                SummarizedExperiment::assays(theObject)[["NormalizedData"]] <- SummarizedExperiment::assays(theObject)[[1]]
+
+                assay_name <- paste0(geo_access, "_","RMA")
+
+                SummarizedExperiment::assays(theObject)[[assay_name]] <- SummarizedExperiment::assays(theObject)[[1]]
                 return(theObject)
 
               }
@@ -53,11 +58,12 @@ setMethod("Normalization",
               counts <- log(counts,base=2) # log2 transformed data
 
               # Normalize between arrays
-              norm_counts <- limma::normalizeBetweenArrays (counts, method = microarray_method)
-              assays(theObject)[["NormalizedData"]] <- norm_counts
+              norm_counts <- limma::normalizeBetweenArrays (counts,
+                                                     method = microarray_method)
+              assay_name <- paste0(geo_access, "_",microarray_method)
+              SummarizedExperiment::assays(theObject)[[assay_name]] <- norm_counts
               return(theObject)
             }
-
 
           }
 )
@@ -65,7 +71,8 @@ setMethod("Normalization",
 #' @rdname Normalization-methods
 setMethod("Normalization",
           signature = "MultiAssayExperiment",
-          function(theObject, geo_access = NULL, microarray_method = "quantile", RNAseq_method = "TMM",
+          function(theObject, geo_access = NULL, microarray_method = "quantile",
+                   RNAseq_method = "TMM",
                    experiment_type = c("assay_raw","assay_reprocess")){
 
             # Identify Normalization method
@@ -75,8 +82,12 @@ setMethod("Normalization",
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
             if(missing(experiment_type)){experiment_type="assay_raw"}
             experiment_type <- match.arg(experiment_type)
+
+            sobject1 <- theObject[["assay_raw"]]
+            geo_access <- strsplit(SummarizedExperiment::assayNames(sobject1),"_")[[1]][1]
+
             if (experiment_type == "assay_raw"){
-              counts <- SummarizedExperiment::assays(MultiAssayExperiment::experiments(theObject)[[experiment_type]])[[1]]
+              counts <- SummarizedExperiment::assays(theObject[[experiment_type]][[1]])
               counts[counts<10] <- 10
 
               # log2 transformed data
@@ -86,13 +97,16 @@ setMethod("Normalization",
               ScaleFactors <- colSums(counts) * NormFactor
 
               Exp <- round(t(t(counts)/ScaleFactors) * mean(ScaleFactors))
-              SummarizedExperiment::assays(MultiAssayExperiment::experiments(theObject)[[experiment_type]])[["NormalizedData"]] <- Exp
+
+              assay_name <- paste0(geo_access,"_",RNAseq_method)
+
+              SummarizedExperiment::assays(theObject[[experiment_type]])[[assay_name]] <- Exp
               return(theObject)
 
             }
             if (experiment_type == "assay_reprocess"){
 
-              counts <- MultiAssayExperiment::experiments(theObject)[[experiment_type]]
+              counts <- theObject[[experiment_type]]
               counts[counts<10] <- 10
 
               # log2 transformed data
