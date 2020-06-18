@@ -1,33 +1,33 @@
 #' Subsetting objects based on single/multiple conditions
-#' @name SubsetTBStatus
+#' @name Subset_curatedTBData
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
-#' @param diseases A vector indicates (disease)conditions want to subset.
+#' @param annotationCondition A vector indicates conditions want to be subsetted.
 #' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
 #' Choices for experiment_type are: "all", "assay_raw", "assay_reprocess", "assay_reduce".
 #' When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
 #' When experiment_type is "assay_reduce" or "assay_reprocess". Perform subsetting on matrix with experiment name "assay_reduce"/"assay_reprocess" respectively, output is in the form of SummarizedExperiment object.
 #' @param ... Extra named arguments passed to function.
-#' @rdname SubsetTBStatus-methods
-#' @exportMethod SubsetTBStatus
+#' @rdname Subset_curatedTBData-methods
+#' @exportMethod Subset_curatedTBData
 
-setGeneric(name="SubsetTBStatus", function(theObject,...){
-  standardGeneric("SubsetTBStatus")
+setGeneric(name="Subset_curatedTBData", function(theObject,...){
+  standardGeneric("Subset_curatedTBData")
 })
 
-#' @rdname SubsetTBStatus-methods
-setMethod("SubsetTBStatus",
+#' @rdname Subset_curatedTBData-methods
+setMethod("Subset_curatedTBData",
           signature="SummarizedExperiment",
-          function(theObject,annotationColName, diseases, ...){
+          function(theObject,annotationColName, annotationCondition, ...){
 
             # check eligibility
-          #  if(!all(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))){
+          #  if(!all(annotationCondition %in% c("Control", "Latent", "PTB", "OD", "NA"))){
           #    stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD", "NA", collapse = ","),
           #             ". Disease type is not recognized"
           #    ))
           #  }
-            n <- length(diseases)
-            theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% diseases]
+            n <- length(annotationCondition)
+            theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% annotationCondition]
             annotation <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
             if(length(unique(annotation)) == n){
               return(theObject_filter)
@@ -36,18 +36,18 @@ setMethod("SubsetTBStatus",
           }
 )
 
-#' @rdname SubsetTBStatus-methods
-setMethod("SubsetTBStatus",
+#' @rdname Subset_curatedTBData-methods
+setMethod("Subset_curatedTBData",
           signature="MultiAssayExperiment",
 
-          function(theObject, annotationColName, diseases,
+          function(theObject, annotationColName, annotationCondition,
                    experiment_type = c("all", "assay_raw", "assay_reprocess", "assay_reduce")){
 
             # check eligibility
-        #     if(!all(diseases %in% c("Control", "Latent", "PTB", "OD","NA"))){
+        #     if(!all(annotationCondition %in% c("Control", "Latent", "PTB", "OD","NA"))){
         #      stop(cat("Invalid disease, only support for",paste("Control", "Latent", "PTB", "OD","NA", collapse = ","),
         #               ". Disease type",
-        #           diseases[-which(diseases %in% c("Control", "Latent", "PTB", "OD", "NA"))], "is not recognized"
+        #           annotationCondition[-which(annotationCondition %in% c("Control", "Latent", "PTB", "OD", "NA"))], "is not recognized"
         #           ))
         #    }
 
@@ -56,8 +56,8 @@ setMethod("SubsetTBStatus",
             # When experiment_type == "all". Perform whole MultiAssayExperiment selection, output is MultiAsaayExperiment
             if(experiment_type == "all"){
 
-              n <- length(diseases)
-              theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% diseases]
+              n <- length(annotationCondition)
+              theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)[,annotationColName] %in% annotationCondition]
               TB_status <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
               if(length(unique(TB_status)) == n){
                 return(theObject_filter)
@@ -71,7 +71,7 @@ setMethod("SubsetTBStatus",
               if(experiment_type == "assay_reduce" || experiment_type == "assay_reprocess"){
 
 
-              n <- length(diseases)
+              n <- length(annotationCondition)
               col_data <-  SummarizedExperiment::colData(theObject)
 
               # when not all samples are included in the expression matrix
@@ -89,8 +89,8 @@ setMethod("SubsetTBStatus",
 
               sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(assays=list(counts=as.matrix(theObject[[experiment_type]])), colData = col_data)
 
-              # subsetting diseases
-              sobject_TBSig_filter <- sobject_TBSig[,colData(sobject_TBSig)[,annotationColName] %in% diseases]
+              # subsetting annotationCondition
+              sobject_TBSig_filter <- sobject_TBSig[,colData(sobject_TBSig)[,annotationColName] %in% annotationCondition]
               TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
               # check if both status are in the column data
               if(length(unique(TB_status)) == n){
@@ -103,7 +103,7 @@ setMethod("SubsetTBStatus",
               # output is reduced SummarizedExperiment
               if (experiment_type == "assay_raw"){
                 theObject_sub <- theObject[[experiment_type]]
-                n <- length(diseases)
+                n <- length(annotationCondition)
                 col_data <-  colData(theObject)
                 if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
                   index <- na.omit(match(colnames(theObject[[experiment_type]]), row.names(col_data)))
@@ -111,8 +111,8 @@ setMethod("SubsetTBStatus",
                 }
 
                 colData(theObject_sub) <- col_data
-                # subsetting diseases
-                sobject_TBSig_filter <- theObject_sub[,colData(theObject_sub)[,annotationColName] %in% diseases]
+                # subsetting annotationCondition
+                sobject_TBSig_filter <- theObject_sub[,colData(theObject_sub)[,annotationColName] %in% annotationCondition]
                 TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
                 # check if both status are in the column data
                 if(length(unique(TB_status)) == n){

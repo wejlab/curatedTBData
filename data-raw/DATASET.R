@@ -91,9 +91,12 @@ total <- lapply(f2, function(x) readRDS(paste0("data-raw/",x)))
 names(total) <- f2
 
 # examples for import individual data
-total = lapply(c("GSE25534_row_data.RDS", "GSE25534_assay_raw_counts.RDS"), function(x) readRDS(paste0("data-raw/",x)))
-names(total) = c("GSE25534_row_data.RDS", "GSE25534_assay_raw_counts.RDS")
-
+total = lapply(c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
+                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS"),
+               function(x) readRDS(paste0("data-raw/",x)))
+names(total) = c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
+                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS")
+library(devtools)
 purrr::walk2(total, names(total), function(obj, name) {
   assign(name, obj)
   do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
