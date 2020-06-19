@@ -8,13 +8,19 @@
 \usage{
 Subset_curatedTBData(theObject, ...)
 
-\S4method{Subset_curatedTBData}{SummarizedExperiment}(theObject, annotationColName, annotationCondition, ...)
+\S4method{Subset_curatedTBData}{SummarizedExperiment}(
+  theObject,
+  annotationColName,
+  annotationCondition,
+  UseAssay,
+  ...
+)
 
 \S4method{Subset_curatedTBData}{MultiAssayExperiment}(
   theObject,
   annotationColName,
   annotationCondition,
-  experiment_type = c("all", "assay_raw", "assay_reprocess", "assay_reduce")
+  experiment_type
 )
 }
 \arguments{
@@ -27,9 +33,9 @@ Subset_curatedTBData(theObject, ...)
 \item{annotationCondition}{A vector indicates conditions want to be subsetted.}
 
 \item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.
-Choices for experiment_type are: "all", "assay_raw", "assay_reprocess", "assay_reduce".
+Expect theObject[[experiment_type]] to be a matrix. Two special cases are:
 When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
-When experiment_type is "assay_reduce" or "assay_reprocess". Perform subsetting on matrix with experiment name "assay_reduce"/"assay_reprocess" respectively, output is in the form of SummarizedExperiment object.}
+When experiment_type is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
 }
 \description{
 Subsetting objects based on single/multiple conditions

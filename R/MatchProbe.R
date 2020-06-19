@@ -4,9 +4,9 @@ magrittr::`%>%`
 
 #' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
-#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
-#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object,
-#' experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment Object.
+#' @param UseAssay A character indicats the assay names (partial name) of the SummarizedExperiment Object.
+#' @param experiment_type A character for the names of the matched output.
 #' @param ... Extra named arguments passed to function.
 #' @rdname MatchProbe-methods
 #' @exportMethod MatchProbe
@@ -19,31 +19,55 @@ setGeneric(name="MatchProbe", function(theObject,...){
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MatchProbe",
           signature="SummarizedExperiment",
-          function(theObject, experiment_type = "assay_raw"){
-            if (experiment_type == "assay_raw"){
-              experiment_type = 1
+          function(theObject, UseAssay, experiment_type = "assay_MatchProbe", only.matrix=FALSE){
+
+            UseAssay <- paste(UseAssay,collapse = "|")
+            assay_name_index <- grep(UseAssay,SummarizedExperiment::assayNames(theObject))
+
+            if(length(assay_name_index) > 1){
+              assay_name_index <- assay_name_index[1]
+
+              message(paste("More than one assay selected. Use assay:",
+                            SummarizedExperiment::assayNames(theObject)[assay_name_index],
+                            "for probes matching." ))
             }
-            else{
-              experiment_type = "NormalizedData"
+            if(length(assay_name_index) == 0){
+              stop(paste("No assay with the name:",UseAssay))
             }
 
-            sobject_exprs <- SummarizedExperiment::assays(theObject)[[experiment_type]]
+            assay_name <- SummarizedExperiment::assayNames(theObject)[assay_name_index]
+
+
+            geo_access_name <- strsplit(SummarizedExperiment::assayNames(theObject),
+                                        "_")[[1]][1]
+
+            sobject_exprs <- SummarizedExperiment::assays(theObject)[[assay_name]]
 
             #### row data is NULL, special case for those normalized data with unique gene symbol as row names
             if (ncol(SummarizedExperiment::rowData(theObject)) == 0){
 
+
               ### A special case for those normalized data with unique gene symbol as row names GSEXXXX
               ## Matching process has already done
-              mobject1 <- new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[experiment_type]], assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
-                              row_data = DataFrame(theObject@elementMetadata), primary = DataFrame(theObject@colData),
+              mobject1 <- new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[assay_name]],
+                              assay_raw = SummarizedExperiment::assays(theObject)[[assay_name]],
+                              row_data = DataFrame(theObject@elementMetadata),
+                              primary = DataFrame(theObject@colData),
                               meta_data = theObject@metadata[[1]])
-              simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
+              simpleMultiAssay <- CreateObject(mobject1, experiment_type = experiment_type)
+
+              sobject1_final <- simpleMultiAssay[["assay_raw"]]
+
+              # Provide assay names
+              names(SummarizedExperiment::assays(sobject1_final)) <- assay_name
+              simpleMultiAssay[["assay_raw"]] <- sobject1_final
+
               return(simpleMultiAssay)
 
             }
 
             # For regular cases
-            row_data <- SummarizedExperiment::rowData(theObject) %>% as.data.frame()
+            row_data <- SummarizedExperiment::rowData(theObject)
 
             if (!any(colnames(row_data)=="SYMBOL_NEW")){
               stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
@@ -56,31 +80,47 @@ setMethod("MatchProbe",
             }
             # Add new column to the expression matrix
 
-            sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>% dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
+            sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>%
+              dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
 
             # Expand probe sets for non-specific probes if apllicable
-            if(!identical(grep("///",sobject_exprs_new$SYMBOL), integer(0))){
+            if(length(grep("///",sobject_exprs_new$SYMBOL)) != 0){
               sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
             }
 
             # Create expression matrix with gene symbol, take mean values for same genes
             # Where the function spends most of the time, use dtplyr to speed up. Reduce ~1/3 time using dtplyr
 
-            #sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
+            # sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
             sobject_exprs_new1 <- sobject_exprs_new
 
-            sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% as.data.frame()
+            ##### Think how to reduce processing time for the following code??
+
+            sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>%
+              dplyr::summarise_all(mean) %>% as.data.frame()
             row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
-            sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
+            sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol)
+                                                 %in% 'SYMBOL')] %>% as.matrix()
+
+            if(only.matrix){
+              return(sobject_exprs_symbol)
+            }
 
             ## Create MultiAssayExperiment object Use methods from CreateSobject
             # assay_reprocess changes to name of assay_reduce in here
-            mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol, assay_raw = SummarizedExperiment::assays(theObject)[[experiment_type]],
-                            row_data = DataFrame(theObject@elementMetadata), primary = DataFrame(theObject@colData),
+            mobject1 <- new("Mobject", assay_reprocess = sobject_exprs_symbol,
+                            assay_raw = SummarizedExperiment::assays(theObject)[[assay_name]],
+                            row_data = DataFrame(theObject@elementMetadata),
+                            primary = DataFrame(theObject@colData),
                             meta_data = theObject@metadata[[1]])
 
-            simpleMultiAssay <- CreateObject(mobject1,assay_type = "assay_reduce")
+            simpleMultiAssay <- CreateObject(mobject1,experiment_type = experiment_type)
+
+            sobject1_final <- simpleMultiAssay[["assay_raw"]]
+            names(SummarizedExperiment::assays(sobject1_final)) <- assay_name
+            simpleMultiAssay[["assay_raw"]] <- sobject1_final
+
             return(simpleMultiAssay)
 
           }
@@ -90,17 +130,32 @@ setMethod("MatchProbe",
 #' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MatchProbe",
           signature="MultiAssayExperiment",
-          function(theObject, experiment_type = c("assay_raw","assay_raw_norm")){
-              if(experiment_type == "assay_raw_norm"){
-                assay_name = "NormalizedData"
-              }
-              if(experiment_type == "assay_raw"){
-                assay_name = 1
-              }
+          function(theObject, UseAssay, experiment_type="assay_MatchProbe", only.matrix=FALSE){
 
               sobject_ori <- MultiAssayExperiment::experiments(theObject)[["assay_raw"]]
-              sobject_exprs <- MultiAssayExperiment::assays(sobject_ori)[[assay_name]]
-              row_data <- SummarizedExperiment::rowData(sobject_ori) %>% as.data.frame()
+
+              UseAssay <- paste(UseAssay,collapse = "|")
+              assay_name_index <- grep(UseAssay,SummarizedExperiment::assayNames(sobject_ori))
+
+              if(length(assay_name_index) > 1){
+                assay_name_index <- assay_name_index[1]
+
+                message(paste("More than one assay selected. Use assay:",
+                              SummarizedExperiment::assayNames(theObject)[assay_name_index],
+                              "for probes matching." ))
+              }
+              if(length(assay_name_index) == 0){
+                stop(paste("No assay with the name:",UseAssay))
+              }
+
+              assay_name <- SummarizedExperiment::assayNames(sobject_ori)[assay_name_index]
+
+              if(length(assay_name_index) != 1){
+                stop("More than one assay selected, please consider only one assay.")
+              }
+
+              sobject_exprs <- SummarizedExperiment::assays(sobject_ori)[[assay_name]]
+              row_data <- SummarizedExperiment::rowData(sobject_ori)
               if (!any(colnames(row_data)=="SYMBOL_NEW")){
                 stop("RowData of the input Summarized Experiment Object does not have SYMBOL_NEW column, add SYMBOL_NEW column that includes gene symbols.")
               }
@@ -114,7 +169,8 @@ setMethod("MatchProbe",
               # Create Multi-assay experiment
 
               ## Add new column to the expression matrix
-              sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>% dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
+              sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>%
+                dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>% dplyr::filter(SYMBOL!='NA')
 
               ## Expand probe sets for non-specific probes if apllicable
               if(!identical(grep("///",sobject_exprs_new$SYMBOL), integer(0))){
@@ -124,20 +180,26 @@ setMethod("MatchProbe",
               # Create expression matrix with gene symbol, take mean values for same genes
               # sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
               sobject_exprs_new1 <- sobject_exprs_new
-              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>% dplyr::summarise_all(mean) %>% as.data.frame()
+              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(SYMBOL) %>%
+                dplyr::summarise_all(mean) %>% as.data.frame()
               row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
 
-              simpleMultiAssay <- c(theObject,assay_reduce=sobject_exprs_symbol)
-              return(simpleMultiAssay)
+              if(only.matrix){
+                return(sobject_exprs_symbol)
+              }
 
+              simpleMultiAssay <- c(theObject,assay_reduce=sobject_exprs_symbol)
+              index_name <- which(names(simpleMultiAssay) %in% "assay_reduce")
+              names(simpleMultiAssay)[index_name] <- experiment_type
+
+              return(simpleMultiAssay)
 
           })
 
 #' Expand probe set for non-specific probes.
 #' @name expandProbesets
-#'
 #' @param dat_example A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.
 #' @return A matrix that split non-uniquely mapped features to one per row.
 #' @examples
@@ -156,7 +218,8 @@ expandProbesets <- function(sobject_exprs_new, sep="///"){
   sobject_exprs_dup$times <- sapply(x_list, length)
 
   # Expand rows based on their frequency
-  sobject_exprs_expand <- as.data.frame(lapply(sobject_exprs_dup, rep, sobject_exprs_dup$times))
+  sobject_exprs_expand <- as.data.frame(lapply(sobject_exprs_dup, rep,
+                                               sobject_exprs_dup$times))
   sobject_exprs_expand$SYMBOL <- symbol_dup
   sobject_exprs_expand_result <- sobject_exprs_expand %>% dplyr::select(-times)
 

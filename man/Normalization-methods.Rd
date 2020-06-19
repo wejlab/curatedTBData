@@ -29,6 +29,8 @@ Normalization(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
+\item{geo_access}{Geo accession number for certain Study. Used when microarray_method is "SCAN"}
+
 \item{microarray_method}{A character string specifying the normalization method to be used. See `limma::normalizeBetweenArrays` for microarray data.
 The default is "quantile"}
 
