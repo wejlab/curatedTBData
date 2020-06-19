@@ -55,3 +55,5 @@ data-raw/*.RData
 *.tar
 *.txt
 
+# Excel files
+.xlsx

@@ -87,7 +87,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             sig_data <- plyr::rbind.fill(lapply(sig_list,function(x){as.data.frame(x)}))
 
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
-              sig_data_gse <- sig_data %>% filter(GSE == x)
+              sig_data_gse <- sig_data %>% dplyr::filter(GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
                                                           levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
 
@@ -170,7 +170,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
 ################################################
 
-#' Obtain pvalue, emprirical AUC, and 95% CI for each signature using two-sample t-test, ROCit::rocit, and bootstraping
+#' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature using two-sample t-test, ROCit::rocit, and bootstraping
 #' @name get_auc_stats
 #' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
@@ -221,9 +221,9 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
   else{
     # Initialize parallel
-    param <- SerialParam(progressbar=TRUE)
+    param <- BiocParallel::SerialParam(progressbar=TRUE)
 
-    sig_result <- bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
+    sig_result <- BiocParallel::bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
 
       # Deal with PLAGE that have constant score (mostly from Sloot_HIV_2)
@@ -281,8 +281,8 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
                         num.boot=NULL, percent=0.95){
-  param <- SerialParam(progressbar=TRUE)
-  aucs_result <- bplapply(SE_scored_list, function(x){
+  param <- BiocParallel::SerialParam(progressbar=TRUE)
+  aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
     get_auc_stats(x,annotationColName,
                 signatureColNames,num.boot, percent)
   },BPPARAM = param)

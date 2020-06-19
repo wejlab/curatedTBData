@@ -4,16 +4,12 @@
 \alias{CombineObjects}
 \title{Combine samples with common genes from selected studies, usually run after `MatchProbe`}
 \usage{
-CombineObjects(
-  object_list,
-  gse_name = NULL,
-  experiment_type = c("assay_reduce", "assay_reprocess_norm")
-)
+CombineObjects(object_list, list_name = NULL, experiment_type)
 }
 \arguments{
-\item{object_list}{A list contains expression data with mapped gene symbol.}
+\item{object_list}{A list contains expression data with probes mapped to gene symbol.}
 
-\item{gse_name}{A character/vector (GEO accession number) contains object name want to combine.}
+\item{list_name}{A character/vector contains object name to be selected if want to combine sub-list.}
 
 \item{experiment_type}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
 }
@@ -22,4 +18,20 @@ A SummarizedExperiment Object contains combined data from several objects.
 }
 \description{
 Combine samples with common genes from selected studies, usually run after `MatchProbe`
+}
+\examples{
+list_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
+experiment_type <- "assay_MatchProbe"
+data_list <-  curatedTBData::get_curatedTBData(list_name)
+
+object_norm <- lapply(data_list, function(x)
+                                 curatedTBData::Normalization(x,
+                                 microarray_method = "quantile",
+                                 RNAseq_method = "TMM",
+                                 experiment_type = "assay_raw")
+object_match <- lapply(object_norm, function(x)
+                                 curatedTBData::MatchProbe(x,
+                                 UseAssay = c("TMM","quantile","RMA"),
+                                 experiment_type = experiment_type))
+CombineObjects(object_match, list_name, experiment_type= experiment_type)
 }
