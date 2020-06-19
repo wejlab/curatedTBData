@@ -120,7 +120,7 @@ Steps take:
 ```{r}
 # add the normalized data as a new assay in the SummarizedExperiment 
 # set all counts less than 0 to be 1
-GSE39939_sobject_norm <- Normalization(GSE39939_sobject, method = "quantile")
+GSE39939_sobject_norm <- Normalization(GSE39939_sobject, microarray_method = "quantile")
 ```
 Boxplot for non-normalized microarray data
 ```{r, fig.width = 8, fig.height = 8}
@@ -138,7 +138,7 @@ boxplot(assays(GSE39939_sobject_norm)[[2]][,1:20])
 ```{r}
 # Add the normalized data as a new assay in the MultiAssayExperiment. 
 # Use experiment_type = "assay_reprocess" for reprocess RNA-seq
-GSE107991_mobject_norm <- Normalization(GSE107991_mobject, experiment_type = "assay_raw", method = "TMM")
+GSE107991_mobject_norm <- Normalization(GSE107991_mobject, RNAseq_method = "TMM", experiment_type = "assay_raw")
 ```
 
 Boxplot for non-normalized RNA-seq data
@@ -165,7 +165,7 @@ MatchProbe(GSE39939_sobject, experiment_type = "assay_raw")
 MatchProbe(GSE107991_mobject, experiment_type = "assay_raw")
 ```
 
-# Normalization to list of datasets
+# Normalize a list of datasets
 
 First of all, we create reate a list of object with normalized reads and probesets mapped to symbols. Match probe ID to symbol using either raw data or normalized data (if applicable) .
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
@@ -226,7 +226,7 @@ $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{n
 # Modify the list to make it compatible with TBSignatureProfiler
 
 multi_set_PTB_Latent <- lapply(object_match, function(x)
-  Subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_type = "assay_reduce")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+  Subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_type = "assay_MatchProbe")) %>% plyr::compact()   # Remove empty objects use plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                     function(x) TBSignatureProfiler::runTBsigProfiler(input = x,

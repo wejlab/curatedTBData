@@ -170,7 +170,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
 ################################################
 
-#' Obtain pvalue, emprirical AUC, and 95% CI for each signature using two-sample t-test, ROCit::rocit, and bootstraping
+#' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature using two-sample t-test, ROCit::rocit, and bootstraping
 #' @name get_auc_stats
 #' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
