@@ -8,17 +8,28 @@
 \usage{
 MatchProbe(theObject, ...)
 
-\S4method{MatchProbe}{SummarizedExperiment}(theObject, experiment_type = "assay_raw")
+\S4method{MatchProbe}{SummarizedExperiment}(
+  theObject,
+  UseAssay,
+  experiment_type = "assay_MatchProbe",
+  only.matrix = FALSE
+)
 
-\S4method{MatchProbe}{MultiAssayExperiment}(theObject, experiment_type = c("assay_raw", "assay_raw_norm"))
+\S4method{MatchProbe}{MultiAssayExperiment}(
+  theObject,
+  UseAssay,
+  experiment_type = "assay_MatchProbe",
+  only.matrix = FALSE
+)
 }
 \arguments{
-\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+\item{theObject}{A SummarizedExperiment/MultiAssayExperiment Object.}
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object,
-experiment_type = assay_raw/assay_raw_norm for matching probe to gene symbol using non-normalized data or normalized data respectively.}
+\item{UseAssay}{A character indicats the assay names (partial name) of the SummarizedExperiment Object.}
+
+\item{experiment_type}{A character for the names of the matched output.}
 }
 \description{
 S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.

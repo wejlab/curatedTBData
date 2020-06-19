@@ -8,12 +8,20 @@
 \usage{
 Normalization(theObject, ...)
 
-\S4method{Normalization}{SummarizedExperiment}(theObject, method = "quantile", ...)
+\S4method{Normalization}{SummarizedExperiment}(
+  theObject,
+  geo_access = NULL,
+  microarray_method = "quantile",
+  RNAseq_method = "TMM",
+  ...
+)
 
 \S4method{Normalization}{MultiAssayExperiment}(
   theObject,
-  experiment_type = c("assay_raw", "assay_reprocess"),
-  method = "TMM"
+  geo_access = NULL,
+  microarray_method = "quantile",
+  RNAseq_method = "TMM",
+  experiment_type = c("assay_raw", "assay_reprocess")
 )
 }
 \arguments{
@@ -21,9 +29,18 @@ Normalization(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{method}{character string specifying the normalization method to be used. See `limma::normalizeBetweenArrays` for microarray, and `edgeR::TMM` for RNA sequence data.}
+\item{geo_access}{Geo accession number for certain Study. Used when microarray_method is "SCAN"}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
+\item{microarray_method}{A character string specifying the normalization method to be used. See `limma::normalizeBetweenArrays` for microarray data.
+The default is "quantile"}
+
+\item{RNAseq_method}{A character string specifying the normalization method to be used. See `edgeR::calcNormFactors` for RNA sequence data.
+The default is "TMM"}
+
+\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
+Choices for experiment_type are "assay_raw" and "assay_reprocess". The deafult is experiment_type="assay_raw"
+If experiment_type is "assay_raw", perform normalization on the assay provided by the authors.
+If experiment_type is "assay_reprocess", perform normalization on the reprocessed assay.}
 }
 \description{
 Normalization for microarray and RNA-seq transcriptome data.

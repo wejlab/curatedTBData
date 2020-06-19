@@ -12,15 +12,29 @@ install.packages("devtools")
 devtools::install_github("compbiomed/curatedTBData")
 ```
 
+
 ## Load Data
-To get a listing of all datasets:
+
+View summarized table for all the available data
+``` r
+data("DataSummary",package="curatedTBData")
+```
+
+Load specific datasets:
 
 ``` r
 library(curatedTBData)
-data(package="curatedTBData")
+
+# Load Single Study
+get_curatedTBData("GSE39939")
+
+# Load Multiple Studies
+get_curatedTBData(c("GSE39939","GSE107993"))
 ```
-Load specific datasets
+
+Load all available datasets in the pakcage:
+
 ``` r
-data(GSE39939_sobject)
-data(GSE107991_mobject)
+library(curatedTBData)
+get_curatedTBData(geo_access="All")
 ```

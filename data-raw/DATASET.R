@@ -4,7 +4,7 @@ usethis::use_data("DATASET")
 
 library(purrr)
 library(devtools)
-############ Function to adgere a list of summarized experiment data ############
+############ Function to add a list of summarized experiment data ############
 add_new_data <- function(edit_files){
   library(purrr)
   library(devtools)
@@ -81,3 +81,29 @@ add_new_data_mobject("GSE79362_mobject.RDS")
 #----------------------------------------------------.
 # Edit GSE94438 on Apr. 5th
 add_new_data_mobject("GSE94438_mobject.RDS")
+
+#----------------------------------------------------.
+# store Objects into indivual matrix
+
+f1 <-  list.files("data-raw")
+f2 <-  f1[grep("GSE",f1)]
+total <- lapply(f2, function(x) readRDS(paste0("data-raw/",x)))
+names(total) <- f2
+
+# examples for import individual data
+total = lapply(c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
+                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS"),
+               function(x) readRDS(paste0("data-raw/",x)))
+names(total) = c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
+                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS")
+library(devtools)
+purrr::walk2(total, names(total), function(obj, name) {
+  assign(name, obj)
+  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
+})
+
+# Save Summary table
+DataSummary <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx")
+library(devtools)
+use_data(DataSummary,compress = "xz", overwrite = TRUE)
+

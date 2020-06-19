@@ -44,6 +44,7 @@ Suggests:
     magick,
     singscore,
     sva,
+    SCAN.UPC,
     TBSignatureProfiler,
     testthat
 VignetteBuilder: knitr
