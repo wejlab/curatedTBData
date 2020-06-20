@@ -20,7 +20,9 @@ Subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  experiment_type
+  UseAssay = NULL,
+  experiment_name,
+  ...
 )
 }
 \arguments{
@@ -32,10 +34,13 @@ Subset_curatedTBData(theObject, ...)
 
 \item{annotationCondition}{A vector indicates conditions want to be subsetted.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.
-Expect theObject[[experiment_type]] to be a matrix. Two special cases are:
-When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
-When experiment_type is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
+\item{UseAssay}{A character indicates the name of the assay (expression matrix) within the object.
+Need this argument when the input is a SummarizedExperiment object.}
+
+\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.
+Expect theObject[[experiment_name]] to be a matrix. Two special cases are:
+When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
+When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
 }
 \description{
 Subsetting objects based on single/multiple conditions

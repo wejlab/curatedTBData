@@ -2,9 +2,13 @@
 #' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
 #' @name SignatureFilter
 #' @param sig_list SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.
-#' @param gset A character/vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for example.
+#' Names of each list should be the GEO accession of the study.
+#' @param gset A character/vector contians name(s) of the signatures.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
+#' @param GSE A character/vector for the GEO accession of the SummarizedExperiment Object.
+#' Need GSE value when the input is a single object instead of the list.
 #' @param ... Extra named arguments passed to function.
+#' @seealso TBSignatureProfiler::TBSignatureProfiler.
 #' @rdname SignatureFilter-methods
 #' @exportMethod SignatureFilter
 setGeneric(name="SignatureFilter", function(sig_list, gset,...){
@@ -14,9 +18,9 @@ setGeneric(name="SignatureFilter", function(sig_list, gset,...){
 #' @rdname SignatureFilter-methods
 setMethod("SignatureFilter",
           signature (sig_list = "list", gset = "character"),
-          function(sig_list, gset, annotationColName="TBStatus"){
+          function(sig_list, gset, annotationColName = "TBStatus"){
             if(!any(is(sig_list[[1]])=="SummarizedExperiment")){
-              stop(cat("Should be a list of SummarizedExperiment","You list element is ",class(sig_list[[1]])))
+              stop(paste("Should be a list of SummarizedExperiment","You list element is ",class(sig_list[[1]])))
             }
             sig_list1 <- lapply(1:length(sig_list), function(i,gset){
 
@@ -45,12 +49,16 @@ setMethod("SignatureFilter",
           function(sig_list, gset, GSE, annotationColName = "TBStatus"){
             index <- na.omit(match(gset,names(colData(sig_list))))
             if(length(index)==0){
-              result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],NA, GSE)
+              result <- data.frame(SummarizedExperiment::colData(sig_list)
+                                   [,annotationColName],
+                                   NA, GSE)
               colnames(result) <- c(annotationColName, gset,"GSE")
               return(result)
             }
 
-            result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],SummarizedExperiment::colData(sig_list)[,index], GSE)
+            result <- data.frame(SummarizedExperiment::colData(sig_list)[,annotationColName],
+                                 SummarizedExperiment::colData(sig_list)[,index],
+                                 GSE)
             colnames(result) <- c(annotationColName, gset,"GSE")
             return(result)
 
@@ -122,10 +130,15 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
 
             p_boxplot <- plyr::compact(p_boxplot)
 
-            library(gridExtra)
-            library(ggplot2)
-            p_combine <- do.call("grid.arrange", c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
-            return(p_combine)
+            if (requireNamespace("gridExtra", quietly = TRUE)) {
+              p_combine <- do.call("grid.arrange",
+                                   c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+              return(p_combine)
+            } else {
+              stop("Need package gridExtra for the output, please install it.")
+            }
+
+
           })
 
 
@@ -144,16 +157,16 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
             names(myColors) <- levels(sig_data$annotationNameLevels)
 
-            sig_data1 <-  SummarizedExperiment::SummarizedExperiment(colData = sig_data)
+            sig_data1 <- SummarizedExperiment::SummarizedExperiment(colData = sig_data)
 
 
             p <- TBSignatureProfiler::signatureBoxplot(
-              inputData = sig_data1,
-              name = NULL,
-              signatureColNames = signatureColNames,
-              annotationColName = "annotationNameLevels",
-              rotateLabels = FALSE,
-              fill_colors = myColors)
+                                          inputData = sig_data1,
+                                          name = NULL,
+                                          signatureColNames = signatureColNames,
+                                          annotationColName = "annotationNameLevels",
+                                          rotateLabels = FALSE,
+                                          fill_colors = myColors)
             p1 <- p + ggplot2::theme(plot.title = element_text(size=26, face="bold"),
                             strip.text = element_text(size=26, face="bold"),
                             legend.title = element_blank(),
@@ -176,6 +189,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
+#' @param percent A number speciying the percentage of the confidence interval.
 #' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
 get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
@@ -274,9 +288,10 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' Combine results from list. Calculate p-value and AUC values
 #' @name combine_auc
 #' @param SE_scored_list A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.
-#' @param annotationColName A character indicates feature of interest in the object's column data
-#' @param signatureColNames A character/vector contains name of gene signature.
+#' @param annotationColName A character string specifying the feature of interest in the object's column data
+#' @param signatureColNames A character/vector string contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
+#' @param percent A number indicates the percentage of confidence interval.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
@@ -311,15 +326,18 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
 ##############################################################################
 #' Combine results from list. Calculate p-value and AUC values
 #' @name bootstrap_mean_CI
-#' @param data A data frame contains the interested numeric vector .
+#' @param data A data frame/matrix contains the interested numeric vector .
 #' @param percent A number indicates the percentage of confidence interval.
-#' @param method A character indicates the method used for computing bootstrap confidence interval. By default, this is set to `empirical`.
-#'
+#' @param method A character string specifying the method used for computing bootstrap confidence interval.
+#' The choices are c("percentile","empirical"). The default is "empirical".
+#' @param colName A character string specifying the column name of the data frame
+#' that was selected for bootstraping.
 #' @param num.boot Number of bootstrap times.
 #' @return A data frame with lower and upper bootstrap confidence interval.
 #' @export
 #'
-bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile","empirical"), num.boot){
+bootstrap_mean_CI <- function(data,colName, percent=0.95,
+                              method=c("percentile","empirical"), num.boot){
 
   if(missing(method)){method="empirical"}
   method <- match.arg(method)
@@ -329,7 +347,6 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
 
   x <- unlist(data[,colName])
   x <- na.omit(x) # Remove NA's in PLAGE method
-
 
   names(x) <- NULL
   n <- length(x)
@@ -381,7 +398,7 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution
-#' @param aucs_result_dat A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.
+#' @param aucs_result A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.
 #' @return Ridge plot with median line
 #'
 #' @examples
@@ -389,8 +406,6 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95, method=c("percentile",
 #' p_ridge <- get_auc_distribution(aucs_result)
 #' @export
 get_auc_distribution <- function(aucs_result){
-
-  library(gridExtra)
 
   # add 50% AUC line
   aucs_result_dat_lines <- data.frame(Signature = aucs_result$Signature,x0=0.5)
@@ -407,8 +422,8 @@ get_auc_distribution <- function(aucs_result){
 #' @param combine_dat A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.
 #' @param GSE_sig A dataframe contains information about eacch signature and its traning dataset name.
 #' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
-#' @param facet Logic. True if want to group signatures into groups. Default is FLASE.
-#' @return Heatmap with AUC values. x axis represents expression data, y axis represents signatures.
+#' @param facet Logical value. True if want to group signatures into groups. Default is TRUE.
+#' @return Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
 #' @examples
 #' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86","Blankley_5"),2),
 #'                AUC=runif(10,0.5,1), GSE=rep(c("GSE39939","GSE19442"), each=5))
@@ -417,7 +432,8 @@ get_auc_distribution <- function(aucs_result){
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
 #'@export
-heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
+heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
+
   dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
   data_wide <- tidyr::spread(dat, Signature, AUC)
   row.names(data_wide) <- data_wide$GSE
@@ -427,7 +443,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
   # Clustering AUC values
   dd <- dist(dat_input)
   hc <- hclust(dd)
-  dat_input1 <-dat_input[hc$order,]
+  dat_input1 <- dat_input[hc$order,]
 
   # Get mean AUC for each dataset
   dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1, na.rm = TRUE))
@@ -464,47 +480,34 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
   frames2$Var1 <- as.integer(frames$Var1)
   frames2$Var2 <- as.integer(frames$Var2)
 
-  # Functions to create correct traning index in facet grid
-  facet_rect_position <- function(datta, frames){
-
-    # Split dataframe into list based on different signature type
-    frames_list <- frames %>% dplyr::group_split(sig_typek)
-    names(frames_list) <- sapply(frames_list, function(x) x$sig_typek[1])
-
-    datta_list <- datta %>% dplyr::group_split(sig_typek)
-    names(datta_list) <- sapply(datta_list, function(x) x$sig_typek[1])
-
-    # Get the correct index in for traning dataset
-    # chnage sig_type levels from sub list based on characters in full list
-    frame_facet1 <- lapply(names(frames_list), function(i){
-      frames_list[[i]]$Var1 <- as.integer(frames_list[[i]]$Var1)
-      frames_list[[i]]$Var2 <- as.integer(factor(frames_list[[i]]$Var2, levels = unique(datta_list[[i]]$Var2)))
-
-      frames_list[[i]]
-    })
-    frame_facet <- do.call(rbind,frame_facet1)
-    return(frame_facet)
-
-  }
-
-  frame_facet <- facet_rect_position(datta,frames)
-
-  if (facet==FALSE){
-    p <- ggplot(data = datta, aes(x=Var1, y=Var2, fill=value)) +
-      geom_tile() +
-      geom_text(aes(label = round(value, 2)), cex=3.5) +
-      scale_fill_distiller(palette = "RdPu", trans = "reverse") +
-      geom_rect(data=frames2, size=1, fill=NA, colour="black",
-                aes(xmin=Var1 - 0.5, xmax=Var1 + 0.5, ymin=Var2 - 0.5, ymax=Var2 + 0.5)) +
-      theme(axis.title.x=element_blank(),
-            axis.title.y=element_blank(),
-            axis.text.x = element_text(angle = 45, vjust = 1,
-                                       size = 12, hjust = 1),
-            axis.text.y = element_text(size = 12))
-    return(p)
-
-  }
   if(facet==TRUE){
+
+    # Functions to create correct traning index in facet grid
+    facet_rect_position <- function(datta, frames){
+
+      # Split dataframe into list based on different signature type
+      frames_list <- frames %>% dplyr::group_split(sig_typek)
+      names(frames_list) <- sapply(frames_list, function(x) x$sig_typek[1])
+
+      datta_list <- datta %>% dplyr::group_split(sig_typek)
+      names(datta_list) <- sapply(datta_list, function(x) x$sig_typek[1])
+
+      # Get the correct index in for traning dataset
+      # change sig_type levels from sub list based on characters in full list
+      frame_facet1 <- lapply(names(frames_list), function(i){
+        num_Var1 <- as.integer(frames_list[[i]]$Var1)
+        num_Var2 <- as.integer(as.integer(factor(frames_list[[i]]$Var2,
+                                                 levels = unique(datta_list[[i]]$Var2))))
+        frames_list[[i]] %>% dplyr::mutate(Var1 = num_Var1, Var2 = num_Var2)
+      })
+
+      frame_facet <- do.call(rbind,frame_facet1)
+      return(frame_facet)
+
+    }
+
+    frame_facet <- facet_rect_position(datta,frames)
+
     p <- ggplot(data = datta, aes(x=Var1, y=Var2, fill=value)) +
       geom_tile() +
       scale_fill_distiller(palette = "RdPu", trans = "reverse") +
@@ -522,4 +525,21 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=FALSE){
     return(p)
   }
 
+  if (facet==FALSE){
+    p <- ggplot(data = datta, aes(x=Var1, y=Var2, fill=value)) +
+      geom_tile() +
+      geom_text(aes(label = round(value, 2)), cex=3.5) +
+      scale_fill_distiller(palette = "RdPu", trans = "reverse") +
+      geom_rect(data=frames2, size=1, fill=NA, colour="black",
+                aes(xmin=Var1 - 0.5, xmax=Var1 + 0.5, ymin=Var2 - 0.5, ymax=Var2 + 0.5)) +
+      theme(axis.title.x=element_blank(),
+            axis.title.y=element_blank(),
+            axis.text.x = element_text(angle = 45, vjust = 1,
+                                       size = 12, hjust = 1),
+            axis.text.y = element_text(size = 12))
+    return(p)
+
+  }
+
 }
+

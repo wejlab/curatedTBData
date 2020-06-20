@@ -11,7 +11,7 @@ get_gsea_rank(data_sobject, TBSig, annotationColNames = "TBStatus")
 
 \item{annotationColNames}{A character indicates feature of interest in the object's column data.}
 
-\item{TBsignatures}{A list of signature genes with list names as signature name.}
+\item{TBsig}{A list of signature genes with list names as signature name.}
 }
 \value{
 A list of dataframes (single dataframe if only one signature) with Disease status and signature genes rank.

@@ -16,7 +16,5 @@ A DataFrame object contains the patient information for each sample
 Create Column data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 }
 \examples{
-gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
-create_ColData("GSE39939",gse)
-
+create_ColData("GSE39939")
 }

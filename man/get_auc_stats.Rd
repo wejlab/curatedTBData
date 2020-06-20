@@ -20,6 +20,8 @@ get_auc_stats(
 \item{signatureColNames}{A character/vector contains name of gene signature.}
 
 \item{num.boot}{Number of bootstrapping.}
+
+\item{percent}{A number speciying the percentage of the confidence interval.}
 }
 \value{
 A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.

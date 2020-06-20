@@ -10,12 +10,15 @@ CreateObject(theObject, ...)
 
 \S4method{CreateObject}{Sobject}(theObject)
 
-\S4method{CreateObject}{Mobject}(theObject, assay_type = "assay_reprocess")
+\S4method{CreateObject}{Mobject}(theObject, experiment_name = "assay_reprocess")
 }
 \arguments{
 \item{theObject}{A class either Sobject or Mobject}
 
 \item{...}{Extra named arguments passed to function}
+
+\item{experiment_name}{A character indicates the name of the new experiment
+after creating the MultiAssayExperiment Object.}
 }
 \description{
 Create SummarizedExperiment/MultiAssayExperiment object

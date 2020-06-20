@@ -32,7 +32,7 @@ setMethod("curatedTBData", signature = "character",
 #' @inheritParams curatedTBData
 #' @export
 .illumina4 <- function(geo_access, plat_access){
-
+  data_download <- NULL
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
   dat_download <- download_data_Illumina4(geo_access)
   row_data <- create_RowData(data_download,plat_access)
@@ -107,12 +107,7 @@ setMethod("curatedTBData", signature = "character",
 #' download_data_Illumina4("GSE39939")
 #' @export
 download_data_Illumina4<- function(geo_access){
-  if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-  if (! "GEOquery" %in% installed.packages()) BiocManager::install("GEOquery")
-  if (! "dplyr" %in% installed.packages()) install.packages("dplyr")
-  library(dplyr)
-  library(GEOquery)
+
   urls <- GEOquery::getGEOSuppFiles(geo_access, fetch_files = FALSE)
 
   # only one txt file
@@ -207,9 +202,9 @@ download_data_Affy2<- function(geo_access){
 
 }
 
-#####################################################
 
 #' Create row data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
+#' @importFrom AnnotationDbi select
 #' @name create_RowData
 #' @param dat_download A dataframe object read from `download_data_Illumina4` or `create_data_Illumina3`
 #' @param plat_access A character indicates platform access number
@@ -231,9 +226,6 @@ create_RowData <- function(dat_download, plat_access){
 
   # Annotation
   PROBES <- row.names(dat_download)
-  library(illuminaHumanv3.db)
-  library(illuminaHumanv4.db)
-  library(hgu133plus2.db)
 
   if (plat_access == "GPL6947"){
     OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
@@ -305,15 +297,12 @@ create_RowData <- function(dat_download, plat_access){
 #' Create Column data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array
 #' @name create_ColData
 #' @inheritParams download_data_Illumina4
-#'
 #' @return A DataFrame object contains the patient information for each sample
-#'
 #' @examples
-#' gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
-#' create_ColData("GSE39939",gse)
-#'
+#' create_ColData("GSE39939")
 #' @export
 create_ColData <- function(geo_access,gse){
+  gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
 
   # Obatain sample characteristics
   data_characteristic <- lapply(1:length(GSMList(gse)), function(x)
@@ -458,6 +447,8 @@ Mobject <- setClass("Mobject",
 #' Create SummarizedExperiment/MultiAssayExperiment object
 #' @name CreateObject
 #' @param theObject A class either Sobject or Mobject
+#' @param experiment_name A character indicates the name of the new experiment
+#' after creating the MultiAssayExperiment Object.
 #' @param ... Extra named arguments passed to function
 #' @rdname CreateObject-methods
 #' @exportMethod CreateObject
@@ -479,12 +470,12 @@ setMethod("CreateObject", signature="Sobject",
 #' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Mobject",
-          function(theObject,assay_type = "assay_reprocess"){
-            objlist1 <- list(assay_type = theObject@assay_reprocess,
+          function(theObject,experiment_name = "assay_reprocess"){
+            objlist1 <- list(experiment_name = theObject@assay_reprocess,
                              assay_raw = SummarizedExperiment::SummarizedExperiment(
                                theObject@assay_raw,rowData=theObject@row_data))
-            names(objlist1) <- c(assay_type,"assay_raw")
-            assay_reprocess_map <- data.frame(assay = rep(assay_type,ncol(theObject@assay_reprocess)),
+            names(objlist1) <- c(experiment_name,"assay_raw")
+            assay_reprocess_map <- data.frame(assay = rep(experiment_name,ncol(theObject@assay_reprocess)),
                                               primary = colnames(theObject@assay_reprocess),
                                               colname = colnames(theObject@assay_reprocess),
                                               stringsAsFactors = FALSE)
