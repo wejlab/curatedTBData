@@ -1,6 +1,6 @@
 #' Obtain signature gene rank
 #' @param data_sobject A SummarizedExperiment Object contains assays and column data with disease status.
-#' @param TBsignatures A list of signature genes with list names as signature name.
+#' @param TBsig A list of signature genes with list names as signature name.
 #' @param annotationColNames A character indicates feature of interest in the object's column data.
 #' @return A list of dataframes (single dataframe if only one signature) with Disease status and signature genes rank.
 #' @examples

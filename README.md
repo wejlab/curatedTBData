@@ -26,15 +26,15 @@ Load specific datasets:
 library(curatedTBData)
 
 # Load Single Study
-get_curatedTBData("GSE39939")
+get_curatedTBData(geo_access = "GSE39939")
 
 # Load Multiple Studies
-get_curatedTBData(c("GSE39939","GSE107993"))
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
 ```
 
 Load all available datasets in the pakcage:
 
 ``` r
 library(curatedTBData)
-get_curatedTBData(geo_access="All")
+get_curatedTBData(geo_access = "All")
 ```

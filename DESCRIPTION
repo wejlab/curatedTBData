@@ -11,6 +11,8 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
+    AnnotationDbi,
+    Biobase,
     BiocManager,
     BiocStyle,
     BiocParallel,
@@ -18,21 +20,24 @@ Imports:
     GEOquery,
     ggplot2,
     ggridges,
-    gridExtra,
     knitr,
     limma,
+    magrittr,
+    methods,
     MultiAssayExperiment,
     plyr,
     RColorBrewer,
     reshape2,
+    readr,
     rmarkdown,
     ROCit,
     roxygen2,
     stats,
+    stringr,
     SummarizedExperiment,
+    tibble,
     tidyr
 Suggests:
-    AgiMicroRna,
     affy,
     DT,
     edgeR,

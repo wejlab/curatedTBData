@@ -3,10 +3,12 @@
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param annotationCondition A vector indicates conditions want to be subsetted.
-#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
-#' Expect theObject[[experiment_type]] to be a matrix. Two special cases are:
-#' When experiment_type is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
-#' When experiment_type is "assay_raw". Perform subsetting on the SummarizedExperiment Object.
+#' @param UseAssay A character indicates the name of the assay (expression matrix) within the object.
+#' Need this argument when the input is a SummarizedExperiment object.
+#' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object.
+#' Expect theObject[[experiment_name]] to be a matrix. Two special cases are:
+#' When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
+#' When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.
 #' @param ... Extra named arguments passed to function.
 #' @rdname Subset_curatedTBData-methods
 #' @exportMethod Subset_curatedTBData
@@ -48,19 +50,19 @@ setMethod("Subset_curatedTBData",
 #' @rdname Subset_curatedTBData-methods
 setMethod("Subset_curatedTBData",
           signature="MultiAssayExperiment",
-          function(theObject, annotationColName, annotationCondition,
-                   experiment_type){
+          function(theObject, annotationColName, annotationCondition, UseAssay=NULL,
+                   experiment_name,...){
             # Check whether experiment exists in the object
-            if(experiment_type != "All"){
-              experiment_name_index <- which(names(theObject) %in% experiment_type)
+            if(experiment_name != "All"){
+              experiment_name_index <- which(names(theObject) %in% experiment_name)
               if(length(experiment_name_index) == 0){
-                stop(paste(experiment_type,"is not found within the object"))
+                stop(paste(experiment_name,"is not found within the object"))
               }
             }
 
-            # For experiment_type == "all".
+            # For experiment_name == "all".
             # Perform whole MultiAssayExperiment selection, output is MultiAsaayExperiment
-            if(experiment_type == "All"){
+            if(experiment_name == "All"){
 
               n <- length(annotationCondition)
               theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)
@@ -73,15 +75,15 @@ setMethod("Subset_curatedTBData",
             }
               # Perform individual selection, assay_raw is SummarizedExperiment
               # output is reduced SummarizedExperiment
-            else if (experiment_type == "assay_raw"){
+            else if (experiment_name == "assay_raw"){
 
-                theObject_sub <- theObject[[experiment_type]]
+                theObject_sub <- theObject[[experiment_name]]
                 n <- length(annotationCondition)
                 col_data <-  SummarizedExperiment::colData(theObject)
 
                 # For those datasets that do not include all samples from the study
-                if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
-                  index <- na.omit(match(colnames(theObject[[experiment_type]]),
+                if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
+                  index <- na.omit(match(colnames(theObject[[experiment_name]]),
                                          row.names(col_data)))
                   col_data <- col_data[index,]
                 }
@@ -107,21 +109,21 @@ setMethod("Subset_curatedTBData",
 
               # when not all samples are included in the expression matrix
               # This is the cases with some RNA-seq studies
-              if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
-                index <- na.omit(match(colnames(theObject[[experiment_type]]),
+              if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
+                index <- na.omit(match(colnames(theObject[[experiment_name]]),
                                        row.names(col_data)))
                 col_data <- col_data[index,]
               }
 
               # Set atrribute to be NULL, ensure that row/column names have NULL attribute
-              colnames(theObject[[experiment_type]]) <- as.character(
-                                         colnames(theObject[[experiment_type]]))
+              colnames(theObject[[experiment_name]]) <- as.character(
+                                         colnames(theObject[[experiment_name]]))
 
-              row.names(theObject[[experiment_type]]) <- as.character(
-                                         row.names(theObject[[experiment_type]]))
+              row.names(theObject[[experiment_name]]) <- as.character(
+                                         row.names(theObject[[experiment_name]]))
 
               sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(
-                                  assays=list(counts = as.matrix(theObject[[experiment_type]])),
+                                  assays=list(counts = as.matrix(theObject[[experiment_name]])),
                                               colData = col_data)
 
               # subsetting annotationCondition
@@ -143,34 +145,33 @@ setMethod("Subset_curatedTBData",
 #' @name CombineObjects
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected if want to combine sub-list.
-#' @param experiment_type A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
+#' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
 #' @examples
 #' list_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
-#' experiment_type <- "assay_MatchProbe"
-#' data_list <-  curatedTBData::get_curatedTBData(list_name)
+#' data_list <-  get_curatedTBData(list_name)
 #'
 #' object_norm <- lapply(data_list, function(x)
 #'                                  curatedTBData::Normalization(x,
 #'                                  microarray_method = "quantile",
 #'                                  RNAseq_method = "TMM",
-#'                                  experiment_type = "assay_raw")
+#'                                  experiment_name = "assay_raw")
 #' object_match <- lapply(object_norm, function(x)
 #'                                  curatedTBData::MatchProbe(x,
 #'                                  UseAssay = c("TMM","quantile","RMA"),
-#'                                  experiment_type = experiment_type))
-#' CombineObjects(object_match, list_name, experiment_type= experiment_type)
+#'                                  createExperimentName = "assay_MatchProbe"))
+#' CombineObjects(object_match, list_name, experiment_name= "assay_MatchProbe")
 #' @export
 CombineObjects <- function(object_list,list_name=NULL,
-                           experiment_type){
+                           experiment_name){
 
   if(is.null(list_name)){
     list_name <-  names(object_list)
-    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[[experiment_type]]
+    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[[experiment_name]]
                               %>% data.frame)
   }
   else {
-    dat_exprs_match <- lapply(object_list[list_name], function(x) experiments(x)[[experiment_type]]
+    dat_exprs_match <- lapply(object_list[list_name], function(x) experiments(x)[[experiment_name]]
                               %>% data.frame)
   }
 

@@ -4,10 +4,10 @@
 \alias{expandProbesets}
 \title{Expand probe set for non-specific probes.}
 \usage{
-expandProbesets(sobject_exprs_new, sep = "///")
+expandProbesets(dat, sep = "///")
 }
 \arguments{
-\item{dat_example}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.}
+\item{dat}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.}
 }
 \value{
 A matrix that split non-uniquely mapped features to one per row.

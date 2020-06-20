@@ -6,10 +6,10 @@
 #' The default is "quantile"
 #' @param RNAseq_method A character string specifying the normalization method to be used. See `edgeR::calcNormFactors` for RNA sequence data.
 #' The default is "TMM"
-#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
-#' Choices for experiment_type are "assay_raw" and "assay_reprocess". The deafult is experiment_type="assay_raw"
-#' If experiment_type is "assay_raw", perform normalization on the assay provided by the authors.
-#' If experiment_type is "assay_reprocess", perform normalization on the reprocessed assay.
+#' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
+#' Choices for experiment_name are "assay_raw" and "assay_reprocess". The deafult is experiment_name="assay_raw"
+#' If experiment_name is "assay_raw", perform normalization on the assay provided by the authors.
+#' If experiment_name is "assay_reprocess", perform normalization on the reprocessed assay.
 #' @param ... Extra named arguments passed to function.
 #' @rdname Normalization-methods
 #' @exportMethod Normalization
@@ -100,22 +100,22 @@ setMethod("Normalization",
           signature = "MultiAssayExperiment",
           function(theObject, geo_access = NULL, microarray_method = "quantile",
                    RNAseq_method = "TMM",
-                   experiment_type = c("assay_raw","assay_reprocess")){
+                   experiment_name = c("assay_raw","assay_reprocess")){
 
             # Identify Normalization method
             # microarray_method <-  match.arg(microarray_method)
             # RNAseq_method <- match.arg(RNAseq_method)
 
             # Get raw counts from assay_raw experiment for a MultiAssayExperiment Object
-            if(missing(experiment_type)){experiment_type="assay_raw"}
-            experiment_type <- match.arg(experiment_type)
+            if(missing(experiment_name)){experiment_name="assay_raw"}
+            experiment_name <- match.arg(experiment_name)
 
             sobject1 <- theObject[["assay_raw"]]
             geo_access_name <- strsplit(SummarizedExperiment::assayNames(sobject1),"_")[[1]][1]
 
-            if (experiment_type == "assay_raw"){
+            if (experiment_name == "assay_raw"){
               assay_name <- paste0(geo_access_name,"_raw")
-              counts <- SummarizedExperiment::assays(theObject[[experiment_type]])[[assay_name]]
+              counts <- SummarizedExperiment::assays(theObject[[experiment_name]])[[assay_name]]
               counts[counts<10] <- 10
 
               # log2 transformed data
@@ -128,13 +128,13 @@ setMethod("Normalization",
 
               assay_name <- paste0(geo_access_name,"_",RNAseq_method)
 
-              SummarizedExperiment::assays(theObject[[experiment_type]])[[assay_name]] <- Exp
+              SummarizedExperiment::assays(theObject[[experiment_name]])[[assay_name]] <- Exp
               return(theObject)
 
             }
-            if (experiment_type == "assay_reprocess"){
+            if (experiment_name == "assay_reprocess"){
 
-              counts <- theObject[[experiment_type]]
+              counts <- theObject[[experiment_name]]
               counts[counts<10] <- 10
 
               # log2 transformed data
