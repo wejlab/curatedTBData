@@ -36,7 +36,7 @@ setMethod("curatedTBData", signature = "character",
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
   dat_download <- download_data_Illumina4(geo_access)
   row_data <- create_RowData(data_download,plat_access)
-  col_data <- create_ColData(geo_access, gse)
+  col_data <- create_ColData(geo_access)
 
   # check validity
   if (all(colnames(dat_download) == row.names(col_data))){
@@ -61,7 +61,7 @@ setMethod("curatedTBData", signature = "character",
   dat_download <- download_data_Illumina3(geo_access)
 
   row_data <- create_RowData(dat_download,plat_access)
-  col_data <- create_ColData(geo_access, gse)
+  col_data <- create_ColData(geo_access)
 
   # check validity
   if (all(colnames(dat_download) == row.names(col_data))){
@@ -83,7 +83,7 @@ setMethod("curatedTBData", signature = "character",
   gse <- GEOquery::getGEO(geo_access, GSEMatrix = F)
   normalized_rma <- download_data_Affy2(geo_access)
   row_data <- create_RowData(normalized_rma,plat_access)
-  col_data <- create_ColData(geo_access,gse)
+  col_data <- create_ColData(geo_access)
   if (all(colnames(normalized_rma) == row.names(col_data))){
     result <- list(counts = normalized_rma, row_data = row_data, col_data = col_data)
     return(result)
@@ -117,7 +117,7 @@ download_data_Illumina4<- function(geo_access){
 
     temp <- tempfile()
     download.file(url_non_normalized,temp)
-    Non_normalized <- read.delim(gzfile(temp),row.names = 1, header = TRUE) %>% dplyr::select_if(~sum(!is.na(.)) > 0)
+    Non_normalized <- utils::read.delim(gzfile(temp),row.names = 1, header = TRUE) %>% dplyr::select_if(~sum(!is.na(.)) > 0)
 
     # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
     if (!is.null(grep('.Pval',colnames(Non_normalized)))){
@@ -150,11 +150,13 @@ download_data_Illumina3<- function(geo_access){
     temp <- tempfile()
     tempd <- tempdir()
     download.file(url_temp,temp)
-    untar(temp,exdir = tempd)
+    utils::untar(temp,exdir = tempd)
     files <- list.files(tempd, pattern = "txt.*")
     # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
     Non_normalized_list <- lapply(files, function(x)
-      read.delim(paste0(tempd,'/',x), header=TRUE, col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')), stringsAsFactors = FALSE))
+            utils::read.delim(paste0(tempd,'/',x), header=TRUE,
+            col.names = c('ID_REF',gsub('_.*','',x),paste0(gsub('_.*','',x),'.Pval')),
+            stringsAsFactors = FALSE))
     # return(Non_normalized_list)
     Non_normalized <- Reduce(
       function(x, y) merge(x, y, by = "ID_REF", all = F),
@@ -186,12 +188,12 @@ download_data_Affy2<- function(geo_access){
     temp <- tempfile()
     tempd <- tempdir()
     download.file(url_temp,temp)
-    untar(temp,exdir = tempd)
+    utils::untar(temp,exdir = tempd)
     celFiles <- list.files(path = tempd, pattern = '*.CEL',full.names=TRUE)
     # unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
     # Conduct RMA
     data_affy <- affy::ReadAffy(filenames = celFiles)
-    normalized_rma <- exprs(affy::rma(data_affy))
+    normalized_rma <- Biobase::exprs(affy::rma(data_affy))
     colnames(normalized_rma) <- sapply(1:ncol(normalized_rma),
                                        function(x) gsub('\\..*','',colnames(normalized_rma)[x]))
 
@@ -216,6 +218,8 @@ download_data_Affy2<- function(geo_access){
 #' @export
 create_RowData <- function(dat_download, plat_access){
 
+  PROBEID <- SYMBOL <- NULL
+
   dat_download <- data.frame(dat_download)
   # Obatian sample names
   samplename <- colnames(dat_download)
@@ -228,17 +232,17 @@ create_RowData <- function(dat_download, plat_access){
   PROBES <- row.names(dat_download)
 
   if (plat_access == "GPL6947"){
-    OUT <- AnnotationDbi::select(illuminaHumanv3.db, PROBES, "SYMBOL")
+    OUT <- AnnotationDbi::select(illuminaHumanv3.db::illuminaHumanv3.db, PROBES, "SYMBOL")
     OUT[is.na(OUT)] <- NA
   }
   if (plat_access== "GPL10558"){
-    OUT <- AnnotationDbi::select(illuminaHumanv4.db, PROBES, "SYMBOL")
+    OUT <- AnnotationDbi::select(illuminaHumanv4.db::illuminaHumanv4.db, PROBES, "SYMBOL")
     OUT[is.na(OUT)] <- NA
   }
 
   # Affymetrix hgu133plus2.db
   if (plat_access== "GPL570"){
-    OUT <- AnnotationDbi::select(hgu133plus2.db, PROBES, "SYMBOL")
+    OUT <- AnnotationDbi::select(hgu133plus2.db::hgu133plus2.db, PROBES, "SYMBOL")
     OUT[is.na(OUT)] <- NA
     OUT_collapse <- OUT %>% dplyr::group_by(PROBEID) %>%
       dplyr::summarise(SYMBOL = paste(SYMBOL, collapse="///"),
@@ -260,8 +264,9 @@ create_RowData <- function(dat_download, plat_access){
     }
     # Create new variable called SYMBOL_NEW, used later in creating multi-assay pbject
     row_data$SYMBOL_NEW <- Symbol_plat_new
+    final <- S4Vectors::DataFrame(row_data)
 
-    return(DataFrame(row_data))
+    return(final)
 
   }
 
@@ -301,19 +306,19 @@ create_RowData <- function(dat_download, plat_access){
 #' @examples
 #' create_ColData("GSE39939")
 #' @export
-create_ColData <- function(geo_access,gse){
+create_ColData <- function(geo_access){
   gse <- GEOquery::getGEO(geo_access, GSEMatrix =  F)
 
   # Obatain sample characteristics
-  data_characteristic <- lapply(1:length(GSMList(gse)), function(x)
-    GSMList(gse)[[x]]@header$characteristics_ch1)
+  data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
+                         GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
   characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
     sapply(data_characteristic, '[[',x))
 
   # get string after :
-  characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% data.frame()
+  characteristic_data_frame <- data.frame(sub('(.*?): ','',characteristic_table))
   colnames(characteristic_data_frame) <- sub(':.*','',characteristic_table)[1,]
-  row.names(characteristic_data_frame) <- names(GSMList(gse))
+  row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
   return(characteristic_data_frame)
 
 }
@@ -381,10 +386,10 @@ Sobject <- setClass("Sobject",
                                                    nrow = 2, ncol = 3, byrow = TRUE,
                                     dimnames = list(c("111_at", "222_at"),
                                                     c("S.1", "S.2", "S.3"))),
-                                    row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),
+                                    row_data = S4Vectors::DataFrame(ID_REF=c("111_at", "222_at"),
                                                                                Symbol=c("A1BC","ZAC"),
                                                                                row.names = c("111_at", "222_at")),
-                                    column_data = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female"),
+                                    column_data = S4Vectors::DataFrame(Gender=c("Male", "Female","Female"),
                                                                                   TBStatus=c("PTB","Latent", "Control"),
                                                                                   row.names = c("S.1", "S.2", "S.3")),
                       # Create  new class in biobase
@@ -427,10 +432,10 @@ Mobject <- setClass("Mobject",
                                                         nrow = 2, ncol = 3, byrow = TRUE,
                                                         dimnames = list(c("111_at", "222_at"),
                                                                         c("S.1", "S.2", "S.3"))),
-                                     row_data = MultiAssayExperiment::DataFrame(ID_REF=c("111_at", "222_at"),
+                                     row_data = S4Vectors::DataFrame(ID_REF=c("111_at", "222_at"),
                                                                                 Symbol=c("A1BC","ZAC"),
                                                                                 row.names = c("111_at", "222_at")),
-                                     primary = MultiAssayExperiment::DataFrame(Gender=c("Male", "Female","Female","Female"),
+                                     primary = S4Vectors::DataFrame(Gender=c("Male", "Female","Female","Female"),
                                                                                TBStatus=c("PTB","Latent", "Control","PTB"),
                                                                                row.names = c("S.1", "S.2", "S.3","S.4")),
                                      meta_data = new('MIAME', name="XXXXX", lab="XXXXXX",
@@ -470,12 +475,12 @@ setMethod("CreateObject", signature="Sobject",
 #' @rdname CreateObject-methods
 setMethod("CreateObject",
           signature="Mobject",
-          function(theObject,experiment_name = "assay_reprocess"){
-            objlist1 <- list(experiment_name = theObject@assay_reprocess,
+          function(theObject,createExperimentName = "assay_reprocess"){
+            objlist1 <- list(createExperimentName = theObject@assay_reprocess,
                              assay_raw = SummarizedExperiment::SummarizedExperiment(
                                theObject@assay_raw,rowData=theObject@row_data))
-            names(objlist1) <- c(experiment_name,"assay_raw")
-            assay_reprocess_map <- data.frame(assay = rep(experiment_name,ncol(theObject@assay_reprocess)),
+            names(objlist1) <- c(createExperimentName,"assay_raw")
+            assay_reprocess_map <- data.frame(assay = rep(createExperimentName,ncol(theObject@assay_reprocess)),
                                               primary = colnames(theObject@assay_reprocess),
                                               colname = colnames(theObject@assay_reprocess),
                                               stringsAsFactors = FALSE)

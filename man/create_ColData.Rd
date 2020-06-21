@@ -4,7 +4,7 @@
 \alias{create_ColData}
 \title{Create Column data information from Illumina HumanHT-12 V3.0/4.0 expression beadchip and Affymetrix Human Genome U133 Plus 2.0 Array}
 \usage{
-create_ColData(geo_access, gse)
+create_ColData(geo_access)
 }
 \arguments{
 \item{geo_access}{A character that contains GEO accession number.}

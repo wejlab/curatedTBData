@@ -10,7 +10,7 @@ CreateObject(theObject, ...)
 
 \S4method{CreateObject}{Sobject}(theObject)
 
-\S4method{CreateObject}{Mobject}(theObject, experiment_name = "assay_reprocess")
+\S4method{CreateObject}{Mobject}(theObject, createExperimentName = "assay_reprocess")
 }
 \arguments{
 \item{theObject}{A class either Sobject or Mobject}

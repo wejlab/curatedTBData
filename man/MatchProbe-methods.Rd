@@ -11,14 +11,14 @@ MatchProbe(theObject, ...)
 \S4method{MatchProbe}{SummarizedExperiment}(
   theObject,
   UseAssay,
-  experiment_name = "assay_MatchProbe",
+  createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
 
 \S4method{MatchProbe}{MultiAssayExperiment}(
   theObject,
   UseAssay,
-  experiment_name = "assay_MatchProbe",
+  createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
 }
@@ -29,9 +29,9 @@ MatchProbe(theObject, ...)
 
 \item{UseAssay}{A character indicats the assay names (partial name) of the SummarizedExperiment Object.}
 
-\item{experiment_name}{A character for the names of the new experiment matrix.}
+\item{createExperimentName}{A character specifying the names of the new experiment matrix.}
 
-\item{onli.matrix}{A logical value. Default is FALSE. TRUE for only output the matched matrix.}
+\item{only.matrix}{A logical value. Default is FALSE. TRUE for only output the matched matrix.}
 }
 \description{
 S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
