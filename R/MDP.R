@@ -8,8 +8,8 @@ NULL
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param gset A vector contians name(s) of the signatures.
 #' @param assay_name A number/character specifying the assay name of the SummarizedExperiment objectt.
-#' @param GSE List of characters specifying the name of the study, usually GEO accession number.
-#' @param experiment_type A character indicates the name of the experiment within MultiAssayExperiment object.
+#' @param GSE List of character strings specifying the name of the study, usually GEO accession number.
+#' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object.
 #' @param ... Extra named arguments passed to function.
 #' @rdname MDP-methods
 #' @exportMethod MDP
@@ -18,11 +18,11 @@ setGeneric("MDP", function(theObject, gset, ...) standardGeneric("MDP"))
 #' @rdname MDP-methods
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
-          function(theObject, gset = NULL, assay_name = 1, GSE = GSE){
+          function(theObject, gset = NULL, assay_name, GSE = GSE){
    # theObject data after normalization
-   counts <- assays(theObject)[[assay_name]]
+   counts <- SummarizedExperiment::assays(theObject)[[assay_name]]
    # select the reference group, calculate mean and sd
-   theObject_ref <- assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
+   theObject_ref <- SummarizedExperiment::assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
    mean_ref <- apply(theObject_ref, 1, mean)
    sd_ref <- apply(theObject_ref, 1, sd)
 
@@ -39,15 +39,17 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
    gMDP[is.infinite(gMDP)] <- 2
 
    # Include the gMDP assays in the existing SummarizedExperiment Object
-   assays(theObject)[["gMDP"]] <- gMDP
+   SummarizedExperiment::assays(theObject)[["gMDP"]] <- gMDP
 
    # show available classes in datasets
-   TBStatus <- unique(colData(theObject)$TBStatus %>% as.character())
+   TBStatus <- unique(SummarizedExperiment::colData(theObject)$TBStatus %>%
+                         as.character())
 
    # calculate the average gMDP score wihtin each class and sort from max to minimal
    gMDP_avg <- lapply(1:length(TBStatus), function(x){
-     gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
-     gMDP_class_avg <- apply(gMDP_class, 1, mean) %>% sort(decreasing = T)
+     gMDP_class <- SummarizedExperiment::assays(
+        theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
+     gMDP_class_avg <- apply(gMDP_class, 1, mean) %>% dplyr::sort(decreasing = T)
      gMDP_class_avg
    })
    names(gMDP_avg) <- TBStatus
@@ -59,7 +61,8 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 
    # claculate MDP of individual sample (sMDP)
    sMDP <- lapply(1:length(TBStatus), function(x,gMDP_avg_gene){
-     gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
+     gMDP_class <- SummarizedExperiment::assays(
+        theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
      sMDP_class <- gMDP_class[which(row.names(gMDP_class) %in% gMDP_avg_gene[[x]]),]
      sMDP_sample <- apply(sMDP_class, 2, mean)
      sMDP_sample
@@ -77,23 +80,27 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "NULL"),
 #' @rdname MDP-methods
 #' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
-          function(theObject, gset = NULL, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
+          function(theObject, gset = NULL, experiment_name = "assay_reduce",
+                   assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
-            col_data <- MultiAssayExperiment:: colData(theObject)
-            if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
-              index <- sapply(1:length(colnames(theObject[[experiment_type]])), function (i)
-                which(row.names(col_data) %in% colnames(theObject[[experiment_type]])[i]))
+            col_data <- SummarizedExperiment::colData(theObject)
+            if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
+              index <- sapply(1:length(colnames(theObject[[experiment_name]])), function (i)
+                which(row.names(col_data) %in% colnames(theObject[[experiment_name]])[i]))
 
               col_data <- col_data[index,]
             }
 
-            theObject <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(theObject[[experiment_type]])), colData = col_data)
+            theObject <- SummarizedExperiment::SummarizedExperiment(
+                              assays = list(counts= as.matrix(theObject[[experiment_name]])),
+                              colData = col_data)
 
             # Everything follows the summarized Experiment
             counts <- SummarizedExperiment::assays(theObject)[[assay_name]]
             # select the reference group, calculate mean and sd
-            theObject_ref <- SummarizedExperiment::assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
+            theObject_ref <- SummarizedExperiment::assays(
+                               theObject[,theObject$TBStatus == "Control"])[[assay_name]]
             mean_ref <- apply(theObject_ref, 1, mean)
             sd_ref <- apply(theObject_ref, 1, sd)
 
@@ -113,12 +120,14 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
             assays(theObject)[["gMDP"]] <- gMDP
 
             # show available classes in datasets
-            TBStatus <- unique(colData(theObject)$TBStatus %>% as.character())
+            TBStatus <- unique(SummarizedExperiment::colData(theObject)$TBStatus %>%
+                                  as.character())
 
             # calculate the average gMDP score wihtin each class and sort from max to minimal
             gMDP_avg <- lapply(1:length(TBStatus), function(x){
-              gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
-              gMDP_class_avg <- apply(gMDP_class, 1, mean) %>% sort(decreasing = T)
+              gMDP_class <- SummarizedExperiment::assays(
+                                  theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
+              gMDP_class_avg <- apply(gMDP_class, 1, mean) %>% dplyr::sort(decreasing = T)
               gMDP_class_avg
             })
             names(gMDP_avg) <- TBStatus
@@ -130,7 +139,7 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 
             # claculate MDP of individual sample (sMDP)
             sMDP <- lapply(1:length(TBStatus), function(x,gMDP_avg_gene){
-              gMDP_class <- assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
+              gMDP_class <- SummarizedExperiment::assays(theObject[,theObject$TBStatus == TBStatus[x]])[["gMDP"]]
               sMDP_class <- gMDP_class[which(row.names(gMDP_class) %in% gMDP_avg_gene[[x]]),]
               sMDP_sample <- apply(sMDP_class, 2, mean)
               sMDP_sample
@@ -154,9 +163,9 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "NULL"),
 setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
           function(theObject, gset = gset, assay_name = 1){
             # theObject data after normalization
-            counts <- assays(theObject)[[assay_name]]
+            counts <- SummarizedExperiment::assays(theObject)[[assay_name]]
             # select the reference group, calculate mean and sd
-            theObject_ref <- assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
+            theObject_ref <- SummarizedExperiment::assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
             mean_ref <- apply(theObject_ref, 1, mean)
             sd_ref <- apply(theObject_ref, 1, sd)
 
@@ -173,12 +182,12 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             gMDP[is.infinite(gMDP)] <- 2
 
             # Include the gMDP assays in the existing SummarizedExperiment Object
-            assays(theObject)[["gMDP"]] <- gMDP
+            SummarizedExperiment::assays(theObject)[["gMDP"]] <- gMDP
 
             # show available classes in datasets
             # TBStatus <- unique(colData(theObject)$TBStatus %>% as.character())
             # Great methods, copy from gsva
-            mapped.gset <- lapply(gset,function(x, y) na.omit(match(x, y)),
+            mapped.gset <- lapply(gset,function(x, y) stats::na.omit(match(x, y)),
                                            row.names(gMDP))
             # remove gene sets from the analysis for which no features are available
             index <- which(unlist(lapply(mapped.gset, function(x) length(x)!=0)))
@@ -198,8 +207,8 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
             names(sMDP) <- names(mapped.gset)
 
             sMDP_sig <- do.call(cbind,sMDP) %>% data.frame()
-            TBStatus <- colData(theObject)[,"TBStatus"]
-            names(TBStatus) <- row.names(colData(theObject))
+            TBStatus <- SummarizedExperiment::colData(theObject)[,"TBStatus"]
+            names(TBStatus) <- row.names(SummarizedExperiment::colData(theObject))
 
             sMDP_data <- cbind(sMDP_sig,TBStatus) %>% data.frame()
             return(sMDP_data)
@@ -210,24 +219,25 @@ setMethod("MDP", signature (theObject = "SummarizedExperiment", gset = "list"),
 #' @rdname MDP-methods
 #' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
-          function(theObject, gset = gset, experiment_type = "assay_reduce", assay_name = 1, GSE = GSE){
+          function(theObject, gset = gset, experiment_name = "assay_reduce", assay_name = 1, GSE = GSE){
 
             # Create SummarizedExperiment
-            col_data <- MultiAssayExperiment::colData(theObject)
-            if (ncol(theObject[[experiment_type]]) != nrow(col_data)){
-              index <- sapply(1:length(colnames(theObject[[experiment_type]])), function (i)
-                which(row.names(col_data) %in% colnames(theObject[[experiment_type]])[i]))
+            col_data <- SummarizedExperiment::colData(theObject)
+            if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
+              index <- sapply(1:length(colnames(theObject[[experiment_name]])), function (i)
+                which(row.names(col_data) %in% colnames(theObject[[experiment_name]])[i]))
 
               col_data <- col_data[index,]
             }
 
-            theObject <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(theObject[[experiment_type]])),
+            theObject <- SummarizedExperiment::SummarizedExperiment(assays = list(counts= as.matrix(theObject[[experiment_name]])),
                                                                     colData = col_data)
 
             # theObject data after normalization
-            counts <- assays(theObject)[[assay_name]]
+            counts <- SummarizedExperiment::assays(theObject)[[assay_name]]
             # select the reference group, calculate mean and sd
-            theObject_ref <- assays(theObject[,theObject$TBStatus == "Control"])[[assay_name]]
+            theObject_ref <- SummarizedExperiment::assays(
+                               theObject[,theObject$TBStatus == "Control"])[[assay_name]]
             mean_ref <- apply(theObject_ref, 1, mean) # 1 is running row by row
             sd_ref <- apply(theObject_ref, 1, sd)
 
@@ -245,7 +255,7 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             gMDP[is.infinite(gMDP)] <- 2
 
             # Include the gMDP assays in the existing SummarizedExperiment Object
-            assays(theObject)[["gMDP"]] <- gMDP
+            SummarizedExperiment::assays(theObject)[["gMDP"]] <- gMDP
 
             # show available classes in datasets
             # TBStatus <- unique(colData(theObject)$TBStatus %>% as.character())
@@ -276,8 +286,8 @@ setMethod("MDP", signature (theObject = "MultiAssayExperiment", gset = "list"),
             names(sMDP) <- names(mapped.gset)
 
             sMDP_sig <- do.call(cbind,sMDP) %>% data.frame()
-            TBStatus <- colData(theObject)[,"TBStatus"]
-            names(TBStatus) <- row.names(colData(theObject))
+            TBStatus <- SummarizedExperiment::colData(theObject)[,"TBStatus"]
+            names(TBStatus) <- row.names(SummarizedExperiment::colData(theObject))
 
             sMDP_data <- cbind(sMDP_sig,TBStatus, GSE) %>% data.frame()
             return(sMDP_data)

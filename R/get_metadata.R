@@ -18,6 +18,9 @@
 #' @importFrom dplyr select
 #' @importFrom dplyr starts_with
 #' @importFrom dplyr everything
+#' @importFrom rlang .data
+#' @importFrom stats na.omit
+#' @importFrom stats sd
 get_metadata <- function(series_accession) {
     accession_nchar <-
         stringr::str_length(series_accession)

@@ -1,5 +1,5 @@
 #' Subsetting objects based on single/multiple conditions
-#' @name Subset_curatedTBData
+#' @name subset_curatedTBData
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param annotationCondition A vector indicates conditions want to be subsetted.
@@ -10,15 +10,15 @@
 #' When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
 #' When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.
 #' @param ... Extra named arguments passed to function.
-#' @rdname Subset_curatedTBData-methods
-#' @exportMethod Subset_curatedTBData
+#' @rdname subset_curatedTBData-methods
+#' @exportMethod subset_curatedTBData
 
-setGeneric(name="Subset_curatedTBData", function(theObject,...){
-  standardGeneric("Subset_curatedTBData")
+setGeneric(name="subset_curatedTBData", function(theObject,...){
+  standardGeneric("subset_curatedTBData")
 })
 
-#' @rdname Subset_curatedTBData-methods
-setMethod("Subset_curatedTBData",
+#' @rdname subset_curatedTBData-methods
+setMethod("subset_curatedTBData",
           signature="SummarizedExperiment",
           function(theObject, annotationColName, annotationCondition, UseAssay,...){
 
@@ -47,8 +47,8 @@ setMethod("Subset_curatedTBData",
           }
 )
 
-#' @rdname Subset_curatedTBData-methods
-setMethod("Subset_curatedTBData",
+#' @rdname subset_curatedTBData-methods
+setMethod("subset_curatedTBData",
           signature="MultiAssayExperiment",
           function(theObject, annotationColName, annotationCondition, UseAssay=NULL,
                    experiment_name,...){
@@ -83,14 +83,14 @@ setMethod("Subset_curatedTBData",
 
                 # For those datasets that do not include all samples from the study
                 if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
-                  index <- na.omit(match(colnames(theObject[[experiment_name]]),
+                  index <- stats::na.omit(match(colnames(theObject[[experiment_name]]),
                                          row.names(col_data)))
                   col_data <- col_data[index,]
                 }
 
                 SummarizedExperiment::colData(theObject_sub) <- col_data
                 # subsetting annotationCondition
-                sobject_TBSig_filter <- theObject_sub[,colData(theObject_sub)
+                sobject_TBSig_filter <- theObject_sub[,SummarizedExperiment::colData(theObject_sub)
                                                       [,annotationColName] %in% annotationCondition]
                 TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
                 # check if both status are in the column data
@@ -110,7 +110,7 @@ setMethod("Subset_curatedTBData",
               # when not all samples are included in the expression matrix
               # This is the cases with some RNA-seq studies
               if (ncol(theObject[[experiment_name]]) != nrow(col_data)){
-                index <- na.omit(match(colnames(theObject[[experiment_name]]),
+                index <- stats::na.omit(match(colnames(theObject[[experiment_name]]),
                                        row.names(col_data)))
                 col_data <- col_data[index,]
               }
@@ -127,7 +127,7 @@ setMethod("Subset_curatedTBData",
                                               colData = col_data)
 
               # subsetting annotationCondition
-              sobject_TBSig_filter <- sobject_TBSig[,colData(sobject_TBSig)
+              sobject_TBSig_filter <- sobject_TBSig[,SummarizedExperiment::colData(sobject_TBSig)
                                                     [,annotationColName] %in% annotationCondition]
               TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
               # check if both conditions are in the column data
@@ -150,29 +150,25 @@ setMethod("Subset_curatedTBData",
 #' @examples
 #' list_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
 #' data_list <-  get_curatedTBData(list_name)
-#'
 #' object_norm <- lapply(data_list, function(x)
-#'                                  curatedTBData::Normalization(x,
-#'                                  microarray_method = "quantile",
-#'                                  RNAseq_method = "TMM",
-#'                                  experiment_name = "assay_raw")
+#'                                Normalization(x, microarray_method = "quantile",
+#'                                RNAseq_method = "TMM", experiment_name = "assay_raw"))
 #' object_match <- lapply(object_norm, function(x)
-#'                                  curatedTBData::MatchProbe(x,
-#'                                  UseAssay = c("TMM","quantile","RMA"),
-#'                                  createExperimentName = "assay_MatchProbe"))
-#' CombineObjects(object_match, list_name, experiment_name= "assay_MatchProbe")
+#'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+#'                                createExperimentName = "assay_MatchProbe"))
+#' CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
 #' @export
 CombineObjects <- function(object_list,list_name=NULL,
                            experiment_name){
 
   if(is.null(list_name)){
     list_name <-  names(object_list)
-    dat_exprs_match <- lapply(object_list, function(x) experiments(x)[[experiment_name]]
-                              %>% data.frame)
+    dat_exprs_match <- lapply(object_list, function(x)
+         MutliAssatExperiment::experiments(x)[[experiment_name]] %>% data.frame)
   }
   else {
-    dat_exprs_match <- lapply(object_list[list_name], function(x) experiments(x)[[experiment_name]]
-                              %>% data.frame)
+    dat_exprs_match <- lapply(object_list[list_name], function(x)
+         MutliAssatExperiment::experiments(x)[[experiment_name]] %>% data.frame)
   }
 
   # Combine sample with common genes from selected objects.
@@ -183,11 +179,12 @@ CombineObjects <- function(object_list,list_name=NULL,
   row.names(dat_exprs_combine) <- dat_exprs_combine$id
   dat_exprs_count <- dat_exprs_combine[,-1]
   # Create combined column data information
-  Sample1 <- lapply(object_list[list_name], function(x) MultiAssayExperiment::colData(x)
-                    %>% row.names())
+  Sample1 <- lapply(object_list[list_name], function(x)
+    SummarizedExperiment::colData(x) %>% row.names())
+
   Sample <- unlist(Sample1, use.names=FALSE)
   col_data <- lapply(1:length(object_list[list_name]), function(x) {
-    col_data <- MultiAssayExperiment::colData(object_list[list_name][[x]])
+    col_data <- SummarizedExperiment::colData(object_list[list_name][[x]])
     col_data$GSE <-names(object_list[list_name][x])
     col_data
   })
@@ -197,7 +194,7 @@ CombineObjects <- function(object_list,list_name=NULL,
   row.names(col_info) <- Sample
 
   # Remove samples that does not exist in the count
-  index <- na.omit(match(colnames(dat_exprs_count), Sample))
+  index <- stats::na.omit(match(colnames(dat_exprs_count), Sample))
   col_info <- col_info[index,]
 
   # Create output in the format of SummarizedExperiment

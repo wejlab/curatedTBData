@@ -10,7 +10,7 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
   if(geo_access[1] == "All"){
 
     # Get all available studies
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
+    file_names_full <- utils::data(package="curatedTBData")[["results"]][,"Item"]
     file_names_full <- file_names_full[grep("GSE",file_names_full)]
 
     geo_access <- unique(gsub("_.*","",file_names_full))
@@ -20,7 +20,7 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
     objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
 
       # Load Data into the Environment
-      data_load <-  data(list=file_names_full[geo_index_list[[x]]])
+      data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
       names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
@@ -83,7 +83,7 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
   }
   else{
 
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
+    file_names_full <- utils::data(package="curatedTBData")[["results"]][,"Item"]
     geo_index_list <- lapply(geo_access, function(x) grep(x,file_names_full))
     names(geo_index_list) <- geo_access
 
@@ -101,10 +101,11 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
     objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
 
       # Load Data into the Environment
-      data_load <-  data(list=file_names_full[geo_index_list[[x]]])
+      data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),"\\1", data_load)
+      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
+                                      "([^.]+)[.].*"),"\\1", data_load)
 
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
@@ -116,8 +117,10 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
 
       if(length(check_type) == 0){ # combine into SummarizedExperiment
 
-        sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                        column_data  = data_list$column_data, meta_data = data_list$meta_data)
+        sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
+                        row_data = data_list$row_data,
+                        column_data = data_list$column_data,
+                        meta_data = data_list$meta_data)
 
         sobject1_final <- CreateObject(sobject1)
 
@@ -163,7 +166,7 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
   param <- BiocParallel::SerialParam(progressbar=TRUE)
   if(geo_access[1] == "All"){
     # Get all available studies
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
+    file_names_full <- utils::data(package="curatedTBData")[["results"]][,"Item"]
     file_names_full <- file_names_full[grep("GSE",file_names_full)]
 
     geo_access <- unique(gsub("_.*","",file_names_full))
@@ -173,7 +176,7 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
     objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
 
       # Load Data into the Environment
-      data_load <-  data(list=file_names_full[geo_index_list[[x]]])
+      data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
       names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
@@ -213,7 +216,7 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
   }
   else{
 
-    file_names_full <- data(package="curatedTBData")[["results"]][,"Item"]
+    file_names_full <- utils::data(package="curatedTBData")[["results"]][,"Item"]
     geo_index_list <- lapply(geo_access, function(x) grep(x,file_names_full))
     names(geo_index_list) <- geo_access
 
@@ -231,7 +234,7 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
     objects_list <- BiocParallel::bplapply(1:length(geo_index_list), function(x){
 
       # Load Data into the Environment
-      data_load <-  data(list=file_names_full[geo_index_list[[x]]])
+      data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
       names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
@@ -247,8 +250,10 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
 
       # combine studues into SummarizedExperiment Object
 
-        sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts), row_data = data_list$row_data,
-                        column_data  = data_list$column_data, meta_data = data_list$meta_data)
+        sobject1 <- new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
+                        row_data = data_list$row_data,
+                        column_data  = data_list$column_data,
+                        meta_data = data_list$meta_data)
 
         sobject1_final <- CreateObject(sobject1)
 

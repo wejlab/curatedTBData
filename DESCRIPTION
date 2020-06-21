@@ -29,14 +29,17 @@ Imports:
     RColorBrewer,
     reshape2,
     readr,
+    rlang,
     rmarkdown,
     ROCit,
     roxygen2,
     stats,
     stringr,
     SummarizedExperiment,
+    S4Vectors,
     tibble,
-    tidyr
+    tidyr,
+    utils
 Suggests:
     affy,
     DT,

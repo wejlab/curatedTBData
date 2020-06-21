@@ -10,12 +10,12 @@
 \usage{
 MDP(theObject, gset, ...)
 
-\S4method{MDP}{SummarizedExperiment,`NULL`}(theObject, gset = NULL, assay_name = 1, GSE = GSE)
+\S4method{MDP}{SummarizedExperiment,`NULL`}(theObject, gset = NULL, assay_name, GSE = GSE)
 
 \S4method{MDP}{MultiAssayExperiment,`NULL`}(
   theObject,
   gset = NULL,
-  experiment_type = "assay_reduce",
+  experiment_name = "assay_reduce",
   assay_name = 1,
   GSE = GSE
 )
@@ -25,7 +25,7 @@ MDP(theObject, gset, ...)
 \S4method{MDP}{MultiAssayExperiment,list}(
   theObject,
   gset = gset,
-  experiment_type = "assay_reduce",
+  experiment_name = "assay_reduce",
   assay_name = 1,
   GSE = GSE
 )
@@ -39,9 +39,9 @@ MDP(theObject, gset, ...)
 
 \item{assay_name}{A number/character specifying the assay name of the SummarizedExperiment objectt.}
 
-\item{GSE}{List of characters specifying the name of the study, usually GEO accession number.}
+\item{GSE}{List of character strings specifying the name of the study, usually GEO accession number.}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object.}
+\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.}
 }
 \description{
 S4 Method calcualtes molecular degree of perturbation scores for SummarizedExperiment/MultiAssayExperiment object.

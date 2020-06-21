@@ -7,7 +7,10 @@
 expandProbesets(dat, sep = "///")
 }
 \arguments{
-\item{dat}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.}
+\item{dat}{A matrix with one column represents gene symbol with
+column name "SYMBOL", and rest of columns are gene expression value from each sample.}
+
+\item{sep}{A character string that separates gene symbols.}
 }
 \value{
 A matrix that split non-uniquely mapped features to one per row.
