@@ -6,7 +6,7 @@
 #' @param UseAssay A character indicates the name of the assay (expression matrix) within the object.
 #' Need this argument when the input is a SummarizedExperiment object.
 #' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object.
-#' Expect theObject[[experiment_name]] to be a matrix. Two special cases are:
+#' Expect \code{theObject[[experiment_name]]} to be a matrix. Two special cases are:
 #' When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
 #' When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.
 #' @param ... Extra named arguments passed to function.
@@ -138,17 +138,17 @@ setMethod("subset_curatedTBData",
             }
 
         }
-
 )
 
-#' Combine samples with common genes from selected studies, usually run after `MatchProbe`
+#' Combine samples with common genes from selected studies,
+#' usually run after \code{\link{MatchProbe}}
 #' @name CombineObjects
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected if want to combine sub-list.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
 #' @examples
-#' list_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
+#' list_name <-  c("GSE101705","GSE54992","GSE19444")
 #' data_list <-  get_curatedTBData(list_name)
 #' object_norm <- lapply(data_list, function(x)
 #'                                Normalization(x, microarray_method = "quantile",
@@ -156,7 +156,7 @@ setMethod("subset_curatedTBData",
 #' object_match <- lapply(object_norm, function(x)
 #'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
 #'                                createExperimentName = "assay_MatchProbe"))
-#' CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
+#' sobject <- CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
 #' @export
 CombineObjects <- function(object_list,list_name=NULL,
                            experiment_name){
@@ -164,11 +164,11 @@ CombineObjects <- function(object_list,list_name=NULL,
   if(is.null(list_name)){
     list_name <-  names(object_list)
     dat_exprs_match <- lapply(object_list, function(x)
-         MutliAssatExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+         MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
   }
   else {
     dat_exprs_match <- lapply(object_list[list_name], function(x)
-         MutliAssatExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+         MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
   }
 
   # Combine sample with common genes from selected objects.
@@ -183,7 +183,7 @@ CombineObjects <- function(object_list,list_name=NULL,
     SummarizedExperiment::colData(x) %>% row.names())
 
   Sample <- unlist(Sample1, use.names=FALSE)
-  col_data <- lapply(1:length(object_list[list_name]), function(x) {
+  col_data <- lapply(seq_len(length(object_list[list_name])), function(x) {
     col_data <- SummarizedExperiment::colData(object_list[list_name][[x]])
     col_data$GSE <-names(object_list[list_name][x])
     col_data

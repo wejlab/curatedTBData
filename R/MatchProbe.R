@@ -1,7 +1,3 @@
-#' @importFrom magrittr %>%
-#' @export
-magrittr::`%>%`
-
 #' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment Object.
@@ -51,7 +47,7 @@ setMethod("MatchProbe",
 
               ### A special case for those normalized data with unique gene symbol as row names GSEXXXX
               ## Matching process has already done
-              mobject1 <- new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[assay_name]],
+              mobject1 <- methods::new("Mobject", assay_reprocess = SummarizedExperiment::assays(theObject)[[assay_name]],
                               assay_raw = SummarizedExperiment::assays(theObject)[[assay_name]],
                               row_data = S4Vectors::DataFrame(theObject@elementMetadata),
                               primary = S4Vectors::DataFrame(theObject@colData),
@@ -208,7 +204,6 @@ setMethod("MatchProbe",
 #' column name "SYMBOL", and rest of columns are gene expression value from each sample.
 #' @param sep A character string that separates gene symbols.
 #' @return A matrix that split non-uniquely mapped features to one per row.
-#' @examples
 #' dat_example <- data.frame(SYMBOL=c("OR7E14P///OR7E12P","CEP104///LILRA6",
 #' "SNAR-A1///SNAR-A2///SNAR-A12","ALG6"),sample1=rnorm(4),sample2=rnorm(4))
 #' expandProbesets(dat_example, sep="///")
@@ -222,7 +217,7 @@ expandProbesets <- function(dat, sep="///"){
 
   x_list <- strsplit(as.character(sobject_exprs_dup$SYMBOL), sep)
   symbol_dup <- gsub(" ","",unlist(x_list))
-  sobject_exprs_dup$times <- sapply(x_list, length)
+  sobject_exprs_dup$times <- unlist(lapply(x_list, length))
 
   # Expand rows based on their frequency
   sobject_exprs_expand <- as.data.frame(lapply(sobject_exprs_dup, rep,

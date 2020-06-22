@@ -13,7 +13,7 @@ SignatureFilter(sig_list, gset, ...)
 \S4method{SignatureFilter}{SummarizedExperiment,character}(sig_list, gset, GSE, annotationColName = "TBStatus")
 }
 \arguments{
-\item{sig_list}{SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.
+\item{sig_list}{SummarizedExperiment object(s) obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 Names of each list should be the GEO accession of the study.}
 
 \item{gset}{A character/vector contians name(s) of the signatures.}
