@@ -13,7 +13,7 @@ combine_auc(
 )
 }
 \arguments{
-\item{SE_scored_list}{A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.}
+\item{SE_scored_list}{A list of SummarizedExperiment Object from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
 \item{annotationColName}{A character string specifying the feature of interest in the object's column data}
 

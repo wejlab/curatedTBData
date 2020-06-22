@@ -166,7 +166,7 @@ Matching probes to symbol using raw data is straight-forward, we use the normali
 ```{r normalized/matched sample, cache=TRUE, results="hide", eval=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
-# Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed data) by specifying the experiment_name=assay_raw
+# Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed dat) by specifying the experiment_name=assay_raw
 
 object_norm <- bplapply(objects_list, function(x) Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM", experiment_name = "assay_raw"), BPPARAM = param) 
 

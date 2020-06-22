@@ -37,7 +37,8 @@ get_gsea_rank <- function(data_sobject,TBSig,annotationColNames="TBStatus"){
 
     # Rank the assay first
     data_rank <- apply(data_sobject_assay, 2, rank)
-    position <- sapply(1:ncol(data_rank), function(i) get_gene_rank(data_rank[,i],index=index))
+    position <- lapply(seq_len(ncol(data_rank)), function(i)
+                         get_gene_rank(data_rank[,i],index=index)) %>% unlist()
     if(len==1){
       gene_position_summary <- data.frame(Disease = SummarizedExperiment::colData(data_sobject)
                                           [,annotationColNames], position)
@@ -66,7 +67,7 @@ get_gsea_rank <- function(data_sobject,TBSig,annotationColNames="TBStatus"){
 #' @export
 get_rank_boxplot <- function(sig_list,gset){
 
-  if(class(sig_list[[1]])=="data.frame"){
+  if(is(sig_list[[1]])=="data.frame"){
     result <- sig_list[[gset]]
     data_long <- suppressMessages({reshape2::melt(result)})
 
@@ -94,7 +95,7 @@ get_rank_boxplot <- function(sig_list,gset){
   })
   data_list <- plyr::compact(data_list)
 
-  p_boxplot <- lapply(1:length(data_list), function(x){
+  p_boxplot <- lapply(seq_along(data_list), function(x){
     data_long <- suppressMessages({
       reshape2::melt(data_list[[x]])
     })
@@ -113,13 +114,10 @@ get_rank_boxplot <- function(sig_list,gset){
     p
   })
 
-  if (requireNamespace("gridExtra", quietly = TRUE)) {
     p_combine <- do.call("grid.arrange",
                          c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
     return(p_combine)
-  } else {
-    stop("Need package gridExtra for the output, please install it.")
-  }
+
 
 }
 

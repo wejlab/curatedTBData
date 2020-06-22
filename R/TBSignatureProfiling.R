@@ -1,6 +1,6 @@
 #' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
 #' @name SignatureFilter
-#' @param sig_list SummarizedExperiment object(s) produced from `TBSignatureProfiler::runTBsigProfiler`.
+#' @param sig_list SummarizedExperiment object(s) obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 #' Names of each list should be the GEO accession of the study.
 #' @param gset A character/vector contians name(s) of the signatures.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
@@ -51,7 +51,7 @@ setMethod("SignatureFilter",
           function(sig_list, gset, GSE, annotationColName = "TBStatus"){
             index <- stats::na.omit(match(gset,
                                           names(SummarizedExperiment::colData(sig_list))))
-            if(length(index)==0){
+            if(length(index) == 0){
               result <- data.frame(SummarizedExperiment::colData(sig_list)
                                    [,annotationColName],
                                    NA, GSE)
@@ -69,13 +69,16 @@ setMethod("SignatureFilter",
 )
 
 
-#' Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
+#' Boxplot functions for list of signature scores across studies
 #' Also applies to consistent siganture column names.
 #' @name BoxplotTBSig
-#' @param sig_list List of dataframes contain signature scores across studies. Prduced from `SignatureFilter`
-#' @param gset A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for examples.
+#' @param sig_list List of dataframes contain signature scores across studies.
+#' Obtained from \code{\link{SignatureFilter}}.
+#' @param gset A vector contians name(s) of the signatures.
+#' See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.
 #' @param annotationColName A character indicates feature of interest in column names.
 #' @param ... Extra named arguments passed to function
+#' @return A list of boxplot in the form of ggplot object for each TB gene sigantures across TB studies.
 #' @rdname BoxplotTBSig-methods
 #' @exportMethod BoxplotTBSig
 
@@ -87,7 +90,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
           function(sig_list, gset = gset, annotationColName = "TBStatus"){
 
             # Clean column data, extracting information about annotation, signature scores and name of the each dataset
-            if(any(is(sig_list[[1]]) == "SummarizedExperiment")){
+            if(any(methods::is(sig_list[[1]]) == "SummarizedExperiment")){
               sig_list <- SignatureFilter(sig_list, gset = gset,
                                           annotationColName = annotationColName)
             }
@@ -134,13 +137,11 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
 
             p_boxplot <- plyr::compact(p_boxplot)
 
-            if (requireNamespace("gridExtra", quietly = TRUE)) {
-              p_combine <- do.call("grid.arrange",
-                                   c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
-              return(p_combine)
-            } else {
-              stop("Need package gridExtra for the output, please install it.")
-            }
+
+            p_combine <- do.call("grid.arrange",
+                                  c(p_boxplot, ncol=floor(sqrt(length(p_boxplot)))))
+            return(p_combine)
+
 
 
           })
@@ -188,7 +189,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
           })
 
-#' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature using two-sample t-test, ROCit::rocit, and bootstraping
+#' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.
 #' @name get_auc_stats
 #' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
@@ -256,9 +257,9 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
       aucs <- max(pred$AUC, 1 - pred$AUC)
-      bootCI <- sapply(1:num.boot, function(j, score, annotationData){
+      bootCI <- lapply(seq_len(num.boot), function(j, score, annotationData){
 
-        index <- sample(1:length(score), replace = TRUE)
+        index <- sample(seq_len(length(score)), replace = TRUE)
         tmp_score <- score[index]
         tmp_annotationData <- annotationData[index]
 
@@ -270,6 +271,8 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
         }else{NA}
 
       }, score, annotationData)
+
+      bootCI <- unlist(bootCI)
 
       bootCI <- stats::na.omit(bootCI)
 
@@ -290,10 +293,10 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
   }
 
 }
-################################
+
 #' Combine results from list. Calculate p-value and AUC values
 #' @name combine_auc
-#' @param SE_scored_list A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.
+#' @param SE_scored_list A list of SummarizedExperiment Object from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 #' @param annotationColName A character string specifying the feature of interest in the object's column data
 #' @param signatureColNames A character/vector string contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
@@ -334,7 +337,6 @@ combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatur
 }
 
 
-##############################################################################
 #' Combine results from list. Calculate p-value and AUC values
 #' @name bootstrap_mean_CI
 #' @param data A data frame/matrix contains the interested numeric vector .
@@ -373,7 +375,9 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   xbar  <-  mean(x)
 
   # random resamples from x
-  bootstrapsample <- sapply(1:num.boot, function(i) sample(x,n, replace=TRUE))
+  bootstrapsample <- lapply(seq_len(num.boot), function(i)
+                                    sample(x, n, replace=TRUE))
+  bootstrapsample <- do.call(cbind,bootstrapsample)
 
   # Compute the means x∗
   bsmeans <-  colMeans(bootstrapsample)
@@ -411,8 +415,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
 #' @param aucs_result A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.
 #' @return Ridge plot with median line
 #' @examples
-#' aucs_result <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"),
-#'                           AUC=ruinf(3,0,0.5))
+#' aucs_result <- data.frame(Signature = c("Anderson_42", "Anderson_OD_51", "Berry_393"),
+#'                           AUC = stats::runif(3,0,0.5))
 #' p_ridge <- get_auc_distribution(aucs_result)
 #' @export
 get_auc_distribution <- function(aucs_result){
@@ -433,7 +437,6 @@ get_auc_distribution <- function(aucs_result){
   return(p_ridge)
 }
 
-##############################################################################
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name heatmap_auc
@@ -445,10 +448,11 @@ get_auc_distribution <- function(aucs_result){
 #' @examples
 #' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51",
 #'                               "Berry_393","Berry_OD_86","Blankley_5"),2),
-#'                AUC = runif(10,0.5,1), GSE=rep(c("GSE39939","GSE19442"), each=5))
+#'                AUC = stats::runif(10,0.5,1), GSE=rep(c("GSE39939","GSE19442"), each=5))
 #' GSE_sig_exp <- data.frame(Signature=c("Anderson","Anderson","Berry","Berry"),
 #'                    GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
-#' TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86","Blankley_5")
+#' TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86",
+#'                       "Blankley_5")
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
 #'@export
@@ -475,7 +479,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
   datta$trian <- FALSE
 
   index <- NULL
-  for (i in 1:nrow(GSE_sig)){
+  for (i in seq_len(nrow(GSE_sig))){
     kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
     kk$indx <- row.names(kk)
     indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
@@ -483,7 +487,8 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
   }
 
   # Label signature type
-  sig_type_temp <- sig_type_temp2 <- sapply(strsplit(signatureColNames,"_"), function(x) x[2])
+  sig_type_temp <- sig_type_temp2 <- unlist(lapply(strsplit(signatureColNames,"_"),
+                                                   function(x) x[2]))
   sig_type <- unique(suppressWarnings(sig_type_temp[which(is.na(as.numeric(sig_type_temp2)))]))
 
   datta$sig_typek <- "Disease"
@@ -508,10 +513,10 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
 
       # Split dataframe into list based on different signature type
       frames_list <- frames %>% dplyr::group_split(.data$sig_typek)
-      names(frames_list) <- sapply(frames_list, function(x) x$sig_typek[1])
+      names(frames_list) <- unlist(lapply(frames_list, function(x) x$sig_typek[1]))
 
       datta_list <- datta %>% dplyr::group_split(.data$sig_typek)
-      names(datta_list) <- sapply(datta_list, function(x) x$sig_typek[1])
+      names(datta_list) <- unlist(lapply(datta_list, function(x) x$sig_typek[1]))
 
       # Get the correct index in for traning dataset
       # change sig_type levels from sub list based on characters in full list

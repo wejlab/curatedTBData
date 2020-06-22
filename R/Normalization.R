@@ -46,10 +46,12 @@ setMethod("Normalization",
                 lapply(dat_exprs_match, function(x) { x$id <- rownames(x); x }))
               rowname_data <- dat_exprs_combine$id
 
-              dat_final <- dat_exprs_combine %>% dplyr::select(-.data$id) %>% as.matrix()
+              dat_final <- dat_exprs_combine %>% dplyr::select(-.data$id) %>%
+                                                 as.matrix()
               row.names(dat_final) <- rowname_data
               colname_data <- colnames(dat_final)
-              index <- sapply(sample_name, function(x) grep(x,colname_data))
+              index <- lapply(sample_name, function(x)
+                                           grep(x,colname_data)) %>% unlist()
 
               colnames(dat_final) <- sample_name[index]
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/TBSignatureProfiling.R
 \name{get_auc_stats}
 \alias{get_auc_stats}
-\title{Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature using two-sample t-test, ROCit::rocit, and bootstraping}
+\title{Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.}
 \usage{
 get_auc_stats(
   SE_scored,
@@ -27,5 +27,5 @@ get_auc_stats(
 A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 }
 \description{
-Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature using two-sample t-test, ROCit::rocit, and bootstraping
+Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/subset_curatedTBData.R
 \name{CombineObjects}
 \alias{CombineObjects}
-\title{Combine samples with common genes from selected studies, usually run after `MatchProbe`}
+\title{Combine samples with common genes from selected studies,
+usually run after \code{\link{MatchProbe}}}
 \usage{
 CombineObjects(object_list, list_name = NULL, experiment_name)
 }
@@ -17,10 +18,11 @@ CombineObjects(object_list, list_name = NULL, experiment_name)
 A SummarizedExperiment Object contains combined data from several objects.
 }
 \description{
-Combine samples with common genes from selected studies, usually run after `MatchProbe`
+Combine samples with common genes from selected studies,
+usually run after \code{\link{MatchProbe}}
 }
 \examples{
-list_name <-  c("GSE101705","GSE107104","GSE54992","GSE19444")
+list_name <-  c("GSE101705","GSE54992","GSE19444")
 data_list <-  get_curatedTBData(list_name)
 object_norm <- lapply(data_list, function(x)
                                Normalization(x, microarray_method = "quantile",
@@ -28,5 +30,5 @@ object_norm <- lapply(data_list, function(x)
 object_match <- lapply(object_norm, function(x)
                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
                                createExperimentName = "assay_MatchProbe"))
-CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
+sobject <- CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
 }

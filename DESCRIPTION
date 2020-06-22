@@ -1,6 +1,6 @@
 Package: curatedTBData
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Curation of exsiting 42 tuberculosis transcriptomic studies
 Version: 0.1.0
 Authors@R: person("Xutao", "Wang", email = "xutaow@bu.com",
   role = c("aut", "cre"))
@@ -11,29 +11,24 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
-    AnnotationDbi,
     Biobase,
-    BiocManager,
-    BiocStyle,
+    biocViews,
     BiocParallel,
     dplyr,
-    GEOquery,
+    edgeR,
     ggplot2,
     ggridges,
+    gridExtra,
     knitr,
     limma,
     magrittr,
     methods,
     MultiAssayExperiment,
-    plyr,
     RColorBrewer,
     reshape2,
     readr,
     rlang,
-    rmarkdown,
     ROCit,
-    roxygen2,
-    stats,
     stringr,
     SummarizedExperiment,
     S4Vectors,
@@ -42,18 +37,21 @@ Imports:
     utils
 Suggests:
     affy,
+    AnnotationDbi,
     DT,
-    edgeR,
+    plyr,
+    GEOquery,
     GSVA,
     hgu133plus2.db,
-    hrbrthemes,
     illuminaHumanv4.db,
     illuminaHumanv3.db,
     magick,
+    rmarkdown,
+    roxygen2,
     singscore,
     sva,
     SCAN.UPC,
     TBSignatureProfiler,
-    testthat
+    testthat,
 VignetteBuilder: knitr
 RoxygenNote: 7.1.0

@@ -4,7 +4,7 @@
 \alias{BoxplotTBSig}
 \alias{BoxplotTBSig,list,character-method}
 \alias{BoxplotTBSig,data.frame,character-method}
-\title{Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
+\title{Boxplot functions for list of signature scores across studies
 Also applies to consistent siganture column names.}
 \usage{
 BoxplotTBSig(sig_list, gset, ...)
@@ -14,15 +14,20 @@ BoxplotTBSig(sig_list, gset, ...)
 \S4method{BoxplotTBSig}{data.frame,character}(sig_list, gset = gset, annotationColName = "TBStatus")
 }
 \arguments{
-\item{sig_list}{List of dataframes contain signature scores across studies. Prduced from `SignatureFilter`}
+\item{sig_list}{List of dataframes contain signature scores across studies.
+Obtained from \code{\link{SignatureFilter}}.}
 
-\item{gset}{A vector contians name(s) of the signatures. See `TBSignatureProfiler::TBSignatureProfiler` for examples.}
+\item{gset}{A vector contians name(s) of the signatures.
+See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.}
 
 \item{...}{Extra named arguments passed to function}
 
 \item{annotationColName}{A character indicates feature of interest in column names.}
 }
+\value{
+A list of boxplot in the form of ggplot object for each TB gene sigantures across TB studies.
+}
 \description{
-Boxplot functions for list of signature scores across studies (particularly, for inconsistent signatures within study)
+Boxplot functions for list of signature scores across studies
 Also applies to consistent siganture column names.
 }

@@ -38,7 +38,7 @@ subset_curatedTBData(theObject, ...)
 Need this argument when the input is a SummarizedExperiment object.}
 
 \item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.
-Expect theObject[[experiment_name]] to be a matrix. Two special cases are:
+Expect \code{theObject[[experiment_name]]} to be a matrix. Two special cases are:
 When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
 When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
 }
