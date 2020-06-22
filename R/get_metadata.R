@@ -18,6 +18,9 @@
 #' @importFrom dplyr select
 #' @importFrom dplyr starts_with
 #' @importFrom dplyr everything
+#' @importFrom rlang .data
+#' @importFrom methods setClass setGeneric setMethod setRefClass is new
+#' @import edgeR gridExtra knitr
 get_metadata <- function(series_accession) {
     accession_nchar <-
         stringr::str_length(series_accession)

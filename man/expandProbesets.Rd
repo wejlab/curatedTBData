@@ -4,19 +4,20 @@
 \alias{expandProbesets}
 \title{Expand probe set for non-specific probes.}
 \usage{
-expandProbesets(sobject_exprs_new, sep = "///")
+expandProbesets(dat, sep = "///")
 }
 \arguments{
-\item{dat_example}{A matrix with one column represents gene symbol with column name `SYMBOL`, and rest of columns are gene expression value from each sample.}
+\item{dat}{A matrix with one column represents gene symbol with
+column name "SYMBOL", and rest of columns are gene expression value from each sample.}
+
+\item{sep}{A character string that separates gene symbols.}
 }
 \value{
 A matrix that split non-uniquely mapped features to one per row.
-}
-\description{
-Expand probe set for non-specific probes.
-}
-\examples{
 dat_example <- data.frame(SYMBOL=c("OR7E14P///OR7E12P","CEP104///LILRA6",
 "SNAR-A1///SNAR-A2///SNAR-A12","ALG6"),sample1=rnorm(4),sample2=rnorm(4))
 expandProbesets(dat_example, sep="///")
+}
+\description{
+Expand probe set for non-specific probes.
 }

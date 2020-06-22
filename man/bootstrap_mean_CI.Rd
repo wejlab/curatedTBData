@@ -13,11 +13,15 @@ bootstrap_mean_CI(
 )
 }
 \arguments{
-\item{data}{A data frame contains the interested numeric vector .}
+\item{data}{A data frame/matrix contains the interested numeric vector .}
+
+\item{colName}{A character string specifying the column name of the data frame
+that was selected for bootstraping.}
 
 \item{percent}{A number indicates the percentage of confidence interval.}
 
-\item{method}{A character indicates the method used for computing bootstrap confidence interval. By default, this is set to `empirical`.}
+\item{method}{A character string specifying the method used for computing bootstrap confidence interval.
+The choices are c("percentile","empirical"). The default is "empirical".}
 
 \item{num.boot}{Number of bootstrap times.}
 }

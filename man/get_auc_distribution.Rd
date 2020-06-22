@@ -7,7 +7,7 @@
 get_auc_distribution(aucs_result)
 }
 \arguments{
-\item{aucs_result_dat}{A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.}
+\item{aucs_result}{A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.}
 }
 \value{
 Ridge plot with median line
@@ -16,6 +16,7 @@ Ridge plot with median line
 Obtain ridge plots for emprirical AUC distribution for signature scores.
 }
 \examples{
-aucs_result <- data.frame(Signature=c("Anderson_42", "Anderson_OD_51", "Berry_393"), AUC=ruinf(3,0,0.5))
+aucs_result <- data.frame(Signature = c("Anderson_42", "Anderson_OD_51", "Berry_393"),
+                          AUC = stats::runif(3,0,0.5))
 p_ridge <- get_auc_distribution(aucs_result)
 }

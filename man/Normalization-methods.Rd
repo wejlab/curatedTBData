@@ -21,7 +21,7 @@ Normalization(theObject, ...)
   geo_access = NULL,
   microarray_method = "quantile",
   RNAseq_method = "TMM",
-  experiment_type = c("assay_raw", "assay_reprocess")
+  experiment_name = c("assay_raw", "assay_reprocess")
 )
 }
 \arguments{
@@ -37,10 +37,10 @@ The default is "quantile"}
 \item{RNAseq_method}{A character string specifying the normalization method to be used. See `edgeR::calcNormFactors` for RNA sequence data.
 The default is "TMM"}
 
-\item{experiment_type}{A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
-Choices for experiment_type are "assay_raw" and "assay_reprocess". The deafult is experiment_type="assay_raw"
-If experiment_type is "assay_raw", perform normalization on the assay provided by the authors.
-If experiment_type is "assay_reprocess", perform normalization on the reprocessed assay.}
+\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
+Choices for experiment_name are "assay_raw" and "assay_reprocess". The deafult is experiment_name="assay_raw"
+If experiment_name is "assay_raw", perform normalization on the assay provided by the authors.
+If experiment_name is "assay_reprocess", perform normalization on the reprocessed assay.}
 }
 \description{
 Normalization for microarray and RNA-seq transcriptome data.

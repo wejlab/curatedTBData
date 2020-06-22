@@ -13,13 +13,15 @@ combine_auc(
 )
 }
 \arguments{
-\item{SE_scored_list}{A list of SummarizedExperiment Object from `TBSignatureProfiler::TBSignatureProfiler`.}
+\item{SE_scored_list}{A list of SummarizedExperiment Object from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
-\item{annotationColName}{A character indicates feature of interest in the object's column data}
+\item{annotationColName}{A character string specifying the feature of interest in the object's column data}
 
-\item{signatureColNames}{A character/vector contains name of gene signature.}
+\item{signatureColNames}{A character/vector string contains name of gene signature.}
 
 \item{num.boot}{Number of bootstrapping.}
+
+\item{percent}{A number indicates the percentage of confidence interval.}
 }
 \value{
 A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
