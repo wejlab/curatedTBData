@@ -144,8 +144,10 @@ setMethod("subset_curatedTBData",
 #' usually run after \code{\link{MatchProbe}}
 #' @name CombineObjects
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
-#' @param list_name A character/vector contains object name to be selected if want to combine sub-list.
+#' @param list_name A character/vector contains object name to be selected to merge.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
+#' @param batch.adjust A logical value indicating whether adjust for the batch effect.
+#' Default is TRUE.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
 #' @examples
 #' list_name <-  c("GSE101705","GSE54992","GSE19444")
@@ -156,10 +158,16 @@ setMethod("subset_curatedTBData",
 #' object_match <- lapply(object_norm, function(x)
 #'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
 #'                                createExperimentName = "assay_MatchProbe"))
-#' sobject <- CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
+#' sobject <- CombineObjects(object_match, list_name,
+#'                           experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
 #' @export
 CombineObjects <- function(object_list,list_name=NULL,
-                           experiment_name){
+                           experiment_name, batch.adjust = TRUE){
+
+  # Remove samples with TBstatus == NA
+  object_list <- lapply(object_list, function(x)
+    x[,colData(x)[,"TBStatus"]!= "NA"])
+
 
   if(is.null(list_name)){
     list_name <-  names(object_list)
@@ -176,8 +184,10 @@ CombineObjects <- function(object_list,list_name=NULL,
   dat_exprs_combine <- Reduce(
     function(x, y) merge(x, y, by = "id", all = FALSE),
     lapply(dat_exprs_match, function(x) { x$id <- rownames(x); x }))
-  row.names(dat_exprs_combine) <- dat_exprs_combine$id
-  dat_exprs_count <- dat_exprs_combine[,-1]
+  row_names <- dat_exprs_combine$id
+  dat_exprs_count <- dat_exprs_combine %>% dplyr::select(-.data$id) %>% data.frame()
+  row.names(dat_exprs_count) <- row_names
+
   # Create combined column data information
   Sample1 <- lapply(object_list[list_name], function(x)
     SummarizedExperiment::colData(x) %>% row.names())
@@ -197,9 +207,24 @@ CombineObjects <- function(object_list,list_name=NULL,
   index <- stats::na.omit(match(colnames(dat_exprs_count), Sample))
   col_info <- col_info[index,]
 
+  if (batch.adjust){
+
+    # Batch Correction
+    mod1 <- stats::model.matrix(~as.factor(col_info$TBStatus), data = col_info)
+    batch1 <- col_info$GSE
+    combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
+                                 mod=mod1)
+    result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(combat_edata1)),
+                                                         colData = col_info)
+    return(result)
+
+  }
+
+  else{
   # Create output in the format of SummarizedExperiment
   result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(dat_exprs_count)),
                                                        colData = col_info)
   return(result)
+  }
 
 }
