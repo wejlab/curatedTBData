@@ -53,18 +53,11 @@ R_MAX_VSIZE=50Gb
 
 # `curatedTBData`: Clinically Annotated Data for the Tuberculosis (TB) Transcriptome
 
-Insert introduction/background infrmation about this data package
-
-# Create SummarizedExperiment/MultiAssayExperiment Object
-
-# Load available SummarizedExperiment/MultiAssayExperiment Objects
+## Load available SummarizedExperiment/MultiAssayExperiment Objects
 
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets. The pakcage function `get_curatedTBData` takes single or vector character string of GEO accession as input, and load the correpsonding curatedTBData in either the form of  `SummarizedExperiment` or `MultiAssayExperiment`. 
 
-```{r load a list of datasets}
-# To get a summary table for all the studies:
-data("DataSummary",package="curatedTBData")
-
+```{r load a list of all datasets}
 # Load single data
 # get_curatedTBData(geo_access = "GSE39939")
 
@@ -75,12 +68,27 @@ data("DataSummary",package="curatedTBData")
 objects_list <- get_curatedTBData(geo_access = "All")
 ```
 
+## Load a list of RNA-seq data
+```{r load a list of RNA-seq studies}
+# To get a summary table for all the studies:
+data("DataSummary",package="curatedTBData")
+geo_RNA_seq <- DataSummary %>% 
+  dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
+  dplyr::select(.data$`GEO accession`)
+object_list_RNA_seq <- get_curatedTBData(geo_access = geo_RNA_seq$`GEO accession`)
+```
+
+## Load a list of RNA-seq data
+```{r load a list of microarray studies}
+geo_microarray <- DataSummary %>% 
+  dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
+  dplyr::select(.data$`GEO accession`)
+object_list_microarray <- get_curatedTBData(geo_access = geo_microarray$`GEO accession`)
+```
+
 # Subsetting Objects
 
 The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` is the coordination of the meta-data and assays when subsetting.
-
-## Subsetting for single objects
-
 Both SummarizedExperiment and MultiAssayExperiment objects have similar buil-in fuction for subsetting samples based on column condition. For example, we want to select samples with only active TB, or with PTB or OD.
 ```{r subsetting single object example}
 # subset samples from objects with TBStatus: PTB
@@ -158,7 +166,7 @@ MatchProbe(GSE107991_mobject, UseAssay = "GSE107991_raw",
            createExperimentName = "assay_MatchProbe")
 ```
 
-# Normalize a list of datasets
+# Normalizing and mapping to a list of datasets
 
 First of all, we create reate a list of object with normalized reads and probesets mapped to symbols. Match probe ID to symbol using either raw data or normalized data (if applicable) .
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
@@ -190,12 +198,41 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 param <- SerialParam(progressbar=TRUE)
 
 object_match1 <- readRDS("~/Desktop/object_match1.RDS")
+
 # Remove samples with TBStatus == NA
 object_match <- bplapply(object_match1, function(x) 
                             x[,colData(x)[,"TBStatus"]!= "NA"], BPPARAM = param)
 
 # Define the list of TB signatures
 TBsignatures <- TBSignatureProfiler::TBsignatures
+```
+
+# Datasets Integration
+
+If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object. GSE74092 is usually removed from merging, because this used quantitative PCR so they did not have enough coverage to capture all genes.
+
+```{r merge datasets}
+# Merge all  microarray studies
+geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
+  dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
+  dplyr::select(.data$`GEO accession`)
+
+sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accession`, experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
+
+# The samples that correspond to their datasets can be found at:
+colData(sobject)[,"GSE"]
+
+# Create a table for sample and data source information with:
+sample_data_info <- data.frame(Sample = row.names(colData(sobject)), 
+                               Data = colData(sobject)[,"GSE"])
+
+# Possible outcome of interest could be patient's TB subtypes, this can be found at:
+colData(sobject)[,"TBStatus"]
+
+# Create a table for sample and TB status information with:
+sample_outcome_info <- data.frame(Sample = row.names(colData(sobject)), 
+                               Data = colData(sobject)[,"TBStatus"])
+
 ```
 
 # Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`
