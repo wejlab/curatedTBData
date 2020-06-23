@@ -110,3 +110,10 @@ SignatureInfo <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
 library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
+
+GSE69581_column_data.RDS <- readRDS("data-raw/GSE69581_column_data.RDS")
+TBStatus <- TBStatus_temp <- GSE69581_column_data.RDS$TBStatus
+TBStatus[grep("Subclinical", TBStatus_temp)] = "Latent"
+GSE69581_column_data.RDS$TBStatus <- TBStatus
+use_data(GSE69581_column_data.RDS,compress = "xz", overwrite = TRUE)
+

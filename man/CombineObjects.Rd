@@ -5,14 +5,22 @@
 \title{Combine samples with common genes from selected studies,
 usually run after \code{\link{MatchProbe}}}
 \usage{
-CombineObjects(object_list, list_name = NULL, experiment_name)
+CombineObjects(
+  object_list,
+  list_name = NULL,
+  experiment_name,
+  batch.adjust = TRUE
+)
 }
 \arguments{
 \item{object_list}{A list contains expression data with probes mapped to gene symbol.}
 
-\item{list_name}{A character/vector contains object name to be selected if want to combine sub-list.}
+\item{list_name}{A character/vector contains object name to be selected to merge.}
 
 \item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
+
+\item{batch.adjust}{A logical value indicating whether adjust for the batch effect.
+Default is TRUE.}
 }
 \value{
 A SummarizedExperiment Object contains combined data from several objects.
@@ -30,5 +38,6 @@ object_norm <- lapply(data_list, function(x)
 object_match <- lapply(object_norm, function(x)
                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
                                createExperimentName = "assay_MatchProbe"))
-sobject <- CombineObjects(object_match, list_name, experiment_name = "assay_MatchProbe")
+sobject <- CombineObjects(object_match, list_name,
+                          experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
 }
