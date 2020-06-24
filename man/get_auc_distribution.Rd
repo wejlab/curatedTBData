@@ -7,7 +7,8 @@
 get_auc_distribution(aucs_result)
 }
 \arguments{
-\item{aucs_result}{A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.}
+\item{aucs_result}{A dataframe contains signatures, p-value, and AUC.
+This data frame can be obtained from \code{\link{combine_auc}}.}
 }
 \value{
 Ridge plot with median line
