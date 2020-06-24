@@ -59,10 +59,10 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 
 ```{r load a list of all datasets}
 # Load single data
-# get_curatedTBData(geo_access = "GSE39939")
+get_curatedTBData(geo_access = "GSE39939")
 
 # Load Multiple Studies
-# get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
 
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access = "All")
