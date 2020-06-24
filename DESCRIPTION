@@ -12,7 +12,6 @@ LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
     Biobase,
-    biocViews,
     BiocParallel,
     dplyr,
     edgeR,
@@ -52,6 +51,9 @@ Suggests:
     sva,
     SCAN.UPC,
     TBSignatureProfiler,
-    testthat,
+    testthat
+biocViews:
+    ExperimentData,
+    ExperimentHub
 VignetteBuilder: knitr
 RoxygenNote: 7.1.0
