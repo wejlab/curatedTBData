@@ -2,8 +2,7 @@
 % Please edit documentation in R/load_curatedTBData.R
 \name{SCAN_reprocess_FALSE}
 \alias{SCAN_reprocess_FALSE}
-\title{Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-when include.reprocess = FALSE}
+\title{Combine individual data into SummarizedExperiment object}
 \usage{
 SCAN_reprocess_FALSE(geo_access, include.SCAN)
 }
@@ -14,6 +13,11 @@ SCAN_reprocess_FALSE(geo_access, include.SCAN)
 The default in FALSE.}
 }
 \description{
-Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-when include.reprocess = FALSE
+\code{SCAN_reprocess_FALSE()} combines individual data into SummarizedExperiment
+object for all available study.
+This function will not include reprocessed RNA-seq information.
+}
+\examples{
+SCAN_reprocess_TRUE(geo_access = "GSE39939", include.SCAN = TRUE)
+SCAN_reprocess_TRUE(geo_access = "GSE101705", include.SCAN = TRUE)
 }

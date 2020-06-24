@@ -1,5 +1,6 @@
 #' Sobject Class
 #' Create SummarizedExperiment object for curatedTBData
+#'
 #' @slot assay A matrix contatins gene expression data
 #' @slot row_data A DataFrame class contains gene information
 #' @slot column_data A DataFrame class contains sample information
@@ -126,12 +127,18 @@ setMethod("CreateObject",
           }
 )
 
-
-#' Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-#' when include.reprocess = TRUE
+#' @title Combine data into SummarizedExperiment/MultiAssayExperiment object.
+#' @description \code{SCAN_reprocess_TRUE()} combines individual data into SummarizedExperiment
+#' object for microarray study and into MultiAssayExperiment object for RNA-seq study.
+#' This function will include reprocessed RNA-seq information.
 #' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
 #' @param include.SCAN A logical value indicates whether include normalized data processed by SCAN into the final output when available.
 #' The default in FALSE.
+#' @return A SummarizedExperiment object for microarray data, or a MultiAssayEpxeriment object
+#' for RNA-seq data.
+#' @examples
+#' SCAN_reprocess_TRUE(geo_access = "GSE39939", include.SCAN = TRUE)
+#' SCAN_reprocess_TRUE(geo_access = "GSE101705", include.SCAN = TRUE)
 #' @export
 SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
   param <- BiocParallel::SerialParam(progressbar=TRUE)
@@ -291,11 +298,16 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
   }
 }
 
-#' Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-#' when include.reprocess = FALSE
+#' @title Combine individual data into SummarizedExperiment object
+#' @description \code{SCAN_reprocess_FALSE()} combines individual data into SummarizedExperiment
+#' object for all available study.
+#' This function will not include reprocessed RNA-seq information.
 #' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
 #' @param include.SCAN A logical value indicates whether include normalized data processed by SCAN into the final output.
 #' The default in FALSE.
+#' @examples
+#' SCAN_reprocess_TRUE(geo_access = "GSE39939", include.SCAN = TRUE)
+#' SCAN_reprocess_TRUE(geo_access = "GSE101705", include.SCAN = TRUE)
 #' @export
 SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
   param <- BiocParallel::SerialParam(progressbar=TRUE)
@@ -412,7 +424,8 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
   }
 }
 
-#' Combine individual data to SummarizedExperiment/MultiAssayExperiment object
+#' @title Load curatedTBData into SummarizedExperiment/MultiAssayExperiment object.
+#' @description \code{get_curatedTBData} loads available curatedTBData.
 #' @name get_curatedTBData
 #' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
 #' @param include.SCAN A logical value indicates whether include normalized data processed by SCAN into the final output.
@@ -425,9 +438,9 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
 #' GSE107994, GSE101705, GSE107104, GSE112104
 #' @return A list of SummarizedExperiment/MultiAssayExperiment objects
 #' @examples
-#' get_curatedTBData("GSE39939")
-#' get_curatedTBData(c("GSE39939","GSE107993"))
-#' get_curatedTBData("All")
+#' get_curatedTBData(geo_access = "GSE39939")
+#' get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+#' get_curatedTBData(geo_access = "All")
 #' @export
 get_curatedTBData <- function(geo_access, include.SCAN=FALSE, include.reprocess=TRUE){
 

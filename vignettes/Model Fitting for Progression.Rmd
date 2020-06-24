@@ -1,0 +1,141 @@
+---
+title: "Model Fitting for Progression"
+author: "Xutao Wang"
+date: "6/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALSE)
+```
+
+# Load required library
+
+```{r libraries, message=FALSE}
+library(BiocParallel)
+library(dplyr)
+library(edgeR)
+library(GEOquery)
+library(ggplot2)
+library(ggridges)
+library(gridExtra)
+library(limma)
+library(MultiAssayExperiment)
+library(SummarizedExperiment)
+library(TBSignatureProfiler)
+library(caret)
+library(e1071)
+devtools::load_all()
+library(curatedTBData)
+```
+
+# Import Matched Object lists
+
+```{r, results="hide",include=FALSE}
+#Initialize parallel
+param <- SerialParam(progressbar=TRUE)
+
+object_match1 <- readRDS("~/Desktop/object_match1.RDS")
+
+# Remove samples with TBStatus == NA
+object_match <- bplapply(object_match1, function(x) 
+                            x[,colData(x)[,"TBStatus"]!= "NA"], BPPARAM = param)
+
+# Define the list of TB signatures
+
+TBsignatures <- TBSignatureProfiler::TBsignatures
+TB_RISK_signatures <- TBsignatures[c("Leong_RISK_29","Suliman_RISK_4",
+                                     "Zak_RISK_16", "Sweeney_OD_3")]
+```
+
+# Signature for predicting progression
+
+Datasets GSE79362 (Adolescent Cohort Study/ACS), GSE94438 (GC6-74), GSE107994, GSE112104 contain information about latent progression. Next, we consider using gene signatures to predict progression information. GSE107993 only includes latent non-progressor and control samples.
+```{r}
+gse_progress <- c("GSE79362", "GSE107994", "GSE94438","GSE112104")
+multi_set_progress <- lapply(object_match[gse_progress], function(x)
+  subset_curatedTBData(x, annotationColName = "Progression", annotationCondition = c("Positive","Negative"), experiment_name = "assay_MatchProbe")) %>% plyr::compact()
+```
+
+# Method 1
+Go to the original study and check how they get the gene signatures
+```{r}
+
+```
+
+
+# Method 2
+Look at the paper, follow their procedures. 
+Suliman\_RISK\_4 and Zak\_RISK\_16 were evaluated using support vector machines (SVM)
+Sweeney\_OD\_3 uses difference of geometric mean to calculate prediction score.
+
+# Method 3
+For each data split into traning and testing.
+
+## Elastic Net
+```{r}
+theObject <- multi_set_progress[["GSE79362"]]
+signatureGenes_list <- TB_RISK_signatures
+annotationCase <- "Positive"
+annotationColName <- "Progression"
+train_curatedTBData_elasticNet <- function(theObject, signatureGenes_list, annotationColName,
+                                           annotationCase){
+  
+  # Obtain original expression matrix
+  dat_full <- SummarizedExperiment::assay(theObject) %>% data.frame()
+  progress_status <- SummarizedExperiment::colData(theObject)[,annotationColName]
+  
+  # Convert to numeric binary results
+  status_number <- ifelse(progress_status == annotationCase, 1, 0)
+  
+  train_each_signature <- function(dat_full,signatureGenes, status_number){
+    
+                # Subset data with only genes belong to gene signature
+                dat_sub <- dat_full %>% 
+                       dplyr::filter(row.names(dat_full) %in% signatureGenes) %>% 
+                       t() %>% data.frame()
+             
+                dat <- cbind(dat_sub, Status = status_number)
+  
+               # Split the data into traning and testing
+                set.seed(123)
+                dat_idx <- caret::createDataPartition(dat$Status, p = 0.5, list = FALSE)
+                dat_trn <- dat[dat_idx, ]
+                dat_tst <-  dat[-dat_idx,]
+  
+                # Set up 5-fold cross validation
+                cv_5 <-  caret::trainControl(method = "cv", number = 5)
+                def_elnet <- caret::train(Status ~ ., data = dat_trn, method = "glmnet",
+                                    trControl = cv_5)
+                predict_result <- stats::predict(def_elnet, newdata = dat_tst)
+  
+                # Calcualte AUC
+                auc_result <-  ROCit::rocit(predict_result,dat_tst$Status)
+                return(auc_result$AUC)
+  }
+  
+  param <- BiocParallel::SerialParam(progressbar=TRUE)
+  signature_auc <- BiocParallel::bplapply(signatureGenes_list, function(y){
+              train_each_signature(dat_full,y,status_number)
+  }, BPPARAM = param)
+  
+  return(do.call(cbind,signature_auc))
+  
+
+  
+}
+
+signatureGenes <- TB_RISK_signatures
+annotationColName <- "Progression"
+lapply(seq_len(length(multi_set_progress)), function(x, signatureGenes, annotationColName){
+  theObject <- multi_set_progress[[x]]
+  
+  
+},signatureGenes, annotationColName)
+```
+
+## Elastic Net
+
+## Random Forest
+
+## SVM
