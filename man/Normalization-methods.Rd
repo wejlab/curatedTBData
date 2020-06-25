@@ -4,7 +4,7 @@
 \alias{Normalization}
 \alias{Normalization,SummarizedExperiment-method}
 \alias{Normalization,MultiAssayExperiment-method}
-\title{Normalization for microarray and RNA-seq transcriptome data.}
+\title{Normalization for curatedTBData}
 \usage{
 Normalization(theObject, ...)
 
@@ -12,14 +12,14 @@ Normalization(theObject, ...)
   theObject,
   geo_access = NULL,
   microarray_method = "quantile",
-  RNAseq_method = "TMM",
+  RNAseq_method = NULL,
   ...
 )
 
 \S4method{Normalization}{MultiAssayExperiment}(
   theObject,
   geo_access = NULL,
-  microarray_method = "quantile",
+  microarray_method = NULL,
   RNAseq_method = "TMM",
   experiment_name = c("assay_raw", "assay_reprocess")
 )
@@ -29,19 +29,31 @@ Normalization(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{geo_access}{Geo accession number for certain Study. Used when microarray_method is "SCAN"}
+\item{geo_access}{Geo accession number for certain Study. Used when microarray_method is "SCAN".}
 
-\item{microarray_method}{A character string specifying the normalization method to be used. See `limma::normalizeBetweenArrays` for microarray data.
-The default is "quantile"}
+\item{microarray_method}{A character string specifying the normalization method to be used.
+See \code{\link[limma]{normalizeBetweenArrays}} for deatils. The default is "quantile".}
 
-\item{RNAseq_method}{A character string specifying the normalization method to be used. See `edgeR::calcNormFactors` for RNA sequence data.
-The default is "TMM"}
+\item{RNAseq_method}{A character string specifying the normalization method to be used.
+See \code{\link[edgeR]{calcNormFactors}} for RNA sequence data. The default is "TMM".}
 
 \item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
 Choices for experiment_name are "assay_raw" and "assay_reprocess". The deafult is experiment_name="assay_raw"
 If experiment_name is "assay_raw", perform normalization on the assay provided by the authors.
 If experiment_name is "assay_reprocess", perform normalization on the reprocessed assay.}
 }
+\value{
+A SummarizedExperiment object with additional normalized assay if input is a SummarizedExperiment. object.
+A MultiAssayExperiment object with additional normalized assay if input is a MultiAssayExperiment object.
+}
 \description{
-Normalization for microarray and RNA-seq transcriptome data.
+Perform normalization for curatedTBDta.
+\code{microarray_method} (except "SCAN") argument passes to \code{\link[limma]{normalizeBetweenArrays}}
+for microarray data. \code{RNAseq_method argument passes to \code{\link[edgeR]{calcNormFactors}}}
+for RNA sequencing data.
+}
+\examples{
+object_list <- get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+GSE39939_sobject_norm <- Normalization(object_list$GSE39939, microarray_method = "quantile")
+GSE107993_sobject_norm <- Normalization(object_list$GSE107993, RNAseq_method = "TMM")
 }
