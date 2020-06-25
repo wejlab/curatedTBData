@@ -158,8 +158,9 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
       data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
-                                      "([^.]+)[.].*"),"\\1", data_load)
+      names(data_list) <- sub("^[^_]*_", "", data_load)
+      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
+      #                                "([^.]+)[.].*"),"\\1", data_load)
 
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
@@ -239,8 +240,10 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
       data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
-                                      "([^.]+)[.].*"),"\\1", data_load)
+      names(data_list) <- sub("^[^_]*_", "", data_load)
+
+      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
+      #                                "([^.]+)[.].*"),"\\1", data_load)
 
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
@@ -327,8 +330,10 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
       data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
-                               "\\1", data_load)
+      names(data_list) <- sub("^[^_]*_", "", data_load)
+
+      # names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
+      #                         "\\1", data_load)
 
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
@@ -385,8 +390,10 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
       data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
       data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
-                               "\\1", data_load)
+      names(data_list) <- sub("^[^_]*_", "", data_load)
+
+      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
+      #                         "\\1", data_load)
 
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
