@@ -1,4 +1,6 @@
-#' Subsetting objects based on single/multiple conditions
+#' @title Subsetting curatedTBData based on single/multiple conditions
+#' @description \code{subset_curatedTBData} selects desired samples from curatedTBData
+#' database according to pre-specified conditions.
 #' @name subset_curatedTBData
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
