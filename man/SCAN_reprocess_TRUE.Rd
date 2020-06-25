@@ -2,8 +2,7 @@
 % Please edit documentation in R/load_curatedTBData.R
 \name{SCAN_reprocess_TRUE}
 \alias{SCAN_reprocess_TRUE}
-\title{Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-when include.reprocess = TRUE}
+\title{Combine data into SummarizedExperiment/MultiAssayExperiment object.}
 \usage{
 SCAN_reprocess_TRUE(geo_access, include.SCAN)
 }
@@ -13,7 +12,16 @@ SCAN_reprocess_TRUE(geo_access, include.SCAN)
 \item{include.SCAN}{A logical value indicates whether include normalized data processed by SCAN into the final output when available.
 The default in FALSE.}
 }
+\value{
+A SummarizedExperiment object for microarray data, or a MultiAssayEpxeriment object
+for RNA-seq data.
+}
 \description{
-Combine individual data to SummarizedExperiment/MultiAssayExperiment object
-when include.reprocess = TRUE
+\code{SCAN_reprocess_TRUE()} combines individual data into SummarizedExperiment
+object for microarray study and into MultiAssayExperiment object for RNA-seq study.
+This function will include reprocessed RNA-seq information.
+}
+\examples{
+SCAN_reprocess_TRUE(geo_access = "GSE39939", include.SCAN = TRUE)
+SCAN_reprocess_TRUE(geo_access = "GSE101705", include.SCAN = TRUE)
 }

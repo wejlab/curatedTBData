@@ -412,7 +412,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name get_auc_distribution
-#' @param aucs_result A dataframe contains signatures, p-value, and AUC, can be obtained from `combine_auc`.
+#' @param aucs_result A dataframe contains signatures, p-value, and AUC.
+#' This data frame can be obtained from \code{\link{combine_auc}}.
 #' @return Ridge plot with median line
 #' @examples
 #' aucs_result <- data.frame(Signature = c("Anderson_42", "Anderson_OD_51", "Berry_393"),

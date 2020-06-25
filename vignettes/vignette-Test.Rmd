@@ -59,10 +59,10 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 
 ```{r load a list of all datasets}
 # Load single data
-# get_curatedTBData(geo_access = "GSE39939")
+get_curatedTBData(geo_access = "GSE39939")
 
 # Load Multiple Studies
-# get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
 
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access = "All")
@@ -187,7 +187,7 @@ object_match1 <- bplapply(object_norm, function(x)
 
 
 # Remove samples with TBStatus == NA
-object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"]!= "NA"], BPPARAM = param)
+object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"] != "NA"], BPPARAM = param)
 
 # Import the list of TB signatures from TBSignatureProfiler
 TBsignatures <- TBSignatureProfiler::TBsignatures
@@ -291,20 +291,6 @@ for (i in names(TBsignatures)){
   cat("####", i, "\n")
   
   BoxplotTBSig(ssgsea_PTB_Latent, gset = i, annotationColName = "TBStatus")
-  
-  cat("\n\n")
-}
-```
-
-
-### Boxplots signature rank{.tabset}
-
-```{r Boxplot for each signature rank,include=FALSE, results = "asis", fig.width=50, fig.height = 50, fig.wide=TRUE,eval=FALSE, include=FALSE}
-for (i in names(TBsignatures_sub)){
-
-  cat("####", i, "\n")
-  
-  get_rank_boxplot(sig_list,i)
   
   cat("\n\n")
 }

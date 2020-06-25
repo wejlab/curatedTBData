@@ -166,7 +166,7 @@ CombineObjects <- function(object_list,list_name=NULL,
 
   # Remove samples with TBstatus == NA
   object_list <- lapply(object_list, function(x)
-    x[,colData(x)[,"TBStatus"]!= "NA"])
+    x[,SummarizedExperiment::colData(x)[,"TBStatus"]!= "NA"])
 
 
   if(is.null(list_name)){

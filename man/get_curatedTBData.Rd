@@ -2,7 +2,7 @@
 % Please edit documentation in R/load_curatedTBData.R
 \name{get_curatedTBData}
 \alias{get_curatedTBData}
-\title{Combine individual data to SummarizedExperiment/MultiAssayExperiment object}
+\title{Load curatedTBData into SummarizedExperiment/MultiAssayExperiment object.}
 \usage{
 get_curatedTBData(geo_access, include.SCAN = FALSE, include.reprocess = TRUE)
 }
@@ -23,10 +23,10 @@ GSE107994, GSE101705, GSE107104, GSE112104}
 A list of SummarizedExperiment/MultiAssayExperiment objects
 }
 \description{
-Combine individual data to SummarizedExperiment/MultiAssayExperiment object
+\code{get_curatedTBData} loads available curatedTBData.
 }
 \examples{
-get_curatedTBData("GSE39939")
-get_curatedTBData(c("GSE39939","GSE107993"))
-get_curatedTBData("All")
+get_curatedTBData(geo_access = "GSE39939")
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+get_curatedTBData(geo_access = "All")
 }
