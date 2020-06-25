@@ -88,14 +88,9 @@ add_new_data_mobject("GSE94438_mobject.RDS")
 f1 <-  list.files("data-raw")
 f2 <-  f1[grep("GSE",f1)]
 total <- lapply(f2, function(x) readRDS(paste0("data-raw/",x)))
-names(total) <- f2
 
-# examples for import individual data
-total = lapply(c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
-                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS"),
-               function(x) readRDS(paste0("data-raw/",x)))
-names(total) = c("GSE31348_SCAN_counts.RDS", "GSE36238_SCAN_counts.RDS","GSE41055_SCAN_counts.RDS",
-                 "GSE54992_SCAN_counts.RDS","GSE73408_SCAN_counts.RDS")
+names(total) <- gsub("\\..*","",f2)
+
 library(devtools)
 purrr::walk2(total, names(total), function(obj, name) {
   assign(name, obj)
@@ -111,9 +106,9 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
-GSE69581_column_data.RDS <- readRDS("data-raw/GSE69581_column_data.RDS")
-TBStatus <- TBStatus_temp <- GSE69581_column_data.RDS$TBStatus
-TBStatus[grep("Subclinical", TBStatus_temp)] = "Latent"
-GSE69581_column_data.RDS$TBStatus <- TBStatus
-use_data(GSE69581_column_data.RDS,compress = "xz", overwrite = TRUE)
-
+GSE69581_column_data <- readRDS("data-raw/GSE69581_column_data.RDS")
+TBStatus <- TBStatus_temp <- GSE69581_column_data$TBStatus
+TBStatus[grep("Subclinical", TBStatus_temp)] <-  "Latent"
+GSE69581_column_data$TBStatus <- TBStatus
+use_data(GSE69581_column_data,compress = "xz", overwrite = TRUE)
+saveRDS(GSE69581_column_data,"data-raw/GSE69581_column_data.RDS")
