@@ -92,7 +92,7 @@ setMethod("Normalization",
               # set counts less than 10 to be 10.
               counts <- SummarizedExperiment::assays(theObject)[[1]]
               counts[counts<10] <- 10
-              counts <- log(counts,base=2) # log2 transformed data
+              counts <- log(counts, base=2) # log2 transformed data
 
               # Normalize between arrays
               norm_counts <- limma::normalizeBetweenArrays (counts,
@@ -130,7 +130,7 @@ setMethod("Normalization",
               counts[counts<10] <- 10
 
               # log2 transformed data
-              counts <- log(counts,base=2)
+              counts <- log(counts, base=2)
 
               NormFactor <- edgeR::calcNormFactors(counts, method = RNAseq_method)
               ScaleFactors <- colSums(counts) * NormFactor
