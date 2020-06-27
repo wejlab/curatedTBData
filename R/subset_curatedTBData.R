@@ -25,7 +25,7 @@ setMethod("subset_curatedTBData",
           function(theObject, annotationColName, annotationCondition, UseAssay,...){
 
             # Check whether assay exists in the object
-            assay_names <- SummarizedExperiment::assayNames(theObject_filter)
+            assay_names <- SummarizedExperiment::assayNames(theObject)
             assay_name_index <- which(assay_names %in% UseAssay)
             assay_name_exclude <- which(assay_names != UseAssay)
 
