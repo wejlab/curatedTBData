@@ -106,9 +106,23 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
-GSE69581_column_data <- readRDS("data-raw/GSE69581_column_data.RDS")
-TBStatus <- TBStatus_temp <- GSE69581_column_data$TBStatus
-TBStatus[grep("Subclinical", TBStatus_temp)] <-  "Latent"
-GSE69581_column_data$TBStatus <- TBStatus
-use_data(GSE69581_column_data,compress = "xz", overwrite = TRUE)
-saveRDS(GSE69581_column_data,"data-raw/GSE69581_column_data.RDS")
+GSE94438_column_data <- readRDS("data-raw/GSE94438_column_data.RDS")
+dat <- data.frame(GSE94438_column_data)
+dat[ dat == "n.a." ] <- NA
+dat[ dat == "n.a" ] <- NA
+dat[ dat == "" ] <- NA
+dat$GeographicalRegion <- dat$GeographicRegion
+dat_new <- dat[,-which(colnames(dat) %in% "GeographicRegion")]
+geo_region <- geo_region_temp <- as.character(dat_new$GeographicalRegion)
+for (i in 1:length(geo_region_temp)){
+  if(geo_region_temp[i] == "SUN"){geo_region[i] = "SouthAfrica"}
+  if(geo_region_temp[i] == "AHRI"){geo_region[i] = "Ethiopia"}
+  if(geo_region_temp[i] == "MRC"){geo_region[i] = "TheGambia"}
+  if(geo_region_temp[i] == "NA"){geo_region[i] = NA}
+}
+dat_new$GeographicalRegion <- geo_region
+GSE94438_column_data <- DataFrame(dat_new)
+
+library(devtools)
+use_data(GSE94438_column_data,compress = "xz", overwrite = TRUE)
+saveRDS(GSE94438_column_data,"data-raw/GSE94438_column_data.RDS")
