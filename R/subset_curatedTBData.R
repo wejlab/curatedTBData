@@ -1,4 +1,6 @@
-#' Subsetting objects based on single/multiple conditions
+#' @title Subsetting curatedTBData based on single/multiple conditions
+#' @description \code{subset_curatedTBData} selects desired samples from curatedTBData
+#' database according to pre-specified conditions.
 #' @name subset_curatedTBData
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
@@ -23,7 +25,7 @@ setMethod("subset_curatedTBData",
           function(theObject, annotationColName, annotationCondition, UseAssay,...){
 
             # Check whether assay exists in the object
-            assay_names <- SummarizedExperiment::assayNames(theObject_filter)
+            assay_names <- SummarizedExperiment::assayNames(theObject)
             assay_name_index <- which(assay_names %in% UseAssay)
             assay_name_exclude <- which(assay_names != UseAssay)
 
@@ -146,6 +148,8 @@ setMethod("subset_curatedTBData",
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected to merge.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
+#' @param annotationColName A character indicates feature of interest in the object's column data.
+#' This argument passes to `mod` parameter in \code{\link[sva]{ComBat}}. Default is NULL.
 #' @param batch.adjust A logical value indicating whether adjust for the batch effect.
 #' Default is TRUE.
 #' @return A SummarizedExperiment Object contains combined data from several objects.
@@ -159,15 +163,12 @@ setMethod("subset_curatedTBData",
 #'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
 #'                                createExperimentName = "assay_MatchProbe"))
 #' sobject <- CombineObjects(object_match, list_name,
-#'                           experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
+#'                           experiment_name = "assay_MatchProbe",
+#'                           annotationColName = "TBStatus",
+#'                          batch.adjust = TRUE)
 #' @export
 CombineObjects <- function(object_list,list_name=NULL,
-                           experiment_name, batch.adjust = TRUE){
-
-  # Remove samples with TBstatus == NA
-  object_list <- lapply(object_list, function(x)
-    x[,SummarizedExperiment::colData(x)[,"TBStatus"]!= "NA"])
-
+                           experiment_name, annotationColName = NULL,batch.adjust = TRUE){
 
   if(is.null(list_name)){
     list_name <-  names(object_list)
@@ -210,19 +211,29 @@ CombineObjects <- function(object_list,list_name=NULL,
   if (batch.adjust){
 
     # Batch Correction
-    mod1 <- stats::model.matrix(~as.factor(col_info$TBStatus), data = col_info)
-    batch1 <- col_info$GSE
-    combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                 mod=mod1)
-    result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(combat_edata1)),
-                                                         colData = col_info)
-    return(result)
+    if(is.null(annotationColName)){
+      batch1 <- col_info$GSE
+      combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
+                                   mod=NULL)
+      result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
+                                                           colData = col_info)
+      return(result)
+    }
+    else{
+      mod1 <- stats::model.matrix(~as.factor(col_info[,annotationColName]), data = col_info)
+      batch1 <- col_info$GSE
+      combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
+                                   mod=mod1)
+      result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
+                                                           colData = col_info)
+      return(result)
 
+    }
   }
 
   else{
   # Create output in the format of SummarizedExperiment
-  result <- SummarizedExperiment::SummarizedExperiment(assays = list(as.matrix(dat_exprs_count)),
+  result <- SummarizedExperiment::SummarizedExperiment(assays = list(counts = as.matrix(dat_exprs_count)),
                                                        colData = col_info)
   return(result)
   }

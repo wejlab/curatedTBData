@@ -9,6 +9,7 @@ CombineObjects(
   object_list,
   list_name = NULL,
   experiment_name,
+  annotationColName = NULL,
   batch.adjust = TRUE
 )
 }
@@ -18,6 +19,9 @@ CombineObjects(
 \item{list_name}{A character/vector contains object name to be selected to merge.}
 
 \item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
+
+\item{annotationColName}{A character indicates feature of interest in the object's column data.
+This argument passes to `mod` parameter in \code{\link[sva]{ComBat}}. Default is NULL.}
 
 \item{batch.adjust}{A logical value indicating whether adjust for the batch effect.
 Default is TRUE.}
@@ -39,5 +43,7 @@ object_match <- lapply(object_norm, function(x)
                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
                                createExperimentName = "assay_MatchProbe"))
 sobject <- CombineObjects(object_match, list_name,
-                          experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
+                          experiment_name = "assay_MatchProbe",
+                          annotationColName = "TBStatus",
+                         batch.adjust = TRUE)
 }

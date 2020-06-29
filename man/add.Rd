@@ -13,6 +13,10 @@ add(x, y)
 }
 \value{
 The sum of \code{x} and \code{y}.
+\describe{
+  \item{One}{First item}
+  \item{Two}{Second item}
+}
 }
 \description{
 Add together two numbers.

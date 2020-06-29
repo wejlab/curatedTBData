@@ -154,23 +154,21 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
 
     objects_list <- BiocParallel::bplapply(seq_len(length(geo_index_list)), function(x){
 
-      # Load Data into the Environment
-      data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
-      data_list <- lapply(data_load, function(y) get(y))
+    # Load Data into the Environment
+    data_load <-  utils::data(list=file_names_full[geo_index_list[[x]]])
+    data_list <- lapply(data_load, function(y) get(y))
 
-      names(data_list) <- sub("^[^_]*_", "", data_load)
-      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
-      #                                "([^.]+)[.].*"),"\\1", data_load)
+    names(data_list) <- sub("^[^_]*_", "", data_load)
 
-      # Remove data from environment
-      objs <- ls(pos = ".GlobalEnv")
-      rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
+    # Remove data from environment
+    objs <- ls(pos = ".GlobalEnv")
+    rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
 
-      # Check whether assemble into Summarized or MultiAssayExperiment Object
-      # If no reporcess, then goes to SummarizedExperiment
+    # Check whether assemble into Summarized or MultiAssayExperiment Object
+    # If no reporcess, then goes to SummarizedExperiment
 
-      check_type <- grep("reprocess",data_load)
-      if(length(check_type) == 0){ # combine into SummarizedExperiment
+    check_type <- grep("reprocess",data_load)
+    if(length(check_type) == 0){ # combine into SummarizedExperiment
 
         sobject1 <- methods::new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
                         row_data = data_list$row_data,
@@ -183,8 +181,8 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
         names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
                                                                       "_raw")
         if(include.SCAN && !is.null(data_list$SCAN_counts)){
-          assy_name <- paste0(names(geo_index_list)[x],"_SCAN")
-          SummarizedExperiment::assays(sobject1_final)[[assy_name]] <- data_list$SCAN_counts
+          assay_name <- paste0(names(geo_index_list)[x],"_SCAN")
+          SummarizedExperiment::assays(sobject1_final)[[assay_name]] <- data_list$SCAN_counts
         }
         return(sobject1_final)
 
@@ -242,9 +240,6 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
 
       names(data_list) <- sub("^[^_]*_", "", data_load)
 
-      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_",
-      #                                "([^.]+)[.].*"),"\\1", data_load)
-
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
       rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
@@ -266,8 +261,8 @@ SCAN_reprocess_TRUE <- function(geo_access, include.SCAN){
         names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
                                                                       "_raw")
         if(include.SCAN && !is.null(data_list$SCAN_counts)){
-          assy_name <- paste0(names(geo_index_list)[x],"_SCAN")
-          SummarizedExperiment::assays(sobject1_final)[[assy_name]] <- data_list$SCAN_counts
+          assay_name <- paste0(names(geo_index_list)[x],"_SCAN")
+          SummarizedExperiment::assays(sobject1_final)[[assay_name]] <- data_list$SCAN_counts
         }
 
         return(sobject1_final)
@@ -332,35 +327,48 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
 
       names(data_list) <- sub("^[^_]*_", "", data_load)
 
-      # names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
-      #                         "\\1", data_load)
-
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
       rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
 
       # Check whether assemble into Summarized or MultiAssayExperiment Object
-      # If no reporcess, then goes to SummarizedExperiment
+      # If no reporcess, goes to SummarizedExperiment directly
 
-      # check_type <- grep("reprocess",data_load)
-      # combine studies into SummarizedExperiment object
 
+      # Check whether all samples from column data are included in the count matrix e.g. GSE79362
+      if (suppressWarnings(all(colnames(data_list$assay_raw_counts) ==
+                               row.names(data_list$column_data)))){
+        # If sample names in count matrix are the same as sample names in the column data
+        # combine individual study into SummarizedExperiment object
         sobject1 <- methods::new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
-                        row_data = data_list$row_data,
-                        column_data  = data_list$column_data,
-                        meta_data = data_list$meta_data)
+                                 row_data = data_list$row_data,
+                                 column_data  = data_list$column_data,
+                                 meta_data = data_list$meta_data)
 
         sobject1_final <- CreateObject(sobject1)
+      }
+      else{
 
-        # Give assay name in SummarizedExperiment Object
-        names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
+        index <- match(colnames(data_list$assay_raw_counts),
+                       row.names(data_list$column_data))
+        data_list$column_data <- data_list$column_data[index,]
+        sobject1 <- methods::new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
+                                 row_data = data_list$row_data,
+                                 column_data  = data_list$column_data,
+                                 meta_data = data_list$meta_data)
+
+        sobject1_final <- CreateObject(sobject1)
+      }
+
+      # Give assay name in SummarizedExperiment Object
+      names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
                                                                       "_raw")
-        if(include.SCAN && !is.null(data_list$SCAN_counts)){
-          assy_name <- paste0(names(geo_index_list)[x],"_SCAN")
-          SummarizedExperiment::assays(sobject1_final)[[assy_name]] <- data_list$SCAN_counts
+      if(include.SCAN && !is.null(data_list$SCAN_counts)){
+          assay_name <- paste0(names(geo_index_list)[x],"_SCAN")
+          SummarizedExperiment::assays(sobject1_final)[[assay_name]] <- data_list$SCAN_counts
         }
 
-        return(sobject1_final)
+      return(sobject1_final)
 
     }, BPPARAM = param)
 
@@ -392,33 +400,42 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
 
       names(data_list) <- sub("^[^_]*_", "", data_load)
 
-      #names(data_list) <- gsub(paste0(".*",names(geo_index_list)[x],"_","([^.]+)[.].*"),
-      #                         "\\1", data_load)
-
       # Remove data from environment
       objs <- ls(pos = ".GlobalEnv")
       rm(list = objs[grep(names(geo_index_list)[x], objs)], pos = ".GlobalEnv")
 
-      # Check whether assemble into Summarized/MultiAssayExperiment Object
 
-      # check_type <- grep("reprocess",data_load) # If no reporcess, then goes to SummarizedExperiment
-
-      # combine studues into SummarizedExperiment Object
-
+      if (suppressWarnings(all(colnames(data_list$assay_raw_counts) ==
+                               row.names(data_list$column_data)))){
+        # If sample names in count matrix are the same as sample names in the column data
+        # combine individual study into SummarizedExperiment object
         sobject1 <- methods::new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
-                        row_data = data_list$row_data,
-                        column_data  = data_list$column_data,
-                        meta_data = data_list$meta_data)
+                                 row_data = data_list$row_data,
+                                 column_data  = data_list$column_data,
+                                 meta_data = data_list$meta_data)
 
         sobject1_final <- CreateObject(sobject1)
+      }
+      else{
+
+        index <- match(colnames(data_list$assay_raw_counts),
+                       row.names(data_list$column_data))
+        data_list$column_data <- data_list$column_data[index,]
+        sobject1 <- methods::new("Sobject", assay = as.matrix(data_list$assay_raw_counts),
+                                 row_data = data_list$row_data,
+                                 column_data  = data_list$column_data,
+                                 meta_data = data_list$meta_data)
+
+        sobject1_final <- CreateObject(sobject1)
+      }
 
         # Give assay name in SummarizedExperiment Object
-        names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
+      names(SummarizedExperiment::assays(sobject1_final)) <- paste0(names(geo_index_list)[x],
                                                                       "_raw")
 
-        if(include.SCAN && !is.null(data_list$SCAN_counts)){
-          assy_name <- paste0(names(geo_index_list)[x],"_SCAN")
-          SummarizedExperiment::assays(sobject1_final)[[assy_name]] <- data_list$SCAN_counts
+      if(include.SCAN && !is.null(data_list$SCAN_counts)){
+          assay_name <- paste0(names(geo_index_list)[x],"_SCAN")
+          SummarizedExperiment::assays(sobject1_final)[[assay_name]] <- data_list$SCAN_counts
         }
 
         return(sobject1_final)

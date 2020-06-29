@@ -4,7 +4,7 @@
 \alias{subset_curatedTBData}
 \alias{subset_curatedTBData,SummarizedExperiment-method}
 \alias{subset_curatedTBData,MultiAssayExperiment-method}
-\title{Subsetting objects based on single/multiple conditions}
+\title{Subsetting curatedTBData based on single/multiple conditions}
 \usage{
 subset_curatedTBData(theObject, ...)
 
@@ -43,5 +43,6 @@ When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, ou
 When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
 }
 \description{
-Subsetting objects based on single/multiple conditions
+\code{subset_curatedTBData} selects desired samples from curatedTBData
+database according to pre-specified conditions.
 }
