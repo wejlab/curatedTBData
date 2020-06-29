@@ -106,9 +106,22 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
-GSE69581_column_data <- readRDS("data-raw/GSE69581_column_data.RDS")
-TBStatus <- TBStatus_temp <- GSE69581_column_data$TBStatus
-TBStatus[grep("Subclinical", TBStatus_temp)] <-  "Latent"
-GSE69581_column_data$TBStatus <- TBStatus
-use_data(GSE69581_column_data,compress = "xz", overwrite = TRUE)
-saveRDS(GSE69581_column_data,"data-raw/GSE69581_column_data.RDS")
+
+GSE94438_column_data <- GSE94438_column_data
+colnames(GSE94438_column_data)[22] <- "TimeToTB_Month"
+
+library(devtools)
+use_data(GSE94438_column_data,compress = "xz", overwrite = TRUE)
+saveRDS(GSE94438_column_data,"data-raw/GSE94438_column_data.RDS")
+
+
+GSE79362_files <- list.files("data-raw",pattern = "GSE79362")
+GSE79362_list <- lapply(GSE79362_files, function(x)
+  readRDS(paste0("data-raw/",x)))
+
+names(GSE79362_list) <- gsub("\\..*","",GSE79362_files)
+library(devtools)
+purrr::walk2(GSE79362_list, names(GSE79362_list), function(obj, name) {
+  assign(name, obj)
+  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
+})

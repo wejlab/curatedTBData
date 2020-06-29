@@ -217,10 +217,21 @@ geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
 
-sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accession`, experiment_name = "assay_MatchProbe", batch.adjust = TRUE)
+sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accession`, 
+                          experiment_name = "assay_MatchProbe", annotationColName = "TBStatus",
+                          batch.adjust = TRUE)
 
 # The samples that correspond to their datasets can be found at:
 colData(sobject)[,"GSE"]
+
+# To separate batched corrected object into separate SummarizedExperiment object list:
+batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), function(x) {
+  index_GSE <- which(colData(sobject)$GSE %in% x)
+  colData(sobject)[,index_GSE]
+  
+})
+names(batch_sobject_list) <- unique(colData(sobject)[,"GSE"])
+
 
 # Create a table for sample and data source information with:
 sample_data_info <- data.frame(Sample = row.names(colData(sobject)), 
