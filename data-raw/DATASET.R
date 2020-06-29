@@ -106,9 +106,14 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
+
+GSE94438_column_data <- GSE94438_column_data
+colnames(GSE94438_column_data)[22] <- "TimeToTB_Month"
+
 library(devtools)
 use_data(GSE94438_column_data,compress = "xz", overwrite = TRUE)
 saveRDS(GSE94438_column_data,"data-raw/GSE94438_column_data.RDS")
+
 
 GSE79362_files <- list.files("data-raw",pattern = "GSE79362")
 GSE79362_list <- lapply(GSE79362_files, function(x)

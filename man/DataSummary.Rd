@@ -5,7 +5,7 @@
 \alias{DataSummary}
 \title{DataSummary Title}
 \format{
-A dataset containing aaabbbbssssddf
+A dataset containing summarized results for tuberculosis study from NCBI.
 }
 \source{
 \itemize{
