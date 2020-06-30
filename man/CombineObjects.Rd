@@ -7,27 +7,41 @@ usually run after \code{\link{MatchProbe}}}
 \usage{
 CombineObjects(
   object_list,
-  list_name = NULL,
-  experiment_name,
+  experiment_name = NULL,
+  UseAssay = NULL,
   annotationColName = NULL,
-  batch.adjust = TRUE
+  list_name = NULL,
+  batch.adjust = TRUE,
+  par.prior = TRUE,
+  prior.plots = FALSE,
+  mean.only = FALSE,
+  ref.batch = NULL,
+  BPPARAM = bpparam("SerialParam")
 )
 }
 \arguments{
 \item{object_list}{A list contains expression data with probes mapped to gene symbol.}
 
-\item{list_name}{A character/vector contains object name to be selected to merge.}
-
 \item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
 
-\item{annotationColName}{A character indicates feature of interest in the object's column data.
+\item{annotationColName}{A character/ indicates feature of interest in the object's column data.
 This argument passes to `mod` parameter in \code{\link[sva]{ComBat}}. Default is NULL.}
+
+\item{list_name}{A character/vector contains object name to be selected to merge.}
 
 \item{batch.adjust}{A logical value indicating whether adjust for the batch effect.
 Default is TRUE.}
+
+\item{prior.plots}{Additional argument passed to \code{\link[sva]{ComBat}}.}
+
+\item{mean.only}{Additional argument passed to \code{\link[sva]{ComBat}}.}
+
+\item{ref.batch}{Additional argument passed to \code{\link[sva]{ComBat}}.}
+
+\item{BPPARAM}{Additional argument passed to \code{\link[sva]{ComBat}}.}
 }
 \value{
-A SummarizedExperiment Object contains combined data from several objects.
+A SummarizedExperiment Object contains combined data from several studies.
 }
 \description{
 Combine samples with common genes from selected studies,
