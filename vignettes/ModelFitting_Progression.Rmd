@@ -45,15 +45,6 @@ progress_norm <- bplapply(progress_raw, function(x)
   Normalization(x, RNAseq_method = "TMM", experiment_name = "assay_reprocess"), BPPARAM = param) 
 
 
-#batch_correct <- CombineObjects(progress_norm,list_name=c("GSE79362","GSE112104"),
-#                                annotationColName= NULL,
-#                                experiment_name = "assay_reprocess_norm")
-
-
-#batch_correct_filter <- subset_curatedTBData(batch_correct, annotationColName = "Progression", annotationCondition = c("Positive","Negative"), UseAssay = assayNames(batch_correct))
-
-#index_GSE79362 <- which(colData(batch_correct_filter)$GSE %in% "GSE79362")
-
 
 # Subset samples with progression information
 progress_norm_filter <- lapply(progress_norm, function(x) subset_curatedTBData(x, annotationColName = "Progression", annotationCondition = c("Positive","Negative"), experiment_name = "assay_reprocess_norm")) %>% plyr::compact()

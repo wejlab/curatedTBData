@@ -224,10 +224,10 @@ sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accessi
 # The samples that correspond to their datasets can be found at:
 colData(sobject)[,"GSE"]
 
-# To separate batched corrected object into separate SummarizedExperiment object list:
+# To separate batch-corrected object into separate SummarizedExperiment object list:
 batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), function(x) {
   index_GSE <- which(colData(sobject)$GSE %in% x)
-  colData(sobject)[,index_GSE]
+  sobject[,index_GSE]
   
 })
 names(batch_sobject_list) <- unique(colData(sobject)[,"GSE"])
