@@ -99,9 +99,9 @@ purrr::walk2(total, names(total), function(obj, name) {
 
 # Save Summary table
 DataSummary <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
-                                  sheet = "Sheet1")
+                                  sheet = "DataSummary")
 SignatureInfo <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
-                                  sheet = "Sheet2")
+                                  sheet = "SignatureInfo")
 library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
