@@ -148,11 +148,15 @@ setMethod("subset_curatedTBData",
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected to merge.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
-#' @param annotationColName A character indicates feature of interest in the object's column data.
+#' @param annotationColName A character/ indicates feature of interest in the object's column data.
 #' This argument passes to `mod` parameter in \code{\link[sva]{ComBat}}. Default is NULL.
 #' @param batch.adjust A logical value indicating whether adjust for the batch effect.
 #' Default is TRUE.
-#' @return A SummarizedExperiment Object contains combined data from several objects.
+#' @param prior.plots Additional argument passed to \code{\link[sva]{ComBat}}.
+#' @param mean.only Additional argument passed to \code{\link[sva]{ComBat}}.
+#' @param ref.batch Additional argument passed to \code{\link[sva]{ComBat}}.
+#' @param BPPARAM Additional argument passed to \code{\link[sva]{ComBat}}.
+#' @return A SummarizedExperiment Object contains combined data from several studies.
 #' @examples
 #' list_name <-  c("GSE101705","GSE54992","GSE19444")
 #' data_list <-  get_curatedTBData(list_name)
@@ -167,17 +171,42 @@ setMethod("subset_curatedTBData",
 #'                           annotationColName = "TBStatus",
 #'                          batch.adjust = TRUE)
 #' @export
-CombineObjects <- function(object_list,list_name=NULL,
-                           experiment_name, annotationColName = NULL,batch.adjust = TRUE){
-
-  if(is.null(list_name)){
-    list_name <-  names(object_list)
-    dat_exprs_match <- lapply(object_list, function(x)
-         MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
+                           annotationColName = NULL, list_name=NULL,
+                           batch.adjust = TRUE, par.prior = TRUE,
+                           prior.plots = FALSE,
+                           mean.only = FALSE,
+                           ref.batch = NULL,
+                           BPPARAM = bpparam("SerialParam")){
+  # Check the element witin list
+  if(is.null(experiment_name) && is.null(UseAssay)){
+    stop(paste("Please specify experiment name of the MultiAssayExperiment Object or
+               assay name of the SummarizedExperiment Object."))
   }
-  else {
-    dat_exprs_match <- lapply(object_list[list_name], function(x)
-         MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+
+  if(class(object_list[[1]]) == "MultiAssayExperiment"){
+    if(is.null(list_name)){
+      list_name <-  names(object_list)
+      dat_exprs_match <- lapply(object_list, function(x)
+        MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+    }
+    else {
+      dat_exprs_match <- lapply(object_list[list_name], function(x)
+        MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
+    }
+
+  }
+
+  if(class(object_list[[1]]) == "SummarizedExperiment"){
+    if(is.null(list_name)){
+      list_name <-  names(object_list)
+      dat_exprs_match <- lapply(object_list, function(x)
+        SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
+    }
+    else {
+      dat_exprs_match <- lapply(object_list[list_name], function(x)
+        SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
+    }
   }
 
   # Combine sample with common genes from selected objects.
@@ -209,21 +238,30 @@ CombineObjects <- function(object_list,list_name=NULL,
   col_info <- col_info[index,]
 
   if (batch.adjust){
-
     # Batch Correction
     if(is.null(annotationColName)){
       batch1 <- col_info$GSE
       combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                   mod=NULL)
+                                   mod=NULL,  par.prior = par.prior,
+                                   prior.plots = prior.plots,
+                                   mean.only = mean.only,
+                                   ref.batch = ref.batch,
+                                   BPPARAM = BPPARAM)
       result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
                                                            colData = col_info)
       return(result)
     }
     else{
-      mod1 <- stats::model.matrix(~as.factor(col_info[,annotationColName]), data = col_info)
+      formula1 <- paste("~",paste(annotationColName,collapse = "+"))
+      mod1 <- stats::model.matrix(stats::as.formula(formula1),
+                                  data = data.frame(col_info))
       batch1 <- col_info$GSE
       combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                   mod=mod1)
+                                   mod=mod1, par.prior = par.prior,
+                                   prior.plots = prior.plots,
+                                   mean.only = mean.only,
+                                   ref.batch = ref.batch,
+                                   BPPARAM = BPPARAM)
       result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
                                                            colData = col_info)
       return(result)

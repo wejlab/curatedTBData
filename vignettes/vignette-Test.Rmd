@@ -1,5 +1,5 @@
 ---
-title: "curatedTBData - PTB vs Latent"
+title: "curatedTBData - Example"
 author: "Xutao Wang"
 output:
   BiocStyle::html_document:
@@ -37,9 +37,9 @@ devtools::load_all()
 library(curatedTBData)
 ```
 
-This package requires large memory to process data. Please increase R script memory before running this vignette. 
-[Increase memory for Macs](https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached)
-Step 1: Open terminal
+This package requires large memory to process data. Please increase R script memory before running this vignette. \
+See the post for details: [Increase memory for Macs](https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached)\
+Step 1: Open terminal\
 Step 2:
 ```{r, engine='bash', eval=FALSE}
 cd ~
@@ -57,33 +57,41 @@ R_MAX_VSIZE=50Gb
 
 We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets. The pakcage function `get_curatedTBData` takes single or vector character string of GEO accession as input, and load the correpsonding curatedTBData in either the form of  `SummarizedExperiment` or `MultiAssayExperiment`. 
 
-```{r load a list of all datasets}
-# Load single data
-get_curatedTBData(geo_access = "GSE39939")
-
-# Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
+```{r load a list of all datasets, results='hide'}
+# To get a summary table for all the studies:
+data("DataSummary",package="curatedTBData")
 
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access = "All")
+
+# Load single data
+get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
+
+# Load Multiple Studies
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"), 
+                  include.reprocess = TRUE)
+
 ```
 
 ## Load a list of RNA-seq data
-```{r load a list of RNA-seq studies}
+```{r load a list of RNA-seq studies, results='hide'}
 # To get a summary table for all the studies:
-data("DataSummary",package="curatedTBData")
+# data("DataSummary",package="curatedTBData")
 geo_RNA_seq <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
   dplyr::select(.data$`GEO accession`)
-object_list_RNA_seq <- get_curatedTBData(geo_access = geo_RNA_seq$`GEO accession`)
+object_list_RNA_seq <- get_curatedTBData(
+                            geo_access = geo_RNA_seq$`GEO accession`)
 ```
 
 ## Load a list of RNA-seq data
-```{r load a list of microarray studies}
+```{r load a list of microarray studies, results='hide'}
 geo_microarray <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
-object_list_microarray <- get_curatedTBData(geo_access = geo_microarray$`GEO accession`)
+
+object_list_microarray <- get_curatedTBData(
+                             geo_access = geo_microarray$`GEO accession`)
 ```
 
 # Subsetting Objects
@@ -103,12 +111,11 @@ GSE107991_mobject[, GSE107991_mobject$TBStatus == "PTB"]
 
 # Normalization
 
-For imported expression datasets other than affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package before matching probesets to gen symbol. 
-Steps take: 
-1. remove outliers using `arrayQualityMetrics`.??? Have not included yet
-2. Set intensity values < 10 set to 10
-3. log2 transformed the data.
-4. Normalize data (RMA for Affymetrix microarray, quantile normalization for other microarray).
+For curatedTBData expression datasets except Affymetrix microarray and GSEXXXXX, they are all non-normalized raw data. Next, we normalize microarray data using `normalizeBetweenArrays` from `limma` package , and normalize RNA-seq data using `TMM` from `edgeR` package before matching probesets to gen symbol. 
+Steps take: \
+1. Set intensity values < 10 set to 10 \
+2. log2 transformed the data. \
+3. Normalize data using methods available in `edgeR` or `normalizeBetweenArrays`.
 
 ## Between-sample normalization for Illumina microarray
 
@@ -122,13 +129,16 @@ GSE39939_sobject_norm <- Normalization(GSE39939_sobject,
 Boxplot for non-normalized microarray data
 
 ```{r, fig.width = 8, fig.height = 8}
+# display the boxplot in log2 for selected samples
 boxplot(log(assays(GSE39939_sobject_norm)[[1]][,1:20], base=2))
-# display the boxplot in log2 for selected samples
 ```
+
 Boxplot for microarray data after quantile normalization
+
 ```{r, fig.width = 8, fig.height = 8}
-boxplot(assays(GSE39939_sobject_norm)[["GSE39939_quantile"]][,1:20])
 # display the boxplot in log2 for selected samples
+boxplot(assays(GSE39939_sobject_norm)[["GSE39939_quantile"]][,1:20])
+
 ```
 
 ## Betwwen-sample normalization for RNA-seq
@@ -136,13 +146,16 @@ boxplot(assays(GSE39939_sobject_norm)[["GSE39939_quantile"]][,1:20])
 ```{r}
 # Add the normalized data as a new assay in the MultiAssayExperiment. 
 # Use experiment_name = "assay_reprocess" for reprocess RNA-seq
-GSE107991_mobject_norm <- Normalization(GSE107991_mobject, RNAseq_method = "TMM", experiment_name = "assay_raw")
+GSE107991_mobject_norm <- Normalization(GSE107991_mobject, 
+                                        RNAseq_method = "TMM", 
+                                        experiment_name = "assay_raw")
 ```
 
 Boxplot for non-normalized RNA-seq data
 ```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
-boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20]+0.0001, base = 2))
+boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])
+            [,1:20] + 0.0001, base = 2))
 ```
 
 Boxplot for normalized RNA-seq data
@@ -150,7 +163,8 @@ Boxplot for normalized RNA-seq data
 ```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
 # TMM reduces maximum value
-boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])[["GSE107991_TMM"]][,1:20])
+boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])
+        [["GSE107991_TMM"]][,1:20])
 ```
 
 # Match Probe ID to Gene symbol
@@ -168,7 +182,7 @@ MatchProbe(GSE107991_mobject, UseAssay = "GSE107991_raw",
 
 # Normalizing and mapping to a list of datasets
 
-First of all, we create reate a list of object with normalized reads and probesets mapped to symbols. Match probe ID to symbol using either raw data or normalized data (if applicable) .
+To start with, we create reate a list of object with normalized reads and probesets mapped to symbols. Matching probe sets to gene symbol using either raw data or normalized data (if applicable) .
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
 
 ```{r normalized/matched sample, cache=TRUE, results="hide", eval=FALSE}
@@ -176,18 +190,22 @@ Matching probes to symbol using raw data is straight-forward, we use the normali
 param <- SerialParam(progressbar=TRUE)
 # Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed dat) by specifying the experiment_name=assay_raw
 
-object_norm <- bplapply(objects_list, function(x) Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM", experiment_name = "assay_raw"), BPPARAM = param) 
+object_norm <- bplapply(objects_list, function(x) 
+  Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
+                experiment_name = "assay_raw"), BPPARAM = param) 
 
 
 # Match Probe to gene symbols
+
 # Use the normalized data from assay_raw by specifying the experiment_name=assay_raw_norm
 object_match1 <- bplapply(object_norm, function(x) 
-           MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
-                      createExperimentName = "assay_MatchProbe"), BPPARAM = param)
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
+             createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 
 # Remove samples with TBStatus == NA
-object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"] != "NA"], BPPARAM = param)
+object_match <- bplapply(object_match1, function(x) 
+  x[,colData(x)[,"TBStatus"] != "NA"], BPPARAM = param)
 
 # Import the list of TB signatures from TBSignatureProfiler
 TBsignatures <- TBSignatureProfiler::TBsignatures
@@ -211,24 +229,25 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object. GSE74092 is usually removed from merging, because this used quantitative PCR so they did not have enough coverage to capture all genes.
 
-```{r merge datasets}
+```{r merge datasets, results="hide"}
 # Merge all  microarray studies
 geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
 
-sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accession`, 
-                          experiment_name = "assay_MatchProbe", annotationColName = "TBStatus",
+sobject <- CombineObjects(object_match1, 
+                          list_name = geo_microarray$`GEO accession`, 
+                          experiment_name = "assay_MatchProbe", 
+                          annotationColName = "TBStatus",
                           batch.adjust = TRUE)
 
-# The samples that correspond to their datasets can be found at:
-colData(sobject)[,"GSE"]
+# The samples that correspond to their datasets can be found at: colData(sobject)[,"GSE"]
 
-# To separate batched corrected object into separate SummarizedExperiment object list:
-batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), function(x) {
-  index_GSE <- which(colData(sobject)$GSE %in% x)
-  colData(sobject)[,index_GSE]
-  
+# To separate batch-corrected object into separate SummarizedExperiment object list:
+batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), 
+                      function(x) {
+                          index_GSE <- which(colData(sobject)$GSE %in% x)
+                          sobject[,index_GSE]
 })
 names(batch_sobject_list) <- unique(colData(sobject)[,"GSE"])
 
@@ -237,12 +256,11 @@ names(batch_sobject_list) <- unique(colData(sobject)[,"GSE"])
 sample_data_info <- data.frame(Sample = row.names(colData(sobject)), 
                                Data = colData(sobject)[,"GSE"])
 
-# Possible outcome of interest could be patient's TB subtypes, this can be found at:
-colData(sobject)[,"TBStatus"]
+# Possible outcome of interest could be patient's TB subtypes, this can be found at: colData(sobject)[,"TBStatus"]
 
 # Create a table for sample and TB status information with:
 sample_outcome_info <- data.frame(Sample = row.names(colData(sobject)), 
-                               Data = colData(sobject)[,"TBStatus"])
+                                  Data = colData(sobject)[,"TBStatus"])
 
 ```
 
@@ -264,17 +282,22 @@ $|\gamma_k|$= Number of genes within gene set $k$.\
 3. Re-scale the enrichment scores (ES) for each sample
 $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{nk}\}}$$
 
-### ssGSEA Calculation
+### Calculate ssGSEA
 
 ```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
 # Select sample contain information about PTB and Latent
 # Modify the list to make it compatible with TBSignatureProfiler
 
 multi_set_PTB_Latent <- bplapply(object_match, function(x)
-  subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_name = "assay_MatchProbe"), BPPARAM = param) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("Latent","PTB"), 
+                       experiment_name = "assay_MatchProbe"), 
+                       BPPARAM = param) %>% plyr::compact()   
+# Remove empty objects use plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
-                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
@@ -283,9 +306,9 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
 
 # Obtain p.value, AUC
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
-                                         annotationColName = "TBStatus", 
-                                         signatureColNames = names(TBsignatures), 
-                                         num.boot = 60, percent = 0.95)
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = 60, percent = 0.95)
 
 # Obtain signature gene rank
 # sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
@@ -336,12 +359,14 @@ PTB_Latent_auc_summary_ssgsea <- ssgsea_PTB_Latent_combine %>%
   dplyr::select(.data$Signature, AUC) %>% dplyr::group_split(.data$Signature)
 
 # Get summarized table and bootstrap 95% Confidence Interval
-ssgsea_PTB_Latent_auc_CI <- cbind(Signature=sapply(PTB_Latent_auc_summary_ssgsea, 
-                                                   function(x) x$Signature[1]),
-      do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea, function(x){
+ssgsea_PTB_Latent_auc_CI <- cbind(
+  Signature=sapply(PTB_Latent_auc_summary_ssgsea, function(x) 
+  x$Signature[1]), 
+  do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea, function(x){
   bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
 }
-)) )
+)) 
+)
 ssgsea_PTB_Latent_auc_CI %>% DT::datatable()
 ```
 
@@ -352,8 +377,11 @@ ssgsea_PTB_Latent_auc_CI %>% DT::datatable()
 ```{r AUC ridge plot for PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
-get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent") + theme(axis.text.x = element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
-                 axis.text.y = element_text(size=12, angle = 0, hjust = 0.5))
+get_auc_distribution(ssgsea_PTB_Latent_combine) + 
+  ggtitle("Ridge plot of AUC for PTB vs. Latent") + 
+  theme(axis.text.x = element_text(colour="Black", size=12, hjust = 0.5, 
+                                   face="bold"),
+        axis.text.y = element_text(size=12, angle = 0, hjust = 0.5))
 
 ```
 
@@ -364,7 +392,8 @@ get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for
 ```{r PTB vs. Latent heatmap with grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
 # Import signature and data information
 heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo, 
-            names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+            names(TBsignatures), facet = TRUE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
 # Session Information
