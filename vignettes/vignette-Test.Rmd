@@ -1,5 +1,5 @@
 ---
-title: "curatedTBData - PTB vs Latent"
+title: "curatedTBData - Example"
 author: "Xutao Wang"
 output:
   BiocStyle::html_document:
@@ -61,14 +61,16 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 # To get a summary table for all the studies:
 data("DataSummary",package="curatedTBData")
 
+# Get a list of all data
+objects_list <- get_curatedTBData(geo_access = "All")
+
 # Load single data
 get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
 
 # Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE39939","GSE107993"), include.reprocess = TRUE)
+get_curatedTBData(geo_access = c("GSE39939","GSE107993"), 
+                  include.reprocess = TRUE)
 
-# Get a list of all data
-objects_list <- get_curatedTBData(geo_access = "All")
 ```
 
 ## Load a list of RNA-seq data
@@ -78,7 +80,8 @@ objects_list <- get_curatedTBData(geo_access = "All")
 geo_RNA_seq <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
   dplyr::select(.data$`GEO accession`)
-object_list_RNA_seq <- get_curatedTBData(geo_access = geo_RNA_seq$`GEO accession`)
+object_list_RNA_seq <- get_curatedTBData(
+                            geo_access = geo_RNA_seq$`GEO accession`)
 ```
 
 ## Load a list of RNA-seq data
@@ -86,7 +89,9 @@ object_list_RNA_seq <- get_curatedTBData(geo_access = geo_RNA_seq$`GEO accession
 geo_microarray <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
-object_list_microarray <- get_curatedTBData(geo_access = geo_microarray$`GEO accession`)
+
+object_list_microarray <- get_curatedTBData(
+                             geo_access = geo_microarray$`GEO accession`)
 ```
 
 # Subsetting Objects
@@ -141,14 +146,16 @@ boxplot(assays(GSE39939_sobject_norm)[["GSE39939_quantile"]][,1:20])
 ```{r}
 # Add the normalized data as a new assay in the MultiAssayExperiment. 
 # Use experiment_name = "assay_reprocess" for reprocess RNA-seq
-GSE107991_mobject_norm <- Normalization(GSE107991_mobject, RNAseq_method = "TMM", 
+GSE107991_mobject_norm <- Normalization(GSE107991_mobject, 
+                                        RNAseq_method = "TMM", 
                                         experiment_name = "assay_raw")
 ```
 
 Boxplot for non-normalized RNA-seq data
 ```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
-boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])[,1:20]+0.0001, base = 2))
+boxplot(log(assay(experiments(GSE107991_mobject_norm)[["assay_raw"]])
+            [,1:20] + 0.0001, base = 2))
 ```
 
 Boxplot for normalized RNA-seq data
@@ -156,7 +163,8 @@ Boxplot for normalized RNA-seq data
 ```{r, fig.width = 8, fig.height = 8}
 # display the boxplot in log2
 # TMM reduces maximum value
-boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])[["GSE107991_TMM"]][,1:20])
+boxplot(assays(experiments(GSE107991_mobject_norm)[["assay_raw"]])
+        [["GSE107991_TMM"]][,1:20])
 ```
 
 # Match Probe ID to Gene symbol
@@ -182,19 +190,22 @@ Matching probes to symbol using raw data is straight-forward, we use the normali
 param <- SerialParam(progressbar=TRUE)
 # Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed dat) by specifying the experiment_name=assay_raw
 
-object_norm <- bplapply(objects_list, function(x) Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM", experiment_name = "assay_raw"), BPPARAM = param) 
+object_norm <- bplapply(objects_list, function(x) 
+  Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
+                experiment_name = "assay_raw"), BPPARAM = param) 
 
 
 # Match Probe to gene symbols
 
 # Use the normalized data from assay_raw by specifying the experiment_name=assay_raw_norm
 object_match1 <- bplapply(object_norm, function(x) 
-           MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
-                      createExperimentName = "assay_MatchProbe"), BPPARAM = param)
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
+             createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 
 # Remove samples with TBStatus == NA
-object_match <- bplapply(object_match1, function(x) x[,colData(x)[,"TBStatus"] != "NA"], BPPARAM = param)
+object_match <- bplapply(object_match1, function(x) 
+  x[,colData(x)[,"TBStatus"] != "NA"], BPPARAM = param)
 
 # Import the list of TB signatures from TBSignatureProfiler
 TBsignatures <- TBSignatureProfiler::TBsignatures
@@ -224,17 +235,19 @@ geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
 
-sobject <- CombineObjects(object_match1, list_name = geo_microarray$`GEO accession`, 
-                          experiment_name = "assay_MatchProbe", annotationColName = "TBStatus",
+sobject <- CombineObjects(object_match1, 
+                          list_name = geo_microarray$`GEO accession`, 
+                          experiment_name = "assay_MatchProbe", 
+                          annotationColName = "TBStatus",
                           batch.adjust = TRUE)
 
 # The samples that correspond to their datasets can be found at: colData(sobject)[,"GSE"]
 
 # To separate batch-corrected object into separate SummarizedExperiment object list:
-batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), function(x) {
-  index_GSE <- which(colData(sobject)$GSE %in% x)
-  sobject[,index_GSE]
-  
+batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), 
+                      function(x) {
+                          index_GSE <- which(colData(sobject)$GSE %in% x)
+                          sobject[,index_GSE]
 })
 names(batch_sobject_list) <- unique(colData(sobject)[,"GSE"])
 
@@ -247,7 +260,7 @@ sample_data_info <- data.frame(Sample = row.names(colData(sobject)),
 
 # Create a table for sample and TB status information with:
 sample_outcome_info <- data.frame(Sample = row.names(colData(sobject)), 
-                               Data = colData(sobject)[,"TBStatus"])
+                                  Data = colData(sobject)[,"TBStatus"])
 
 ```
 
@@ -276,10 +289,15 @@ $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{n
 # Modify the list to make it compatible with TBSignatureProfiler
 
 multi_set_PTB_Latent <- bplapply(object_match, function(x)
-  subset_curatedTBData(x, annotationColName = "TBStatus", annotationCondition = c("Latent","PTB"), experiment_name = "assay_MatchProbe"), BPPARAM = param) %>% plyr::compact()   # Remove empty objects use plyr::compact()
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("Latent","PTB"), 
+                       experiment_name = "assay_MatchProbe"), 
+                       BPPARAM = param) %>% plyr::compact()   
+# Remove empty objects use plyr::compact()
 
 ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
-                    function(x) TBSignatureProfiler::runTBsigProfiler(input = x,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
                                   useAssay = assayNames(x),
                                   signatures = TBsignatures, 
                                   algorithm = "ssGSEA",
@@ -288,9 +306,9 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
 
 # Obtain p.value, AUC
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
-                                         annotationColName = "TBStatus", 
-                                         signatureColNames = names(TBsignatures), 
-                                         num.boot = 60, percent = 0.95)
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = 60, percent = 0.95)
 
 # Obtain signature gene rank
 # sig_list <- bplapply(ssgsea_PTB_Latent, function(x) get_gsea_rank(x, TBsignatures),BPPARAM=param)
@@ -341,12 +359,14 @@ PTB_Latent_auc_summary_ssgsea <- ssgsea_PTB_Latent_combine %>%
   dplyr::select(.data$Signature, AUC) %>% dplyr::group_split(.data$Signature)
 
 # Get summarized table and bootstrap 95% Confidence Interval
-ssgsea_PTB_Latent_auc_CI <- cbind(Signature=sapply(PTB_Latent_auc_summary_ssgsea, 
-                                                   function(x) x$Signature[1]),
-      do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea, function(x){
+ssgsea_PTB_Latent_auc_CI <- cbind(
+  Signature=sapply(PTB_Latent_auc_summary_ssgsea, function(x) 
+  x$Signature[1]), 
+  do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea, function(x){
   bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
 }
-)) )
+)) 
+)
 ssgsea_PTB_Latent_auc_CI %>% DT::datatable()
 ```
 
@@ -357,8 +377,11 @@ ssgsea_PTB_Latent_auc_CI %>% DT::datatable()
 ```{r AUC ridge plot for PTB vs Latent, fig.width=8, fig.height = 15, cache=TRUE}
 # Ridge plot for AUCs distribution across datasets
 # PTB vs. Latent
-get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for PTB vs. Latent") + theme(axis.text.x = element_text(colour="Black", size=12, hjust = 0.5, face="bold"),
-                 axis.text.y = element_text(size=12, angle = 0, hjust = 0.5))
+get_auc_distribution(ssgsea_PTB_Latent_combine) + 
+  ggtitle("Ridge plot of AUC for PTB vs. Latent") + 
+  theme(axis.text.x = element_text(colour="Black", size=12, hjust = 0.5, 
+                                   face="bold"),
+        axis.text.y = element_text(size=12, angle = 0, hjust = 0.5))
 
 ```
 
@@ -369,7 +392,8 @@ get_auc_distribution(ssgsea_PTB_Latent_combine) + ggtitle("Ridge plot of AUC for
 ```{r PTB vs. Latent heatmap with grouping, fig.width=10, fig.height = 15, fig.wide=TRUE}
 # Import signature and data information
 heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo, 
-            names(TBsignatures), facet = TRUE) + ggtitle("Heatmap of AUC for PTB vs. Latent")
+            names(TBsignatures), facet = TRUE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
 # Session Information
