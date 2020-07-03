@@ -107,13 +107,18 @@ use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
 
-GSE112104_column_data <- GSE112104_column_data
+GSE94438_column_data <- GSE94438_column_data
+GSE94438_column_data$PatientID <- as.character(GSE94438_column_data$PatientID)
+GSE94438_column_data$Code <- as.character(GSE94438_column_data$Code)
+GSE94438_column_data$TimeFromExposure <- as.numeric(GSE94438_column_data$TimeFromExposure)
+GSE94438_column_data$TimeToTB_Month <- as.numeric(GSE94438_column_data$TimeToTB_Month)
+
 index <- which(GSE112104_column_data$Progression == "Positive")
 GSE112104_column_data$TBStatus[index] <- "PTB"
 
 library(devtools)
-use_data(GSE112104_column_data,compress = "xz", overwrite = TRUE)
-saveRDS(GSE112104_column_data,"data-raw/GSE112104_column_data.RDS")
+use_data(GSE94438_column_data,compress = "xz", overwrite = TRUE)
+saveRDS(GSE94438_column_data,"data-raw/GSE94438_column_data.RDS")
 
 
 GSE79362_files <- list.files("data-raw",pattern = "GSE79362")
