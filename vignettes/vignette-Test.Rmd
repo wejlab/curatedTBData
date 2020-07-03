@@ -400,3 +400,5 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
 ```{r session info}
 sessionInfo()
 ```
+
+

@@ -1,3 +1,6 @@
+# Ignore files in practice directory
+/practice/*
+
 # History files
 .Rhistory
 .Rapp.history
