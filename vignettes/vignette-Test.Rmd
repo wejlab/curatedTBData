@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALS
 ```
 
 ```{r install curatedTBData, eval = FALSE}
-devtools::install_github("xutao-wang/curatedTBData")
+devtools::install_github("compbiomed/curatedTBData")
 ```
 
 ```{r libraries, message=FALSE}
@@ -81,7 +81,7 @@ geo_RNA_seq <- DataSummary %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
   dplyr::select(.data$`GEO accession`)
 object_list_RNA_seq <- get_curatedTBData(
-                            geo_access = geo_RNA_seq$`GEO accession`)
+                             geo_access = geo_RNA_seq$`GEO accession`)
 ```
 
 ## Load a list of RNA-seq data
