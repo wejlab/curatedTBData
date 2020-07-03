@@ -209,7 +209,7 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
     }
   }
 
-  # Combine sample with common genes from selected objects.
+  # Combine sample with common genes from a list of objects.
   # Input data type should be data.frame
   dat_exprs_combine <- Reduce(
     function(x, y) merge(x, y, by = "id", all = FALSE),
@@ -242,7 +242,7 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
     if(is.null(annotationColName)){
       batch1 <- col_info$GSE
       combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                   mod=NULL,  par.prior = par.prior,
+                                   mod=NULL, par.prior = par.prior,
                                    prior.plots = prior.plots,
                                    mean.only = mean.only,
                                    ref.batch = ref.batch,
