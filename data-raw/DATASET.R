@@ -27,19 +27,6 @@ add_new_data <- function(edit_files){
 edit_files <- paste0(c("GSE62147_sobject","GSE25534_sobject","GSE41055_sobject"),".RDS")
 add_new_data(edit_files)
 
-## Test
-# tt <- lapply(edit_files, function(x) readRDS(paste0("~/Desktop/curatedTBData/data-raw/",x)))
-# tt_multi <- lapply(tt, function(x) Create_MultiAssay_object(x))
-
-#----------------------------------------------------
-# Add 4 data on Jan. 31st
-# add_files <- paste0(c("GSE101705_sobject","GSE112104_sobject",
-#                       "GSE107104_sobject","GSE89403_sobject"),".RDS")
-# add_new_data(add_files)
-## Test
-# tt <- lapply(add_files, function(x) readRDS(paste0("~/Desktop/curatedTBData/data-raw/",x)))
-# tt_multi <- lapply(tt, function(x) Create_MultiAssay_object(x))
-
 #----------------------------------------------------
 # Modify RNA-seq data on Feb. 22th
 add_new_data_mobject <- function(edit_files){
@@ -106,19 +93,15 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
-
-GSE94438_column_data <- GSE94438_column_data
-GSE94438_column_data$PatientID <- as.character(GSE94438_column_data$PatientID)
-GSE94438_column_data$Code <- as.character(GSE94438_column_data$Code)
-GSE94438_column_data$TimeFromExposure <- as.numeric(GSE94438_column_data$TimeFromExposure)
-GSE94438_column_data$TimeToTB_Month <- as.numeric(GSE94438_column_data$TimeToTB_Month)
-
-index <- which(GSE112104_column_data$Progression == "Positive")
-GSE112104_column_data$TBStatus[index] <- "PTB"
-
+load("~/Downloads/GSE79362_column_data.rda")
+GSE79362_column_data$Age <- as.numeric(as.character(GSE79362_column_data$Age))
+GSE79362_column_data$Gender <- ifelse(GSE79362_column_data$Gender=="female", "Female","Male")
+GSE79362_column_data$Ethnicity <- as.character(GSE79362_column_data$Ethnicity)
+GSE79362_column_data$Bin <- as.numeric(as.character(GSE79362_column_data$Bin))
+GSE79362_column_data$TST <- as.numeric(as.character(GSE79362_column_data$TST ))
 library(devtools)
-use_data(GSE94438_column_data,compress = "xz", overwrite = TRUE)
-saveRDS(GSE94438_column_data,"data-raw/GSE94438_column_data.RDS")
+use_data(GSE79362_column_data,compress = "xz", overwrite = TRUE)
+saveRDS(GSE79362_column_data,"~/Desktop/curatedTBData/data-raw/GSE79362_column_data.RDS")
 
 
 GSE79362_files <- list.files("data-raw",pattern = "GSE79362")
