@@ -17,7 +17,7 @@ devtools::install_github("compbiomed/curatedTBData")
 
 View summarized table for all the available data
 ``` r
-data("DataSummary",package="curatedTBData")
+data("DataSummary", package = "curatedTBData")
 ```
 
 Load specific datasets:
