@@ -68,7 +68,7 @@ objects_list <- get_curatedTBData(geo_access = "All")
 get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
 
 # Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE39939","GSE107993"), 
+get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
                   include.reprocess = TRUE)
 
 ```
