@@ -148,10 +148,9 @@ setMethod("subset_curatedTBData",
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected to merge.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
-#' @param annotationColName A character/ indicates feature of interest in the object's column data.
-#' This argument passes to `mod` parameter in \code{\link[sva]{ComBat}}. Default is NULL.
 #' @param batch.adjust A logical value indicating whether adjust for the batch effect.
 #' Default is TRUE.
+#' @param mod Additional argument passed to \code{\link[sva]{ComBat}}.
 #' @param prior.plots Additional argument passed to \code{\link[sva]{ComBat}}.
 #' @param mean.only Additional argument passed to \code{\link[sva]{ComBat}}.
 #' @param ref.batch Additional argument passed to \code{\link[sva]{ComBat}}.
@@ -168,12 +167,13 @@ setMethod("subset_curatedTBData",
 #'                                createExperimentName = "assay_MatchProbe"))
 #' sobject <- CombineObjects(object_match, list_name,
 #'                           experiment_name = "assay_MatchProbe",
-#'                           annotationColName = "TBStatus",
+#'                           mod = "TBStatus",
 #'                          batch.adjust = TRUE)
 #' @export
 CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
-                           annotationColName = NULL, list_name=NULL,
-                           batch.adjust = TRUE, par.prior = TRUE,
+                           list_name=NULL, batch.adjust = TRUE,
+                           mod = NULL,
+                           par.prior = TRUE,
                            prior.plots = FALSE,
                            mean.only = FALSE,
                            ref.batch = NULL,
@@ -209,7 +209,7 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
     }
   }
 
-  # Combine sample with common genes from selected objects.
+  # Combine sample with common genes from a list of objects.
   # Input data type should be data.frame
   dat_exprs_combine <- Reduce(
     function(x, y) merge(x, y, by = "id", all = FALSE),
@@ -230,7 +230,7 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
   })
 
   # Combine list into dataframe with unequal columns
-  col_info <- plyr::rbind.fill(lapply(col_data,function(x){as.data.frame(x)}))
+  col_info <- plyr::rbind.fill(lapply(col_data, function(x){ as.data.frame(x) }))
   row.names(col_info) <- Sample
 
   # Remove samples that does not exist in the count
@@ -239,25 +239,9 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
 
   if (batch.adjust){
     # Batch Correction
-    if(is.null(annotationColName)){
       batch1 <- col_info$GSE
-      combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                   mod=NULL,  par.prior = par.prior,
-                                   prior.plots = prior.plots,
-                                   mean.only = mean.only,
-                                   ref.batch = ref.batch,
-                                   BPPARAM = BPPARAM)
-      result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
-                                                           colData = col_info)
-      return(result)
-    }
-    else{
-      formula1 <- paste("~",paste(annotationColName,collapse = "+"))
-      mod1 <- stats::model.matrix(stats::as.formula(formula1),
-                                  data = data.frame(col_info))
-      batch1 <- col_info$GSE
-      combat_edata1 <- sva::ComBat(dat=as.matrix(dat_exprs_count), batch=batch1,
-                                   mod=mod1, par.prior = par.prior,
+      combat_edata1 <- sva::ComBat(dat = as.matrix(dat_exprs_count), batch = batch1,
+                                   mod = mod, par.prior = par.prior,
                                    prior.plots = prior.plots,
                                    mean.only = mean.only,
                                    ref.batch = ref.batch,
@@ -266,7 +250,6 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
                                                            colData = col_info)
       return(result)
 
-    }
   }
 
   else{

@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALS
 ```
 
 ```{r install curatedTBData, eval = FALSE}
-devtools::install_github("xutao-wang/curatedTBData")
+devtools::install_github("compbiomed/curatedTBData")
 ```
 
 ```{r libraries, message=FALSE}
@@ -68,7 +68,7 @@ objects_list <- get_curatedTBData(geo_access = "All")
 get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
 
 # Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE39939","GSE107993"), 
+get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
                   include.reprocess = TRUE)
 
 ```
@@ -81,7 +81,7 @@ geo_RNA_seq <- DataSummary %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
   dplyr::select(.data$`GEO accession`)
 object_list_RNA_seq <- get_curatedTBData(
-                            geo_access = geo_RNA_seq$`GEO accession`)
+                             geo_access = geo_RNA_seq$`GEO accession`)
 ```
 
 ## Load a list of RNA-seq data
@@ -400,3 +400,5 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
 ```{r session info}
 sessionInfo()
 ```
+
+
