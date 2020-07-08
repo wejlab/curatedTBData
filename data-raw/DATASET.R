@@ -93,15 +93,10 @@ library(devtools)
 use_data(DataSummary,compress = "xz", overwrite = TRUE)
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
-load("~/Downloads/GSE79362_column_data.rda")
-GSE79362_column_data$Age <- as.numeric(as.character(GSE79362_column_data$Age))
-GSE79362_column_data$Gender <- ifelse(GSE79362_column_data$Gender=="female", "Female","Male")
-GSE79362_column_data$Ethnicity <- as.character(GSE79362_column_data$Ethnicity)
-GSE79362_column_data$Bin <- as.numeric(as.character(GSE79362_column_data$Bin))
-GSE79362_column_data$TST <- as.numeric(as.character(GSE79362_column_data$TST ))
 library(devtools)
-use_data(GSE79362_column_data,compress = "xz", overwrite = TRUE)
-saveRDS(GSE79362_column_data,"~/Desktop/curatedTBData/data-raw/GSE79362_column_data.RDS")
+GSE79362_assay_reprocess <- GSE79362_raw_counts1
+use_data(GSE79362_assay_reprocess,compress = "xz", overwrite = TRUE)
+saveRDS(GSE79362_assay_reprocess,"/data-raw/GSE79362_assay_reprocess.RDS")
 
 
 GSE79362_files <- list.files("data-raw",pattern = "GSE79362")
@@ -114,3 +109,7 @@ purrr::walk2(GSE79362_list, names(GSE79362_list), function(obj, name) {
   assign(name, obj)
   do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
 })
+
+
+
+
