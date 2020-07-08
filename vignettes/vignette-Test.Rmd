@@ -76,7 +76,7 @@ get_curatedTBData(geo_access = c("GSE54992","GSE107993"),
 ## Load a list of RNA-seq data
 ```{r load a list of RNA-seq studies, results='hide'}
 # To get a summary table for all the studies:
-# data("DataSummary",package="curatedTBData")
+data("DataSummary",package="curatedTBData")
 geo_RNA_seq <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
   dplyr::select(.data$`GEO accession`)
