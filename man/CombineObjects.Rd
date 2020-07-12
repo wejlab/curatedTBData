@@ -3,20 +3,13 @@
 \name{CombineObjects}
 \alias{CombineObjects}
 \title{Combine samples with common genes from selected studies,
-usually run after \code{\link{MatchProbe}}}
+usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}}}
 \usage{
 CombineObjects(
   object_list,
   experiment_name = NULL,
   UseAssay = NULL,
-  list_name = NULL,
-  batch.adjust = TRUE,
-  mod = NULL,
-  par.prior = TRUE,
-  prior.plots = FALSE,
-  mean.only = FALSE,
-  ref.batch = NULL,
-  BPPARAM = bpparam("SerialParam")
+  list_name = NULL
 )
 }
 \arguments{
@@ -25,26 +18,13 @@ CombineObjects(
 \item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
 
 \item{list_name}{A character/vector contains object name to be selected to merge.}
-
-\item{batch.adjust}{A logical value indicating whether adjust for the batch effect.
-Default is TRUE.}
-
-\item{mod}{Additional argument passed to \code{\link[sva]{ComBat}}.}
-
-\item{prior.plots}{Additional argument passed to \code{\link[sva]{ComBat}}.}
-
-\item{mean.only}{Additional argument passed to \code{\link[sva]{ComBat}}.}
-
-\item{ref.batch}{Additional argument passed to \code{\link[sva]{ComBat}}.}
-
-\item{BPPARAM}{Additional argument passed to \code{\link[sva]{ComBat}}.}
 }
 \value{
 A SummarizedExperiment Object contains combined data from several studies.
 }
 \description{
 Combine samples with common genes from selected studies,
-usually run after \code{\link{MatchProbe}}
+usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}}
 }
 \examples{
 list_name <-  c("GSE101705","GSE54992","GSE19444")
@@ -56,7 +36,5 @@ object_match <- lapply(object_norm, function(x)
                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
                                createExperimentName = "assay_MatchProbe"))
 sobject <- CombineObjects(object_match, list_name,
-                          experiment_name = "assay_MatchProbe",
-                          mod = "TBStatus",
-                         batch.adjust = TRUE)
+                          experiment_name = "assay_MatchProbe")
 }
