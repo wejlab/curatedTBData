@@ -24,7 +24,6 @@ devtools::install_github("compbiomed/curatedTBData")
 library(BiocParallel)
 library(dplyr)
 library(edgeR)
-library(GEOquery)
 library(ggplot2)
 library(ggridges)
 library(gridExtra)
@@ -55,7 +54,7 @@ R_MAX_VSIZE=50Gb
 
 ## Load available SummarizedExperiment/MultiAssayExperiment Objects
 
-We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets. The pakcage function `get_curatedTBData` takes single or vector character string of GEO accession as input, and load the correpsonding curatedTBData in either the form of  `SummarizedExperiment` or `MultiAssayExperiment`. 
+We use `SummarizedExperiment` object to store information for microarray datasets, and use `MultiAssayExperiment` object to store information for RNA sequencing datasets. The pakcage function `get_curatedTBData` takes single or vector character string of GEO accession as input, and load the correpsonding curatedTBData in either the form of `SummarizedExperiment` or `MultiAssayExperiment`. 
 
 ```{r load a list of all datasets, results='hide'}
 # To get a summary table for all the studies:
@@ -212,7 +211,7 @@ object_match <- bplapply(object_match1, function(x)
 TBsignatures <- TBSignatureProfiler::TBsignatures
 ```
 
-```{r, results="hide",include=FALSE, eval=FALSE}
+```{r, results="hide",include=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
 
@@ -406,17 +405,169 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
 ```
 
 # Select Patients with HIV Positive
-```{r}
+```{r PTB vs. Latent in HIV positive, results='hide'}
 # Select objects with HIV information
-object_match_HIV <- lapply(object_match, function(x) subset_curatedTBData(x,))
-multi_set_PTB_Latent_HIV <- bplapply(object_match, function(x)
-  subset_curatedTBData(x, annotationColName = "HIVStatus", 
+object_match_HIV <- lapply(object_match, function(x)
+  check_annotation(x, annotationColName = "HIVStatus", 
+                   annotationCondition = "HIV positive")) %>% plyr::compact()
+
+multi_set_PTB_Latent_HIV <- bplapply(object_match_HIV, function(x)
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
                        annotationCondition = c("Latent","PTB"), 
                        experiment_name = "assay_MatchProbe"), 
                        BPPARAM = param) %>% plyr::compact()   
+
+ssgsea_PTB_Latent_HIV <- lapply(multi_set_PTB_Latent_HIV,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+
+# Obtain p.value, AUC
+ssgsea_PTB_Latent_combine_HIV <- combine_auc(ssgsea_PTB_Latent_HIV, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = 60, percent = 0.95)
+
 ```
 
-# Select Patients with Diabetets Positive
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. Latent in HIV positive, cache=TRUE, fig.wide = 5, fig.height = 8, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(ssgsea_PTB_Latent_HIV, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. Latent in HIV positive, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(ssgsea_PTB_Latent_combine_HIV %>% 
+                                           dplyr::filter(Signature == i) %>%
+                                           dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Summary Table for the performance of each signature
+
+Compute mean AUC and bootstrapped 95% CI
+
+```{r summary table PTB vs. Latent in HIV positive}
+# Seletct signatures and associated AUC
+PTB_Latent_auc_summary_ssgsea_HIV <- ssgsea_PTB_Latent_combine_HIV %>% 
+  dplyr::select(Signature, AUC) %>% dplyr::group_split(Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval
+ssgsea_PTB_Latent_auc_CI_HIV <- cbind(
+  Signature=sapply(PTB_Latent_auc_summary_ssgsea_HIV, function(x) 
+  x$Signature[1]), 
+  do.call(rbind,lapply(PTB_Latent_auc_summary_ssgsea_HIV, function(x){
+  bootstrap_mean_CI(x, colName="AUC", percent=0.95, num.boot=100)
+}
+)) 
+)
+ssgsea_PTB_Latent_auc_CI_HIV %>% DT::datatable()
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Heatmap
+```{r PTB vs. Latent heatmap in HIV positive, fig.width=6, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_Latent_combine_HIV, SignatureInfo, 
+            names(TBsignatures), facet = TRUE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
+
+# Select Patients with Diabetes Positive
+```{r PTB vs. Latent in Sarcoidosis positive, results='hide'}
+# Select objects with Diabetes Positive
+object_match_DA <- lapply(object_match, function(x)
+  check_annotation(x, annotationColName = "DiabetesStatus", 
+                   annotationCondition = "Positive")) %>% plyr::compact()
+
+multi_set_PTB_Latent_DA <- bplapply(object_match_DA, function(x)
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("Latent","PTB"), 
+                       experiment_name = "assay_MatchProbe"), 
+                       BPPARAM = param) %>% plyr::compact()   
+
+ssgsea_PTB_Latent_DA <- lapply(multi_set_PTB_Latent_DA,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+
+
+# Obtain p.value, AUC
+ssgsea_PTB_Latent_combine_DA <- combine_auc(ssgsea_PTB_Latent_DA, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = 60, percent = 0.95)
+```
+
+### Boxplot of all scores signatures{.tabset}
+
+```{r Boxplot for each signature PTB vs. Latent in Diabetes positive, cache=TRUE, fig.wide = 5, fig.height = 8, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  BoxplotTBSig(ssgsea_PTB_Latent_DA, gset = i, annotationColName = "TBStatus")
+  
+  cat("\n\n")
+}
+```
+
+```{r include = FALSE}
+# Need this chunk to ensure the inclusion/embedding of DT required javascript to work 
+DT::datatable(NULL)
+```
+
+### Table with T-tests & AUC{.tabset}
+
+```{r Table for each signature PTB vs. Latent in Diabetes positive, cache=TRUE, results = "asis"}
+for (i in names(TBsignatures)){
+
+  cat("####", i, "\n")
+  
+  print(htmltools::tagList(DT::datatable(ssgsea_PTB_Latent_combine_DA %>% 
+                                           dplyr::filter(Signature == i) %>%
+                                           dplyr::select(-Signature))))
+  
+  cat("\n\n")
+}
+```
+
+### Comparison of Signature Performance using AUCs{.tabset}
+
+#### Heatmap
+```{r PTB vs. Latent heatmap in Diabetes positive, fig.width=4, fig.height = 15, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_Latent_combine_DA, SignatureInfo, 
+            names(TBsignatures), facet = TRUE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Latent")
+```
 
 # Session Information
 ```{r session info}
