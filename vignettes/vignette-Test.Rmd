@@ -74,7 +74,7 @@ get_curatedTBData(geo_access = c("GSE54992","GSE107993"),
 ```
 
 ## Load a list of RNA-seq data
-```{r load a list of RNA-seq studies, results='hide'}
+```{r load a list of RNA-seq studies, results='hide', eval=FALSE}
 # To get a summary table for all the studies:
 data("DataSummary",package="curatedTBData")
 geo_RNA_seq <- DataSummary %>% 
@@ -85,7 +85,7 @@ object_list_RNA_seq <- get_curatedTBData(
 ```
 
 ## Load a list of RNA-seq data
-```{r load a list of microarray studies, results='hide'}
+```{r load a list of microarray studies, results='hide', eval=FALSE}
 geo_microarray <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
   dplyr::select(.data$`GEO accession`)
@@ -198,6 +198,7 @@ object_norm <- bplapply(objects_list, function(x)
 # Match Probe to gene symbols
 
 # Use the normalized data from assay_raw by specifying the experiment_name=assay_raw_norm
+# Take long time... Consider to reduce the runnning time
 object_match1 <- bplapply(object_norm, function(x) 
   MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
@@ -211,7 +212,7 @@ object_match <- bplapply(object_match1, function(x)
 TBsignatures <- TBSignatureProfiler::TBsignatures
 ```
 
-```{r, results="hide",include=FALSE}
+```{r, results="hide",include=FALSE, eval=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
 
@@ -227,6 +228,7 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 
 # Datasets Integration
 
+## Merge Studies with common gene symbols
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object. GSE74092 is usually removed from merging, because this used quantitative PCR so they did not have enough coverage to capture all genes.
 
 ```{r merge datasets, results="hide"}
@@ -237,11 +239,18 @@ geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
 
 sobject <- CombineObjects(object_match1, 
                           list_name = geo_microarray$`GEO accession`, 
-                          experiment_name = "assay_MatchProbe", 
-                          annotationColName = "TBStatus",
-                          batch.adjust = TRUE)
+                          experiment_name = "assay_MatchProbe")
 
+```
+
+## Batch Correction
+```{r batch correction, results='hide'}
 # The samples that correspond to their datasets can be found at: colData(sobject)[,"GSE"]
+# Batch correction
+batch1 <- colData(sobject)$GSE
+
+combat_edata1 <- sva::ComBat(dat = as.matrix(assay(sobject)), batch = batch1)
+assays(sobject)[["Batch_corrected_counts"]] <- combat_edata1
 
 # To separate batch-corrected object into separate SummarizedExperiment object list:
 batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), 
@@ -261,8 +270,8 @@ sample_data_info <- data.frame(Sample = row.names(colData(sobject)),
 # Create a table for sample and TB status information with:
 sample_outcome_info <- data.frame(Sample = row.names(colData(sobject)), 
                                   Data = colData(sobject)[,"TBStatus"])
-
 ```
+
 
 # Active TB (PTB) vs. Latent TB (Latent) using `TBSignatureprofiler`
 
@@ -395,6 +404,19 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
             names(TBsignatures), facet = TRUE) + 
   ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
+
+# Select Patients with HIV Positive
+```{r}
+# Select objects with HIV information
+object_match_HIV <- lapply(object_match, function(x) subset_curatedTBData(x,))
+multi_set_PTB_Latent_HIV <- bplapply(object_match, function(x)
+  subset_curatedTBData(x, annotationColName = "HIVStatus", 
+                       annotationCondition = c("Latent","PTB"), 
+                       experiment_name = "assay_MatchProbe"), 
+                       BPPARAM = param) %>% plyr::compact()   
+```
+
+# Select Patients with Diabetets Positive
 
 # Session Information
 ```{r session info}
