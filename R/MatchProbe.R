@@ -80,10 +80,12 @@ setMethod("MatchProbe",
 
             sobject_exprs_new <- sobject_exprs %>% dplyr::as_tibble() %>%
               dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>%
-              dplyr::filter(.data$SYMBOL != 'NA')
+              dplyr::filter(.data$SYMBOL != "NA")
 
             # Expand probe sets for non-specific probes if apllicable
             if(length(grep("///",sobject_exprs_new$SYMBOL)) != 0){
+              sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
+            } else if(length(grep(";",sobject_exprs_new$SYMBOL)) != 0){
               sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
             }
 

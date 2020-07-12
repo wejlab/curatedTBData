@@ -69,8 +69,8 @@ setMethod("subset_curatedTBData",
               n <- length(annotationCondition)
               theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)
                                             [,annotationColName] %in% annotationCondition]
-              TB_status <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
-              if(length(unique(TB_status)) == n){
+              result <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
+              if(length(unique(result)) == n){
                 return(theObject_filter)
 
               }
@@ -94,9 +94,9 @@ setMethod("subset_curatedTBData",
                 # subsetting annotationCondition
                 sobject_TBSig_filter <- theObject_sub[,SummarizedExperiment::colData(theObject_sub)
                                                       [,annotationColName] %in% annotationCondition]
-                TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
+                result <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
                 # check if both status are in the column data
-                if(length(unique(TB_status)) == n){
+                if(length(unique(result)) == n){
                   return(sobject_TBSig_filter)
                 }
 
@@ -131,9 +131,9 @@ setMethod("subset_curatedTBData",
               # subsetting annotationCondition
               sobject_TBSig_filter <- sobject_TBSig[,SummarizedExperiment::colData(sobject_TBSig)
                                                     [,annotationColName] %in% annotationCondition]
-              TB_status <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
+              result <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
               # check if both conditions are in the column data
-              if(length(unique(TB_status)) == n){
+              if(length(unique(result)) == n){
                 return(sobject_TBSig_filter)
               }
 
@@ -142,19 +142,26 @@ setMethod("subset_curatedTBData",
         }
 )
 
+
+#' Check the annotation column name in the colData function
+#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
+#' @param annotationColName A character indicates feature of interest in the object's column data.
+#'
+#'
+#' @export
+check_annotation <- function(theObject, annotationColName){
+
+  col_names <- colnames(SummarizedExperiment::colData(theObject))
+
+}
+
+
 #' Combine samples with common genes from selected studies,
-#' usually run after \code{\link{MatchProbe}}
+#' usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}}
 #' @name CombineObjects
 #' @param object_list A list contains expression data with probes mapped to gene symbol.
 #' @param list_name A character/vector contains object name to be selected to merge.
 #' @param experiment_name A character/vector to choose the name of the experiment from MultiAssayExperiment Object.
-#' @param batch.adjust A logical value indicating whether adjust for the batch effect.
-#' Default is TRUE.
-#' @param mod Additional argument passed to \code{\link[sva]{ComBat}}.
-#' @param prior.plots Additional argument passed to \code{\link[sva]{ComBat}}.
-#' @param mean.only Additional argument passed to \code{\link[sva]{ComBat}}.
-#' @param ref.batch Additional argument passed to \code{\link[sva]{ComBat}}.
-#' @param BPPARAM Additional argument passed to \code{\link[sva]{ComBat}}.
 #' @return A SummarizedExperiment Object contains combined data from several studies.
 #' @examples
 #' list_name <-  c("GSE101705","GSE54992","GSE19444")
@@ -166,18 +173,10 @@ setMethod("subset_curatedTBData",
 #'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
 #'                                createExperimentName = "assay_MatchProbe"))
 #' sobject <- CombineObjects(object_match, list_name,
-#'                           experiment_name = "assay_MatchProbe",
-#'                           mod = "TBStatus",
-#'                          batch.adjust = TRUE)
+#'                           experiment_name = "assay_MatchProbe")
 #' @export
 CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
-                           list_name=NULL, batch.adjust = TRUE,
-                           mod = NULL,
-                           par.prior = TRUE,
-                           prior.plots = FALSE,
-                           mean.only = FALSE,
-                           ref.batch = NULL,
-                           BPPARAM = bpparam("SerialParam")){
+                           list_name=NULL){
   # Check the element witin list
   if(is.null(experiment_name) && is.null(UseAssay)){
     stop(paste("Please specify experiment name of the MultiAssayExperiment Object or
@@ -237,26 +236,8 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
   index <- stats::na.omit(match(colnames(dat_exprs_count), Sample))
   col_info <- col_info[index,]
 
-  if (batch.adjust){
-    # Batch Correction
-      batch1 <- col_info$GSE
-      combat_edata1 <- sva::ComBat(dat = as.matrix(dat_exprs_count), batch = batch1,
-                                   mod = mod, par.prior = par.prior,
-                                   prior.plots = prior.plots,
-                                   mean.only = mean.only,
-                                   ref.batch = ref.batch,
-                                   BPPARAM = BPPARAM)
-      result <- SummarizedExperiment::SummarizedExperiment(assays = list(Batch_counts = as.matrix(combat_edata1)),
-                                                           colData = col_info)
-      return(result)
-
-  }
-
-  else{
   # Create output in the format of SummarizedExperiment
   result <- SummarizedExperiment::SummarizedExperiment(assays = list(counts = as.matrix(dat_exprs_count)),
                                                        colData = col_info)
   return(result)
-  }
-
 }
