@@ -101,7 +101,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% dplyr::filter(.data$GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
-                                                          levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+                                   levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
 
@@ -117,7 +117,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
                                                             annotationColName = "annotationNameLevels",
                                                             rotateLabels = FALSE,
                                                             fill_colors = myColors)
-                                                            # c("#999999", "#E69F00", "#56B4E9", "#FC4E07"))
+
               p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size=26, face="bold"),
                               legend.title = ggplot2::element_blank(),
                               legend.position = "none",
@@ -465,10 +465,14 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
   dat_input <- as.matrix(data_wide[,-1])
   dat_input[is.na(dat_input)] <- NA
 
-  # Clustering AUC values
-  dd <- stats::dist(dat_input)
-  hc <- stats::hclust(dd)
-  dat_input1 <- dat_input[hc$order,]
+  if(unique(length(data_wide$GSE)) > 1){
+    # Clustering AUC values if unique(GSE)>1
+    dd <- stats::dist(dat_input)
+    hc <- stats::hclust(dd)
+    dat_input1 <- dat_input[hc$order,]
+  } else {
+    dat_input1 <- dat_input
+  }
 
   # Get mean AUC for each dataset
   dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1, na.rm = TRUE))
