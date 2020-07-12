@@ -86,7 +86,7 @@ setMethod("MatchProbe",
             if(length(grep("///",sobject_exprs_new$SYMBOL)) != 0){
               sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
             } else if(length(grep(";",sobject_exprs_new$SYMBOL)) != 0){
-              sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
+              sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = ";")
             }
 
             # Create expression matrix with gene symbol, take mean values for same genes

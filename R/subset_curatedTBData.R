@@ -146,12 +146,23 @@ setMethod("subset_curatedTBData",
 #' Check the annotation column name in the colData function
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
-#'
+#' @param annotationCondition A vector indicates conditions want to be subsetted.
 #'
 #' @export
-check_annotation <- function(theObject, annotationColName){
+check_annotation <- function(theObject, annotationColName, annotationCondition){
 
   col_names <- colnames(SummarizedExperiment::colData(theObject))
+  n <- length(annotationCondition)
+  if(!is.na(match(annotationColName, col_names))){
+
+    theObject_sub <- theObject[, SummarizedExperiment::colData(theObject)
+                               [,annotationColName] %in% annotationCondition]
+    result <- SummarizedExperiment::colData(theObject_sub)[,annotationColName]
+    if(length(unique(result)) == n){
+      return(theObject_sub)
+    }
+
+  }
 
 }
 
