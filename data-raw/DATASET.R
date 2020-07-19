@@ -100,6 +100,17 @@ saveRDS(GSE79362_assay_reprocess,"/data-raw/GSE79362_assay_reprocess.RDS")
 
 
 # Example to save a list of files from the same GEO
+GSE22098_files <- list.files("data-raw",pattern = "GSE22098")
+GSE22098_list <- lapply(GSE22098_files, function(x)
+  readRDS(paste0("data-raw/",x)))
+
+names(GSE22098_list) <- gsub("\\..*","",GSE22098_files)
+library(devtools)
+purrr::walk2(GSE22098_list, names(GSE22098_list), function(obj, name) {
+  assign(name, obj)
+  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
+})
+
 save_files_list <- function(geo_access){
   GSE_files <- list.files("data-raw",pattern = geo_access)
   GSE_list <- lapply(GSE_files, function(x)
@@ -112,17 +123,9 @@ save_files_list <- function(geo_access){
     do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
   })
 }
-save_files_list("GSE19435")
 
-GSE22098_files <- list.files("data-raw",pattern = "GSE22098")
-GSE22098_list <- lapply(GSE22098_files, function(x)
-  readRDS(paste0("data-raw/",x)))
+save_files_list("GSEIndia")
 
-names(GSE22098_list) <- gsub("\\..*","",GSE22098_files)
-library(devtools)
-purrr::walk2(GSE22098_list, names(GSE22098_list), function(obj, name) {
-  assign(name, obj)
-  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
-})
+
 
 
