@@ -64,11 +64,11 @@ data("DataSummary",package="curatedTBData")
 objects_list <- get_curatedTBData(geo_access = "All")
 
 # Load single data
-get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
+# get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
 
 # Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
-                  include.reprocess = TRUE)
+# get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
+#                  include.reprocess = TRUE)
 
 ```
 
@@ -195,10 +195,11 @@ object_norm <- bplapply(objects_list, function(x)
 
 # Match Probe to gene symbols
 
-# Use the normalized data from assay_raw by specifying the experiment_name=assay_raw_norm
-# Take long time... Consider to reduce the runnning time
+# Use Assay specifying which assay to use, 
+# No argument for experiemnt_name in MatchProbe, because assay_reprocess has mapped to gene symbol
+# Reduce the runnning time using aggregate instead of dplyr
 object_match1 <- bplapply(object_norm, function(x) 
-  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 
