@@ -64,11 +64,11 @@ data("DataSummary",package="curatedTBData")
 objects_list <- get_curatedTBData(geo_access = "All")
 
 # Load single data
-get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
+# get_curatedTBData(geo_access = "GSE39939", include.SCAN = FALSE)
 
 # Load Multiple Studies
-get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
-                  include.reprocess = TRUE)
+# get_curatedTBData(geo_access = c("GSE54992","GSE107993"), 
+#                  include.reprocess = TRUE)
 
 ```
 
@@ -193,13 +193,13 @@ object_norm <- bplapply(objects_list, function(x)
   Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
                 experiment_name = "assay_raw"), BPPARAM = param) 
 
-
 # Match Probe to gene symbols
 
-# Use the normalized data from assay_raw by specifying the experiment_name=assay_raw_norm
-# Take long time... Consider to reduce the runnning time
+# Use Assay specifying which assay to use, 
+# No argument for experiemnt_name in MatchProbe, because assay_reprocess has mapped to gene symbol
+# Reduce the runnning time using aggregate instead of dplyr
 object_match1 <- bplapply(object_norm, function(x) 
-  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"), 
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 
@@ -230,7 +230,7 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 ## Merge Studies with common gene symbols
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the ComBat method, implemented for example in the SVA Bioconductor package. Start using `CombineObjects` to intersect objects with common gene symbol. This function produces a SummarizedExperiment object. GSE74092 is usually removed from merging, because this used quantitative PCR so they did not have enough coverage to capture all genes.
 
-```{r merge datasets, results="hide"}
+```{r merge datasets, results="hide", eval=FALSE}
 # Merge all  microarray studies
 geo_microarray <- DataSummary %>% dplyr::as_tibble() %>%
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
@@ -243,7 +243,7 @@ sobject <- CombineObjects(object_match1,
 ```
 
 ## Batch Correction
-```{r batch correction, results='hide'}
+```{r batch correction, eval=FALSE, results='hide'}
 # The samples that correspond to their datasets can be found at: colData(sobject)[,"GSE"]
 # Batch correction
 batch1 <- colData(sobject)$GSE
@@ -404,7 +404,9 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
   ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
-# Select Patients with HIV Positive
+## Select Patients with HIV Positive{.tabset}
+
+## Subset and calculate ssGSEA
 ```{r PTB vs. Latent in HIV positive, results='hide'}
 # Select objects with HIV information
 object_match_HIV <- lapply(object_match, function(x)
@@ -497,8 +499,8 @@ heatmap_auc(ssgsea_PTB_Latent_combine_HIV, SignatureInfo,
   ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
-# Select Patients with Diabetes Positive
-```{r PTB vs. Latent in Sarcoidosis positive, results='hide'}
+# Select Patients with Diabetes Positive{.tabset}
+```{r PTB vs. Latent in Diabetes positive, results='hide'}
 # Select objects with Diabetes Positive
 object_match_DA <- lapply(object_match, function(x)
   check_annotation(x, annotationColName = "DiabetesStatus", 

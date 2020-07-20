@@ -166,7 +166,6 @@ check_annotation <- function(theObject, annotationColName, annotationCondition){
 
 }
 
-
 #' Combine samples with common genes from selected studies,
 #' usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}}
 #' @name CombineObjects

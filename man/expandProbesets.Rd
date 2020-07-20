@@ -4,7 +4,7 @@
 \alias{expandProbesets}
 \title{Expand probe set for non-specific probes.}
 \usage{
-expandProbesets(dat, sep = "///")
+expandProbesets(dat, sep)
 }
 \arguments{
 \item{dat}{A matrix with one column represents gene symbol with

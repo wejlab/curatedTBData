@@ -96,9 +96,13 @@ setMethod("MatchProbe",
             sobject_exprs_new1 <- sobject_exprs_new
 
             ##### Think how to reduce processing time for the following code??
-            sobject_exprs_symbol <- sobject_exprs_new1 %>%
-              dplyr::group_by(.data$SYMBOL) %>%
-              dplyr::summarise_all(mean) %>% as.data.frame()
+            #sobject_exprs_symbol <- sobject_exprs_new1 %>%
+            #  dplyr::group_by(.data$SYMBOL) %>%
+            #  dplyr::summarise_all(mean) %>% as.data.frame()
+
+            # Try aggregate from stats package. Avoid using sobject_exprs_new1$SYMBOL, slow down the process
+            sobject_exprs_symbol <- stats::aggregate(. ~ SYMBOL, data = sobject_exprs_new1,
+                                                    FUN = mean)
 
             row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
@@ -177,13 +181,20 @@ setMethod("MatchProbe",
               ## Expand probe sets for non-specific probes if apllicable
               if(length(grep("///",sobject_exprs_new$SYMBOL)) != 0){
                 sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
+              }else if(length(grep(";",sobject_exprs_new$SYMBOL)) != 0){
+                sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = ";")
               }
 
               # Create expression matrix with gene symbol, take mean values for same genes
               # sobject_exprs_new1 <- dtplyr::lazy_dt(sobject_exprs_new)
               sobject_exprs_new1 <- sobject_exprs_new
-              sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(.data$SYMBOL) %>%
-                dplyr::summarise_all(mean) %>% as.data.frame()
+
+              #sobject_exprs_symbol <- sobject_exprs_new1 %>% dplyr::group_by(.data$SYMBOL) %>%
+              #  dplyr::summarise_all(mean) %>% as.data.frame()
+              # %>% increases time, try aggregate from stats package
+              sobject_exprs_symbol <- stats::aggregate(. ~ SYMBOL, data = sobject_exprs_new1,
+                                                      FUN = mean)
+
               row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
@@ -210,11 +221,11 @@ setMethod("MatchProbe",
 #' "SNAR-A1///SNAR-A2///SNAR-A12","ALG6"),sample1=rnorm(4),sample2=rnorm(4))
 #' expandProbesets(dat_example, sep="///")
 #' @export
-expandProbesets <- function(dat, sep="///"){
+expandProbesets <- function(dat, sep){
 
   times <- NULL
   # Get index with duplicated symbol
-  index <- grep("///",dat$SYMBOL)
+  index <- grep(sep,dat$SYMBOL)
   sobject_exprs_dup <- dat[index,]
 
   x_list <- strsplit(as.character(sobject_exprs_dup$SYMBOL), sep)
