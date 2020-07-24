@@ -184,7 +184,7 @@ MatchProbe(GSE107991_mobject, UseAssay = "GSE107991_raw",
 To start with, we create reate a list of object with normalized reads and probesets mapped to symbols. Matching probe sets to gene symbol using either raw data or normalized data (if applicable) .
 Matching probes to symbol using raw data is straight-forward, we use the normalized data in the following.
 
-```{r normalized/matched sample, cache=TRUE, results="hide", eval=FALSE}
+```{r normalized/matched sample, cache=TRUE, results="hide"}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
 # Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed dat) by specifying the experiment_name=assay_raw
@@ -211,7 +211,7 @@ object_match <- bplapply(object_match1, function(x)
 TBsignatures <- TBSignatureProfiler::TBsignatures
 ```
 
-```{r, results="hide",include=FALSE}
+```{r, results="hide",include=FALSE, eval=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
 
@@ -406,7 +406,7 @@ heatmap_auc(ssgsea_PTB_Latent_combine, SignatureInfo,
 
 ## Select Patients with HIV Positive{.tabset}
 
-## Subset and calculate ssGSEA
+### Subset and calculate ssGSEA
 ```{r PTB vs. Latent in HIV positive, results='hide'}
 # Select objects with HIV information
 object_match_HIV <- lapply(object_match, function(x)
@@ -499,7 +499,10 @@ heatmap_auc(ssgsea_PTB_Latent_combine_HIV, SignatureInfo,
   ggtitle("Heatmap of AUC for PTB vs. Latent")
 ```
 
-# Select Patients with Diabetes Positive{.tabset}
+## Select Patients with Diabetes Positive{.tabset}
+
+### Subset and calculate ssGSEA
+
 ```{r PTB vs. Latent in Diabetes positive, results='hide'}
 # Select objects with Diabetes Positive
 object_match_DA <- lapply(object_match, function(x)
