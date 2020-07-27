@@ -538,27 +538,46 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
     }
 
     frame_facet <- data.frame(facet_rect_position(datta,frames))
+    if (nrow(frame_facet) == 0){
 
-    p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
-                                                    fill = .data$value)) +
-      ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
-                                                           trans = "reverse") +
-      ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
-      ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
-      ggplot2::theme(axis.title.x = ggplot2::element_blank(),
-                     axis.title.y = ggplot2::element_blank(),
-                     axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
-                                                size = 12, hjust = 1),
-                     axis.text.y = ggplot2::element_text(size = 12)) +
-      ggplot2::geom_rect(data = frame_facet,
-                         ggplot2::aes(xmin = .data$Var1-0.5, xmax = .data$Var1+0.5,
-                                      ymin = .data$Var2-0.5, ymax = .data$Var2+0.5),
-                         size=1, fill=NA, colour="black", inherit.aes = FALSE)
+      p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
+                                                      fill = .data$value)) +
+        ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
+                                                             trans = "reverse") +
+        ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
+        ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
+        ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+                       axis.title.y = ggplot2::element_blank(),
+                       axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
+                                                           size = 12, hjust = 1),
+                       axis.text.y = ggplot2::element_text(size = 12))
+      return(p)
+    }
 
-    return(p)
+    else{
+      p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
+                                                      fill = .data$value)) +
+        ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
+                                                             trans = "reverse") +
+        ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
+        ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
+        ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+                       axis.title.y = ggplot2::element_blank(),
+                       axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
+                                                           size = 12, hjust = 1),
+                       axis.text.y = ggplot2::element_text(size = 12)) +
+        ggplot2::geom_rect(data = frame_facet,
+                           ggplot2::aes(xmin = .data$Var1-0.5, xmax = .data$Var1+0.5,
+                                        ymin = .data$Var2-0.5, ymax = .data$Var2+0.5),
+                           size=1, fill=NA, colour="black", inherit.aes = FALSE)
+
+      return(p)
+    }
+
   }
 
   if (facet==FALSE){
+
     p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
                                                     fill = .data$value)) +
       ggplot2::geom_tile() +
