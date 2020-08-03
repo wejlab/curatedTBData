@@ -303,10 +303,14 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @param percent A number indicates the percentage of confidence interval.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
-combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
+combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                         num.boot=NULL, percent=0.95){
-
   param <- BiocParallel::SerialParam(progressbar=TRUE)
+
+  SE_scored_list_class <- class(SE_scored_list[[1]])
+  if(SE_scored_list_class != "SummarizedExperiment"){
+    stop(paste("combine_auc only supports SummarizedExperiment. Your class:",SE_scored_list_class))
+  }
 
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
     get_auc_stats(x,annotationColName,
