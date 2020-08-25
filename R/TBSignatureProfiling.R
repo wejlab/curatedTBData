@@ -191,7 +191,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
 #' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.
 #' @name get_auc_stats
-#' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
+#' @param SE_scored A \code{SummarizedExperiment} Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
@@ -216,7 +216,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
   if (is.null(num.boot)){
 
     sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
-      score <- SummarizedExperiment::colData(SE_scored)[i][,1]
+      score <- SummarizedExperiment::colData(SE_scored)[i][,1] %>% as.vector()
 
       # Deal with scores that have constant value (mostly from Sloot_HIV_2)
       if (length(unique(score))==1){

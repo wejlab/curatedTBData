@@ -58,7 +58,7 @@ We use `SummarizedExperiment` object to store information for microarray dataset
 
 ```{r load a list of all datasets, results='hide'}
 # To get a summary table for all the studies:
-data("DataSummary",package="curatedTBData")
+data("DataSummary",package = "curatedTBData")
 
 # Get a list of all data
 objects_list <- get_curatedTBData(geo_access = "All")
@@ -312,7 +312,7 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   combineSigAndAlgorithm = TRUE))
 
 
-# Obtain p.value, AUC
+# Obtain p.value, AUC, and Bootstrapped Confidence Interval
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
                                 annotationColName = "TBStatus", 
                                 signatureColNames = names(TBsignatures), 

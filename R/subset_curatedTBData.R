@@ -22,7 +22,8 @@ setGeneric(name="subset_curatedTBData", function(theObject,...){
 #' @rdname subset_curatedTBData-methods
 setMethod("subset_curatedTBData",
           signature="SummarizedExperiment",
-          function(theObject, annotationColName, annotationCondition, UseAssay,...){
+          function(theObject, annotationColName, annotationCondition,
+                   UseAssay="counts",...){
 
             # Check whether assay exists in the object
             assay_names <- SummarizedExperiment::assayNames(theObject)
