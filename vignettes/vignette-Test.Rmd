@@ -292,7 +292,7 @@ $$ES_{jk}=\frac{ES_{jk}}{\max\{ES_{1k},\dots,ES_{nk}\}-\min\{ES_{1k},\dots,ES_{n
 
 ### Calculate ssGSEA
 
-```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide"}
+```{r calculate ssgsea for PTB vs Latent, cache=TRUE, results = "hide", message=FALSE, warning=FALSE}
 # Select sample contain information about PTB and Latent
 # Modify the list to make it compatible with TBSignatureProfiler
 

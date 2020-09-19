@@ -125,7 +125,9 @@ save_files_list <- function(geo_access){
 }
 
 save_files_list("GSEIndia")
-
-
+save_files_list("GSE83456")
+save_files_list("GSE81746")
+save_files_list("GSE107731")
+get_curatedTBData("GSE107731")
 
 
