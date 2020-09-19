@@ -12,7 +12,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  UseAssay,
+  UseAssay = "counts",
   ...
 )
 
