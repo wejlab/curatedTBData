@@ -128,6 +128,15 @@ save_files_list("GSEIndia")
 save_files_list("GSE83456")
 save_files_list("GSE81746")
 save_files_list("GSE107731")
-get_curatedTBData("GSE107731")
+save_files_list("GSE84076")
+get_curatedTBData("GSE84076")
+new_study <- c("GSE83456","GSE81746","GSE107731","GSE84076","GSE19491")
+object_sub <- get_curatedTBData(geo_access = c("GSE81746","GSE107731","GSE84076"))
+object_norm <- bplapply(object_sub, function(x)
+  Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
+                experiment_name = "assay_raw"), BPPARAM = param)
+object_match1 <- bplapply(object_norm, function(x)
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+             createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 

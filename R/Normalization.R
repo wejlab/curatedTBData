@@ -87,7 +87,7 @@ setMethod("Normalization",
               # Check whether the object is derived from Affymetrix or GSEXXXXX.
 
               norm_GSE <- paste(c("GSE31348", "GSE36238", "GSE41055", "GSE54992",
-                                  "GSE73408"), collapse="|")
+                                  "GSE73408", "GSE107731"), collapse="|")
               if (length(grep(norm_GSE,
                               SummarizedExperiment::assayNames(theObject))) != 0){
 
