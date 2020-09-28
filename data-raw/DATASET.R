@@ -93,6 +93,10 @@ SignatureInfo <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
                                   sheet = "SignatureInfo")
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
+SignatureInfoTraining <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
+                                    sheet = "SignatureInfoTraining")
+use_data(SignatureInfoTraining,compress = "xz", overwrite = TRUE)
+
 library(devtools)
 GSE79362_assay_reprocess <- GSE79362_raw_counts1
 use_data(GSE79362_assay_reprocess,compress = "xz", overwrite = TRUE)

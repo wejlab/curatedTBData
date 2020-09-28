@@ -118,7 +118,7 @@ setMethod("subset_curatedTBData",
                 col_data <- col_data[index,]
               }
 
-              # Set atrribute to be NULL, ensure that row/column names have NULL attribute
+              # Set atrribute to be NULL, ensure that row/column names have NULL attributes
               colnames(theObject[[experiment_name]]) <- as.character(
                                          colnames(theObject[[experiment_name]]))
 
@@ -193,30 +193,25 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
     stop(paste("Please specify experiment name of the MultiAssayExperiment Object or
                assay name of the SummarizedExperiment Object."))
   }
-
+  if(is.null(list_name)){
+    list_name <- names(objects_list)
+    object_list <- object_list[list_name]
+  }
+  else{
+    object_list <- object_list[list_name]
+  }
   if(class(object_list[[1]]) == "MultiAssayExperiment"){
-    if(is.null(list_name)){
-      list_name <-  names(object_list)
-      dat_exprs_match <- lapply(object_list, function(x)
-        MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
-    }
-    else {
-      dat_exprs_match <- lapply(object_list[list_name], function(x)
-        MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
-    }
+
+    dat_exprs_match <- lapply(object_list, function(x)
+      MultiAssayExperiment::experiments(x)[[experiment_name]] %>% data.frame)
 
   }
 
   if(class(object_list[[1]]) == "SummarizedExperiment"){
-    if(is.null(list_name)){
-      list_name <-  names(object_list)
-      dat_exprs_match <- lapply(object_list, function(x)
-        SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
-    }
-    else {
-      dat_exprs_match <- lapply(object_list[list_name], function(x)
-        SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
-    }
+
+    dat_exprs_match <- lapply(object_list, function(x)
+      SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
+
   }
 
   # Combine sample with common genes from a list of objects.
