@@ -16,7 +16,7 @@ setGeneric(name="MatchProbe", function(theObject,...){
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MatchProbe",
           signature="SummarizedExperiment",
-          function(theObject, UseAssay, createExperimentName = "assay_MatchProbe",
+          function(theObject, UseAssay, FUN = mean, createExperimentName = "assay_MatchProbe",
                    only.matrix=FALSE){
 
             UseAssay <- paste(UseAssay,collapse = "|")
@@ -102,7 +102,7 @@ setMethod("MatchProbe",
 
             # Try aggregate from stats package. Avoid using sobject_exprs_new1$SYMBOL, slow down the process
             sobject_exprs_symbol <- stats::aggregate(. ~ SYMBOL, data = sobject_exprs_new1,
-                                                    FUN = mean)
+                                                    FUN = FUN)
 
             row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
@@ -134,7 +134,7 @@ setMethod("MatchProbe",
 #' @importClassesFrom MultiAssayExperiment MultiAssayExperiment
 setMethod("MatchProbe",
           signature="MultiAssayExperiment",
-          function(theObject, UseAssay, createExperimentName = "assay_MatchProbe",
+          function(theObject, UseAssay, FUN = mean, createExperimentName = "assay_MatchProbe",
                    only.matrix=FALSE){
 
               sobject_ori <- MultiAssayExperiment::experiments(theObject)[["assay_raw"]]
@@ -193,7 +193,7 @@ setMethod("MatchProbe",
               #  dplyr::summarise_all(mean) %>% as.data.frame()
               # %>% increases time, try aggregate from stats package
               sobject_exprs_symbol <- stats::aggregate(. ~ SYMBOL, data = sobject_exprs_new1,
-                                                      FUN = mean)
+                                                      FUN = FUN)
 
               row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
