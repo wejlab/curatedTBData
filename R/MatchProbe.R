@@ -16,7 +16,8 @@ setGeneric(name="MatchProbe", function(theObject,...){
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 setMethod("MatchProbe",
           signature="SummarizedExperiment",
-          function(theObject, UseAssay, FUN = mean, createExperimentName = "assay_MatchProbe",
+          function(theObject, UseAssay, FUN = mean,
+                   createExperimentName = "assay_MatchProbe",
                    only.matrix=FALSE){
 
             UseAssay <- paste(UseAssay,collapse = "|")
@@ -30,16 +31,17 @@ setMethod("MatchProbe",
                             "for probes matching." ))
             }
             if(length(assay_name_index) == 0){
-              stop(paste("No assay with the name:",UseAssay))
+              stop(paste("No assay with the name:", UseAssay))
             }
 
             assay_name <- SummarizedExperiment::assayNames(theObject)[assay_name_index]
 
 
-            geo_access_name <- strsplit(SummarizedExperiment::assayNames(theObject),
-                                        "_")[[1]][1]
+            geo_access_name <- strsplit(
+              SummarizedExperiment::assayNames(theObject), "_")[[1]][1]
 
             sobject_exprs <- SummarizedExperiment::assays(theObject)[[assay_name]]
+
 
             #### row data is NULL, special case for those normalized data with unique gene symbol as row names
             if (ncol(SummarizedExperiment::rowData(theObject)) == 0){
@@ -82,6 +84,7 @@ setMethod("MatchProbe",
               dplyr::mutate(SYMBOL=row_data$SYMBOL_NEW) %>%
               dplyr::filter(.data$SYMBOL != "NA")
 
+
             # Expand probe sets for non-specific probes if apllicable
             if(length(grep("///",sobject_exprs_new$SYMBOL)) != 0){
               sobject_exprs_new <- expandProbesets(sobject_exprs_new, sep = "///")
@@ -102,12 +105,28 @@ setMethod("MatchProbe",
 
             # Try aggregate from stats package. Avoid using sobject_exprs_new1$SYMBOL, slow down the process
             sobject_exprs_symbol <- stats::aggregate(. ~ SYMBOL, data = sobject_exprs_new1,
-                                                    FUN = FUN)
+                                                    FUN = FUN, na.action=na.pass)
+
 
             row.names(sobject_exprs_symbol) <- sobject_exprs_symbol$SYMBOL
 
             sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol)
                                                  %in% 'SYMBOL')] %>% as.matrix()
+
+            # Use Imputation for missing expression profile
+            # Local Least square Imputation
+            if(any(is.na(sobject_exprs_symbol))){
+              # Check whether more than 50% of the genes are complete
+              gene_mean <- apply(sobject_exprs_symbol, 1, mean)
+              if(sum(is.na(gene_mean)) > length(gene_mean)/2){
+                allVariables <- TRUE
+              } else {allVariables <- FALSE}
+
+              exprs_transpose <- pcaMethods::llsImpute(t(sobject_exprs_symbol),
+                                                       allVariables = allVariables)
+              sobject_exprs_symbol <- t(exprs_transpose)
+
+            }
 
             if(only.matrix){return(sobject_exprs_symbol)}
 

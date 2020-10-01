@@ -283,7 +283,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       colnames(dat) <- c("Signature","P.value","AUC",
                          paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
       dat
-    }, SE_scored, annotationData, lower, upper,BPPARAM = param)
+    }, SE_scored, annotationData, lower, upper, BPPARAM = param)
 
     result <- do.call(rbind, sig_result)
     row.names(result) <- NULL
