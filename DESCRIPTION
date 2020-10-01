@@ -23,6 +23,7 @@ Imports:
     magrittr,
     methods,
     MultiAssayExperiment,
+    pcaMethods,
     RColorBrewer,
     reshape2,
     readr,
