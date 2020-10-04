@@ -1,21 +1,30 @@
 #' @title Normalization for curatedTBData
 #' @description Perform normalization for curatedTBDta.
-#' \code{microarray_method} (except "SCAN") argument passes to \code{\link[limma]{normalizeBetweenArrays}}
-#' for microarray data. \code{RNAseq_method argument passes to \code{\link[edgeR]{calcNormFactors}}}
+#' \code{microarray_method} (except "SCAN") argument passes to
+#' \code{\link[limma]{normalizeBetweenArrays}}
+#' for microarray data. \code{RNAseq_method argument passes to
+#' \code{\link[edgeR]{calcNormFactors}}}
 #' for RNA sequencing data.
-#' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
-#' @param geo_access Geo accession number for certain Study. Used when microarray_method is "SCAN".
-#' @param microarray_method A character string specifying the normalization method to be used.
+#' @param theObject A \code{SummarizedExperiment} or \code{MultiAssayExperiment} object.
+#' @param geo_access GEO accession number for Tuberculosis Study. Used when
+#' microarray_method is "SCAN".
+#' @param microarray_method A \code{character} string specifying the normalization
+#' method to be used.
 #' See \code{\link[limma]{normalizeBetweenArrays}} for deatils. The default is "quantile".
-#' @param RNAseq_method A character string specifying the normalization method to be used.
+#' @param RNAseq_method A \code{character} string specifying the normalization
+#' method to be used.
 #' See \code{\link[edgeR]{calcNormFactors}} for RNA sequence data. The default is "TMM".
-#' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
-#' Choices for experiment_name are "assay_raw" and "assay_reprocess". The deafult is experiment_name="assay_raw"
+#' @param experiment_name A \code{character} indicates the name of the experiment
+#' within MultiAssayExperiment object. Only applicable in multiple assays conditions.
+#' Choices for experiment_name are "assay_raw" and "assay_reprocess".
+#' The deafult is experiment_name="assay_raw"
 #' If experiment_name is "assay_raw", perform normalization on the assay provided by the authors.
 #' If experiment_name is "assay_reprocess", perform normalization on the reprocessed assay.
 #' @param ... Extra named arguments passed to function.
-#' @return A SummarizedExperiment object with additional normalized assay if input is a SummarizedExperiment. object.
-#' A MultiAssayExperiment object with additional normalized assay if input is a MultiAssayExperiment object.
+#' @return A \code{SummarizedExperiment} object with additional normalized assay if
+#' input is a \code{SummarizedExperiment} object.
+#' A MultiAssayExperiment object with additional normalized assay if input is a
+#' \code{MultiAssayExperiment} object.
 #' @examples
 #' object_list <- get_curatedTBData(geo_access = c("GSE39939","GSE107993"))
 #' GSE39939_sobject_norm <- Normalization(object_list$GSE39939, microarray_method = "quantile")
@@ -78,7 +87,7 @@ setMethod("Normalization",
               # Check whether the object is derived from Affymetrix or GSEXXXXX.
 
               norm_GSE <- paste(c("GSE31348", "GSE36238", "GSE41055", "GSE54992",
-                                  "GSE73408"), collapse="|")
+                                  "GSE73408", "GSE107731"), collapse="|")
               if (length(grep(norm_GSE,
                               SummarizedExperiment::assayNames(theObject))) != 0){
 

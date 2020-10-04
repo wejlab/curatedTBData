@@ -13,7 +13,7 @@ get_auc_stats(
 )
 }
 \arguments{
-\item{SE_scored}{A SummarizedExperiment Object from TB signature profiling.}
+\item{SE_scored}{A \code{SummarizedExperiment} Object from TB signature profiling.}
 
 \item{annotationColName}{A character indicates feature of interest in the object's column data}
 

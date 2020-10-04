@@ -93,6 +93,10 @@ SignatureInfo <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
                                   sheet = "SignatureInfo")
 use_data(SignatureInfo,compress = "xz", overwrite = TRUE)
 
+SignatureInfoTraining <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
+                                    sheet = "SignatureInfoTraining")
+use_data(SignatureInfoTraining,compress = "xz", overwrite = TRUE)
+
 library(devtools)
 GSE79362_assay_reprocess <- GSE79362_raw_counts1
 use_data(GSE79362_assay_reprocess,compress = "xz", overwrite = TRUE)
@@ -125,7 +129,18 @@ save_files_list <- function(geo_access){
 }
 
 save_files_list("GSEIndia")
-
-
+save_files_list("GSE83456")
+save_files_list("GSE81746")
+save_files_list("GSE107731")
+save_files_list("GSE84076")
+get_curatedTBData("GSE84076")
+new_study <- c("GSE83456","GSE81746","GSE107731","GSE84076","GSE19491")
+object_sub <- get_curatedTBData(geo_access = c("GSE81746","GSE107731","GSE84076"))
+object_norm <- bplapply(object_sub, function(x)
+  Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
+                experiment_name = "assay_raw"), BPPARAM = param)
+object_match1 <- bplapply(object_norm, function(x)
+  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+             createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 

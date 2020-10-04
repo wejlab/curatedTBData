@@ -11,6 +11,7 @@ MatchProbe(theObject, ...)
 \S4method{MatchProbe}{SummarizedExperiment}(
   theObject,
   UseAssay,
+  FUN = mean,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
@@ -18,6 +19,7 @@ MatchProbe(theObject, ...)
 \S4method{MatchProbe}{MultiAssayExperiment}(
   theObject,
   UseAssay,
+  FUN = mean,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
