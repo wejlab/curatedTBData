@@ -191,7 +191,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 
 #' Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.
 #' @name get_auc_stats
-#' @param SE_scored A SummarizedExperiment Object from TB signature profiling.
+#' @param SE_scored A \code{SummarizedExperiment} Object from TB signature profiling.
 #' @param annotationColName A character indicates feature of interest in the object's column data
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
@@ -216,7 +216,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
   if (is.null(num.boot)){
 
     sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData){
-      score <- SummarizedExperiment::colData(SE_scored)[i][,1]
+      score <- SummarizedExperiment::colData(SE_scored)[i][,1] %>% as.vector()
 
       # Deal with scores that have constant value (mostly from Sloot_HIV_2)
       if (length(unique(score))==1){
@@ -283,7 +283,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       colnames(dat) <- c("Signature","P.value","AUC",
                          paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
       dat
-    }, SE_scored, annotationData, lower, upper,BPPARAM = param)
+    }, SE_scored, annotationData, lower, upper, BPPARAM = param)
 
     result <- do.call(rbind, sig_result)
     row.names(result) <- NULL
@@ -303,10 +303,14 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @param percent A number indicates the percentage of confidence interval.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
-combine_auc <- function(SE_scored_list, annotationColName = "TBStatus", signatureColNames,
+combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                         num.boot=NULL, percent=0.95){
-
   param <- BiocParallel::SerialParam(progressbar=TRUE)
+
+  SE_scored_list_class <- class(SE_scored_list[[1]])
+  if(SE_scored_list_class != "SummarizedExperiment"){
+    stop(paste("combine_auc only supports SummarizedExperiment. Your class:",SE_scored_list_class))
+  }
 
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
     get_auc_stats(x,annotationColName,
@@ -538,27 +542,46 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
     }
 
     frame_facet <- data.frame(facet_rect_position(datta,frames))
+    if (nrow(frame_facet) == 0){
 
-    p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
-                                                    fill = .data$value)) +
-      ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
-                                                           trans = "reverse") +
-      ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
-      ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
-      ggplot2::theme(axis.title.x = ggplot2::element_blank(),
-                     axis.title.y = ggplot2::element_blank(),
-                     axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
-                                                size = 12, hjust = 1),
-                     axis.text.y = ggplot2::element_text(size = 12)) +
-      ggplot2::geom_rect(data = frame_facet,
-                         ggplot2::aes(xmin = .data$Var1-0.5, xmax = .data$Var1+0.5,
-                                      ymin = .data$Var2-0.5, ymax = .data$Var2+0.5),
-                         size=1, fill=NA, colour="black", inherit.aes = FALSE)
+      p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
+                                                      fill = .data$value)) +
+        ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
+                                                             trans = "reverse") +
+        ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
+        ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
+        ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+                       axis.title.y = ggplot2::element_blank(),
+                       axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
+                                                           size = 12, hjust = 1),
+                       axis.text.y = ggplot2::element_text(size = 12))
+      return(p)
+    }
 
-    return(p)
+    else{
+      p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
+                                                      fill = .data$value)) +
+        ggplot2::geom_tile() + ggplot2::scale_fill_distiller(palette = "RdPu",
+                                                             trans = "reverse") +
+        ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales="free", space="free") +
+        ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)), cex=3.5) +
+        ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+                       axis.title.y = ggplot2::element_blank(),
+                       axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
+                                                           size = 12, hjust = 1),
+                       axis.text.y = ggplot2::element_text(size = 12)) +
+        ggplot2::geom_rect(data = frame_facet,
+                           ggplot2::aes(xmin = .data$Var1-0.5, xmax = .data$Var1+0.5,
+                                        ymin = .data$Var2-0.5, ymax = .data$Var2+0.5),
+                           size=1, fill=NA, colour="black", inherit.aes = FALSE)
+
+      return(p)
+    }
+
   }
 
   if (facet==FALSE){
+
     p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
                                                     fill = .data$value)) +
       ggplot2::geom_tile() +

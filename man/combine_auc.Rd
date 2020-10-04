@@ -6,7 +6,7 @@
 \usage{
 combine_auc(
   SE_scored_list,
-  annotationColName = "TBStatus",
+  annotationColName,
   signatureColNames,
   num.boot = NULL,
   percent = 0.95

@@ -25,31 +25,40 @@ Normalization(theObject, ...)
 )
 }
 \arguments{
-\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+\item{theObject}{A \code{SummarizedExperiment} or \code{MultiAssayExperiment} object.}
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{geo_access}{Geo accession number for certain Study. Used when microarray_method is "SCAN".}
+\item{geo_access}{GEO accession number for Tuberculosis Study. Used when
+microarray_method is "SCAN".}
 
-\item{microarray_method}{A character string specifying the normalization method to be used.
+\item{microarray_method}{A \code{character} string specifying the normalization
+method to be used.
 See \code{\link[limma]{normalizeBetweenArrays}} for deatils. The default is "quantile".}
 
-\item{RNAseq_method}{A character string specifying the normalization method to be used.
+\item{RNAseq_method}{A \code{character} string specifying the normalization
+method to be used.
 See \code{\link[edgeR]{calcNormFactors}} for RNA sequence data. The default is "TMM".}
 
-\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object. Only applicable in multiple assays conditions.
-Choices for experiment_name are "assay_raw" and "assay_reprocess". The deafult is experiment_name="assay_raw"
+\item{experiment_name}{A \code{character} indicates the name of the experiment
+within MultiAssayExperiment object. Only applicable in multiple assays conditions.
+Choices for experiment_name are "assay_raw" and "assay_reprocess".
+The deafult is experiment_name="assay_raw"
 If experiment_name is "assay_raw", perform normalization on the assay provided by the authors.
 If experiment_name is "assay_reprocess", perform normalization on the reprocessed assay.}
 }
 \value{
-A SummarizedExperiment object with additional normalized assay if input is a SummarizedExperiment. object.
-A MultiAssayExperiment object with additional normalized assay if input is a MultiAssayExperiment object.
+A \code{SummarizedExperiment} object with additional normalized assay if
+input is a \code{SummarizedExperiment} object.
+A MultiAssayExperiment object with additional normalized assay if input is a
+\code{MultiAssayExperiment} object.
 }
 \description{
 Perform normalization for curatedTBDta.
-\code{microarray_method} (except "SCAN") argument passes to \code{\link[limma]{normalizeBetweenArrays}}
-for microarray data. \code{RNAseq_method argument passes to \code{\link[edgeR]{calcNormFactors}}}
+\code{microarray_method} (except "SCAN") argument passes to
+\code{\link[limma]{normalizeBetweenArrays}}
+for microarray data. \code{RNAseq_method argument passes to
+\code{\link[edgeR]{calcNormFactors}}}
 for RNA sequencing data.
 }
 \examples{
