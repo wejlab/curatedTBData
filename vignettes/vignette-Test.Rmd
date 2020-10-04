@@ -173,9 +173,9 @@ For objects that contain probe information, we match them to gene symbol. We col
 ```{r}
 # Match Probe ID using raw data
 # Specificy createExperimentName = "assay_raw_norm" for matching probe ID using normalized data (if applicable)
-MatchProbe(GSE39939_sobject, UseAssay = "GSE39939_raw", 
+MatchProbe(GSE39939_sobject, useAssay = "GSE39939_raw", 
            createExperimentName = "assay_MatchProbe")
-MatchProbe(GSE107991_mobject, UseAssay = "GSE107991_raw", 
+MatchProbe(GSE107991_mobject, useAssay = "GSE107991_raw", 
            createExperimentName = "assay_MatchProbe")
 ```
 
@@ -199,7 +199,7 @@ object_norm <- bplapply(objects_list, function(x)
 # No argument for experiemnt_name in MatchProbe, because assay_reprocess has mapped to gene symbol
 # Reduce the runnning time using aggregate instead of dplyr
 object_match1 <- bplapply(object_norm, function(x) 
-  MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+  MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
 
