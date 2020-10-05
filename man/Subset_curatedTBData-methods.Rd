@@ -12,7 +12,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  UseAssay = "counts",
+  useAssay = "counts",
   ...
 )
 
@@ -20,7 +20,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  UseAssay = NULL,
+  useAssay = NULL,
   experiment_name,
   ...
 )
@@ -34,7 +34,7 @@ subset_curatedTBData(theObject, ...)
 
 \item{annotationCondition}{A vector indicates conditions want to be subsetted.}
 
-\item{UseAssay}{A character indicates the name of the assay (expression matrix) within the object.
+\item{useAssay}{A character indicates the name of the assay (expression matrix) within the object.
 Need this argument when the input is a SummarizedExperiment object.}
 
 \item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.
