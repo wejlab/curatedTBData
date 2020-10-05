@@ -10,16 +10,16 @@ MatchProbe(theObject, ...)
 
 \S4method{MatchProbe}{SummarizedExperiment}(
   theObject,
-  UseAssay,
-  FUN = mean,
+  useAssay,
+  FUN = median,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
 
 \S4method{MatchProbe}{MultiAssayExperiment}(
   theObject,
-  UseAssay,
-  FUN = mean,
+  useAssay,
+  FUN = median,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
@@ -29,7 +29,7 @@ MatchProbe(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{UseAssay}{A character indicats the assay names (partial name) of the SummarizedExperiment Object.}
+\item{useAssay}{A character indicats the assay names (partial name) of the SummarizedExperiment Object.}
 
 \item{createExperimentName}{A character specifying the names of the new experiment matrix.}
 
