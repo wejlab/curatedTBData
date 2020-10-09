@@ -1,9 +1,14 @@
-#' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+#' S4 method matches probeID to gene symbol by creating MultiAssayExperiement
+#' object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment Object.
-#' @param useAssay A character indicats the assay names (partial name) of the SummarizedExperiment Object.
-#' @param createExperimentName A character specifying the names of the new experiment matrix.
-#' @param only.matrix A logical value. Default is FALSE. TRUE for only output the matched matrix.
+#' @param useAssay A character indicats the assay names (partial name) of the
+#' SummarizedExperiment Object.
+#' @param createExperimentName A character specifying the names of the new
+#' experiment matrix.
+#' @param only.matrix \code{boolean}. A logical value indicates whether return the
+#' processed matrix only.
+#' The default is FALSE. TRUE for only output the matched matrix.
 #' @param ... Extra named arguments passed to function.
 #' @rdname MatchProbe-methods
 #' @exportMethod MatchProbe

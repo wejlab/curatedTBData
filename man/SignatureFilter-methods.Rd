@@ -4,7 +4,7 @@
 \alias{SignatureFilter}
 \alias{SignatureFilter,list,character-method}
 \alias{SignatureFilter,SummarizedExperiment,character-method}
-\title{Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.}
+\title{Subset signatures scores and disease status from column data of SummarizedExperiment Objects.}
 \usage{
 SignatureFilter(sig_list, gset, ...)
 
@@ -26,7 +26,7 @@ Names of each list should be the GEO accession of the study.}
 Need GSE value when the input is a single object instead of the list.}
 }
 \description{
-Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
+Subset signatures scores and disease status from column data of SummarizedExperiment Objects.
 }
 \seealso{
 TBSignatureProfiler::TBSignatureProfiler.

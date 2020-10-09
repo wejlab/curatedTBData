@@ -1,4 +1,4 @@
-#' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
+#' Subset signatures scores and disease status from column data of SummarizedExperiment Objects.
 #' @name SignatureFilter
 #' @param sig_list SummarizedExperiment object(s) obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 #' Names of each list should be the GEO accession of the study.
