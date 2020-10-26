@@ -137,12 +137,24 @@ save_files_list("GSE29536")
 save_files_list("GSE83892")
 get_curatedTBData("GSE84076")
 
-object_sub <- get_curatedTBData(geo_access = c("GSE29536","GSE83892"))
+# file_name <- c("GSE107991", "GSE107992", "GSE107993", "GSE107994")
+file_name <- c("GSE94438")
+GSE_list <- lapply(file_name, function(x)
+  readRDS(paste0("data-raw/",x,"_assay_reprocess.RDS")))
+
+names(GSE_list) <- paste0(file_name,"_assay_reprocess")
+library(devtools)
+purrr::walk2(GSE_list, names(GSE_list), function(obj, name) {
+  assign(name, obj)
+  do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
+})
+
+object_sub <- get_curatedTBData(geo_access = file_name)
 object_norm_test <- bplapply(object_sub, function(x)
   Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
                 experiment_name = "assay_raw"), BPPARAM = param)
 object_match_test <- bplapply(object_norm_test, function(x)
   MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
-object_match=c(object_match,object_match_test)
+
 
