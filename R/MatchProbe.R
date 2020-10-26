@@ -117,20 +117,6 @@ setMethod("MatchProbe",
             sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol)
                                                  %in% "SYMBOL")] %>% as.matrix()
 
-            # Use Imputation for missing expression profile
-            # Local Least square Imputation
-            # if(any(is.na(sobject_exprs_symbol))){
-            #   # Check whether more than 50% of the genes are complete
-            #   gene_mean <- apply(sobject_exprs_symbol, 1, mean)
-            #   if(sum(is.na(gene_mean)) > length(gene_mean)/2){
-            #     allVariables <- TRUE
-            #   } else {allVariables <- FALSE}
-            #
-            #   exprs_transpose <- pcaMethods::llsImpute(t(sobject_exprs_symbol),
-            #                                            allVariables = allVariables)
-            #   sobject_exprs_symbol <- t(exprs_transpose)
-            #
-            # }
 
             if(only.matrix){return(sobject_exprs_symbol)}
 
@@ -226,21 +212,6 @@ setMethod("MatchProbe",
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(
                 colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
-              # Use Imputation for missing expression profile
-              # Local Least square Imputation
-              # if(any(is.na(sobject_exprs_symbol))){
-              #   # Check whether more than 50% of the genes are complete
-              #   gene_mean <- apply(sobject_exprs_symbol, 1, mean)
-              #   if(sum(is.na(gene_mean)) > length(gene_mean)/2){
-              #     allVariables <- TRUE
-              #   } else {allVariables <- FALSE}
-              #
-              #   exprs_transpose <- pcaMethods::llsImpute(t(sobject_exprs_symbol),
-              #                                            k = 10, correlation="pearson",
-              #                                            allVariables = allVariables)
-              #   sobject_exprs_symbol <- t(exprs_transpose)
-              #
-              # }
 
               if(only.matrix){
                 return(sobject_exprs_symbol)

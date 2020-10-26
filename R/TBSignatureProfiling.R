@@ -196,10 +196,12 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
 #' @param percent A number speciying the percentage of the confidence interval.
+#' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
+#' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
 #' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
 get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
-                      num.boot=NULL, percent=0.95){
+                      num.boot=NULL, percent=0.95, AUC.abs = FALSE){
 
   # check signatureColNames
   index <- stats::na.omit(match(signatureColNames,colnames(SummarizedExperiment::colData(SE_scored))))
@@ -227,7 +229,11 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
-      aucs <- max(pred$AUC, 1 - pred$AUC)
+      if(AUC.abs){
+        aucs <- pred$AUC
+      }else{
+        aucs <- max(pred$AUC, 1 - pred$AUC)
+      }
       data.frame(Signature=i,P.value=round(pvals,4),AUC=round(aucs,4))
 
 
@@ -256,7 +262,11 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       }
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
-      aucs <- max(pred$AUC, 1 - pred$AUC)
+      if(AUC.abs){
+        aucs <- pred$AUC
+      }else{
+        aucs <- max(pred$AUC, 1 - pred$AUC)
+      }
       bootCI <- lapply(seq_len(num.boot), function(j, score, annotationData){
 
         index <- sample(seq_len(length(score)), replace = TRUE)
@@ -301,20 +311,26 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @param signatureColNames A character/vector string contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
 #' @param percent A number indicates the percentage of confidence interval.
+#' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
+#' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
-                        num.boot=NULL, percent=0.95){
+                        num.boot=NULL, percent=0.95, AUC.abs = FALSE){
   param <- BiocParallel::SerialParam(progressbar=TRUE)
-
+  # Check if the input is a list
+  if (class(SE_scored_list) != "list"){
+    stop(sprintf("combine_auc only supports a list of SummarizedExperiment. Please convert the input to a list."))
+  }
   SE_scored_list_class <- class(SE_scored_list[[1]])
   if(SE_scored_list_class != "SummarizedExperiment"){
-    stop(paste("combine_auc only supports SummarizedExperiment. Your class:",SE_scored_list_class))
+    stop(sprintf("combine_auc only supports SummarizedExperiment. Your class: %s",
+                 SE_scored_list_class))
   }
 
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
-    get_auc_stats(x,annotationColName,
-                signatureColNames,num.boot, percent)
+    get_auc_stats(x, annotationColName,
+                  signatureColNames, num.boot, percent, AUC.abs)
   },BPPARAM = param)
   aucs_result_dat <- do.call(rbind,aucs_result)
 
@@ -370,7 +386,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   if (n==1){
     xbar <- x
     ci <- data.frame(xbar,NA, NA)
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
+                      paste0("CI upper.",upper*100,"%"))
     row.names(ci) <- NULL
 
     return(ci)
@@ -381,7 +398,7 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   # random resamples from x
   bootstrapsample <- lapply(seq_len(num.boot), function(i)
                                     sample(x, n, replace=TRUE))
-  bootstrapsample <- do.call(cbind,bootstrapsample)
+  bootstrapsample <- do.call(cbind, bootstrapsample)
 
   # Compute the means x∗
   bsmeans <-  colMeans(bootstrapsample)
@@ -397,7 +414,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
     ci  <-  xbar - c(d[2], d[1])
 
     ci <- data.frame(xbar,ci[1], ci[2])
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
+                      paste0("CI upper.",upper*100,"%"))
     row.names(ci) <- NULL
 
     return(ci)
@@ -406,7 +424,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   if (method == "percentile"){
     ci_percent <- stats::quantile(bsmeans, c(lower, upper), na.rm=TRUE)
     ci_percent <- data.frame(xbar,ci_percent[1], ci_percent[2])
-    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),
+                              paste0("CI upper.",upper*100,"%"))
     row.names(ci_percent) <- NULL
 
     return(ci_percent)
