@@ -291,7 +291,8 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       dat <- data.frame(i,round(pvals,4), round(aucs,4),
                         round(LowerAUC,4), round(UpperAUC,4))
       colnames(dat) <- c("Signature","P.value","AUC",
-                         paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+                         paste0("CI lower.",lower*100,"%"),
+                         paste0("CI upper.",upper*100,"%"))
       dat
     }, SE_scored, annotationData, lower, upper, BPPARAM = param)
 
