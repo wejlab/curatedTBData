@@ -465,10 +465,11 @@ get_auc_distribution <- function(aucs_result){
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name heatmap_auc
-#' @param combine_dat A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.
-#' @param GSE_sig A dataframe contains information about eacch signature and its traning dataset name.
+#' @param combine_dat A dataframe contains signatures, datsets name, and AUC.
+#' Such dataset can be obtained from \code{\link[curatedTBData]{combine_auc}}.
+#' @param GSE_sig A dataframe contains information about each signature and its traning dataset name.
 #' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
-#' @param facet Logical value. True if want to group signatures into groups. Default is TRUE.
+#' @param facet Boolean. TRUE if want to group signatures into groups. Default is TRUE.
 #' @return Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
 #' @examples
 #' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51",
