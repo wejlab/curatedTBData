@@ -276,9 +276,15 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
         # Consider when resampling only has 1 cases, remove it
         if(length(unique(tmp_annotationData)) == 2){
           tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
-          tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+          if(AUC.abs){
+            tmp_auc <- tmp_pred$AUC
+          }
+          else{
+            tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+          }
           tmp_auc
-        }else{NA}
+        }
+        else{NA}
 
       }, score, annotationData)
 
