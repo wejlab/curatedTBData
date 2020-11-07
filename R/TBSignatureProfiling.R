@@ -198,10 +198,14 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 #' @param percent A number speciying the percentage of the confidence interval.
 #' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
 #' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
+#' @param BPPARAM An instance inherited from \code{bplappy}.
+#' See \code{\link[BiocParallel]{bplapply}} for details.
 #' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
 get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
-                      num.boot=NULL, percent=0.95, AUC.abs = FALSE){
+                      num.boot=NULL, percent=0.95, AUC.abs = FALSE,
+                      BPPARAM = BiocParallel::SerialParam(progressbar=TRUE)
+){
 
   # check signatureColNames
   index <- stats::na.omit(match(signatureColNames,colnames(SummarizedExperiment::colData(SE_scored))))
@@ -248,7 +252,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
   else{
     # Initialize parallel
-    param <- BiocParallel::SerialParam(progressbar=TRUE)
+    param <- BPPARAM
 
     sig_result <- BiocParallel::bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
@@ -320,11 +324,14 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @param percent A number indicates the percentage of confidence interval.
 #' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
 #' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
+#' @param An instance inherited from \code{bplappy}.
+#' See \code{\link[BiocParallel]{bplapply}} for details.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
-                        num.boot=NULL, percent=0.95, AUC.abs = FALSE){
-  param <- BiocParallel::SerialParam(progressbar=TRUE)
+                        num.boot=NULL, percent=0.95, AUC.abs = FALSE,
+                        BPPARAM = BiocParallel::SerialParam(progressbar=TRUE)){
+  param <- BPPARAM
   # Check if the input is a list
   if (class(SE_scored_list) != "list"){
     stop(sprintf("combine_auc only supports a list of SummarizedExperiment. Please convert the input to a list."))
@@ -337,8 +344,8 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
 
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
     get_auc_stats(x, annotationColName,
-                  signatureColNames, num.boot, percent, AUC.abs)
-  },BPPARAM = param)
+                  signatureColNames, num.boot, percent, AUC.abs, BPPARAM)
+  }, BPPARAM = param)
   aucs_result_dat <- do.call(rbind,aucs_result)
 
   # re-order data based on their median AUC
@@ -474,6 +481,7 @@ get_auc_distribution <- function(aucs_result){
 #' @param combine_dat A dataframe contains signatures, datsets name, and AUC.
 #' Such dataset can be obtained from \code{\link[curatedTBData]{combine_auc}}.
 #' @param GSE_sig A dataframe contains information about each signature and its traning dataset name.
+#' Defult is NULL.
 #' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
 #' @param facet Boolean. TRUE if want to group signatures into groups. Default is TRUE.
 #' @return Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
@@ -488,7 +496,7 @@ get_auc_distribution <- function(aucs_result){
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
 #' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
 #'@export
-heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
+heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TRUE){
 
   dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
   data_wide <- tidyr::spread(dat, .data$Signature, .data$AUC)
@@ -513,13 +521,17 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
 
   # Get traning data position index
   datta$trian <- FALSE
-
   index <- NULL
-  for (i in seq_len(nrow(GSE_sig))){
-    kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
-    kk$indx <- row.names(kk)
-    indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
-    index <- c(index,indx)
+  if (is.null(GSE_sig)){
+    index <- NULL
+  }
+  else{
+    for (i in seq_len(nrow(GSE_sig))){
+      kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
+      kk$indx <- row.names(kk)
+      indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
+      index <- c(index,indx)
+    }
   }
 
   # Label signature type
