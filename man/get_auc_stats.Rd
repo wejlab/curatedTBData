@@ -10,7 +10,8 @@ get_auc_stats(
   signatureColNames,
   num.boot = NULL,
   percent = 0.95,
-  AUC.abs = FALSE
+  AUC.abs = FALSE,
+  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
 \arguments{
@@ -26,6 +27,9 @@ get_auc_stats(
 
 \item{AUC.abs}{Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
 If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).}
+
+\item{BPPARAM}{An instance inherited from \code{bplappy}.
+See \code{\link[BiocParallel]{bplapply}} for details.}
 }
 \value{
 A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
