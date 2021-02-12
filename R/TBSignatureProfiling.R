@@ -483,7 +483,10 @@ get_auc_distribution <- function(aucs_result){
 #' @param GSE_sig A dataframe contains information about each signature and its traning dataset name.
 #' Defult is NULL.
 #' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
-#' @param facet Boolean. TRUE if want to group signatures into groups. Default is TRUE.
+#' @param facet Boolean. TRUE if the users want to group signatures into groups.
+#' Default is TRUE.
+#' @param clustering Boolena. TRUE if the users want to perform clustering of the heatmap using hierarchical clustering.
+#' Default is TRUE.
 #' @return Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
 #' @examples
 #' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51",
@@ -493,18 +496,29 @@ get_auc_distribution <- function(aucs_result){
 #'                    GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
 #' TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86",
 #'                       "Blankley_5")
-#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
-#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = FALSE)
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = TRUE)
 #'@export
-heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TRUE){
+heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet = TRUE,
+                        clustering = TRUE, order_increase_avg = FALSE,
+                        x_axis_name = NULL){
 
   dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
   data_wide <- tidyr::spread(dat, .data$Signature, .data$AUC)
   row.names(data_wide) <- data_wide$GSE
   dat_input <- as.matrix(data_wide[,-1])
   dat_input[is.na(dat_input)] <- NA
+  if (order_increase_avg){
+    datasets_order_name <- apply(dat_input, 1,function(x) mean(x,na.rm=T)) %>%
+      sort(decreasing = TRUE) %>% names()
+    dat_input <- dat_input[match(datasets_order_name,row.names(dat_input)),]
+  }
 
-  if(unique(length(data_wide$GSE)) > 1){
+  if(!is.null(x_axis_name)){
+    dat_input <- dat_input[x_axis_name,]
+  }
+
+  if(unique(length(data_wide$GSE)) > 1 && clustering){
     # Clustering AUC values if unique(GSE)>1
     dd <- stats::dist(dat_input)
     hc <- stats::hclust(dd)
@@ -512,6 +526,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TR
   } else {
     dat_input1 <- dat_input
   }
+
 
   # Get mean AUC for each dataset
   dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1, na.rm = TRUE))
@@ -554,7 +569,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TR
   frames2$Var1 <- as.integer(frames$Var1)
   frames2$Var2 <- as.integer(frames$Var2)
 
-  if(facet==TRUE){
+  if(facet){
 
     # Functions to create correct traning index in facet grid
     facet_rect_position <- function(datta, frames){
@@ -618,8 +633,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TR
     }
 
   }
-
-  if (facet==FALSE){
+  else{
 
     p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
                                                     fill = .data$value)) +
@@ -634,11 +648,12 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet=TR
       ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),
                      axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
-                                       size = 12, hjust = 1),
+                                                         size = 12, hjust = 1),
                      axis.text.y = ggplot2::element_text(size = 12))
     return(p)
 
   }
+
 
 }
 
