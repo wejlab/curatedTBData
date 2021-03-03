@@ -149,12 +149,13 @@ purrr::walk2(GSE_list, names(GSE_list), function(obj, name) {
   do.call("use_data", list(as.name(name), compress = "xz", overwrite = TRUE))
 })
 
-object_sub <- get_curatedTBData(geo_access = file_name)
-object_norm_test <- bplapply(object_sub, function(x)
-  Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
-                experiment_name = "assay_raw"), BPPARAM = param)
-object_match_test <- bplapply(object_norm_test, function(x)
-  MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
-             createExperimentName = "assay_MatchProbe"), BPPARAM = param)
+# object_sub <- get_curatedTBData(geo_access = file_name)
+# object_norm_test <- bplapply(object_sub, function(x)
+#   Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
+#                 experiment_name = "assay_raw"), BPPARAM = param)
+# object_match_test <- bplapply(object_norm_test, function(x)
+#   MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
+#              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
-
+tt = readRDS("~/Desktop/OriginalModel.RDS")
+use_data(tt,compress = "xz", overwrite = TRUE)
