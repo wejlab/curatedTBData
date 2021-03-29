@@ -157,5 +157,3 @@ purrr::walk2(GSE_list, names(GSE_list), function(obj, name) {
 #   MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
 #              createExperimentName = "assay_MatchProbe"), BPPARAM = param)
 
-tt = readRDS("~/Desktop/OriginalModel.RDS")
-use_data(tt,compress = "xz", overwrite = TRUE)
