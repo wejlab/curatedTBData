@@ -101,7 +101,8 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% dplyr::filter(.data$GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
-                                   levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+                                   levels = c("Control", "Latent", "PTB", "OD",
+                                              "Positive", "Negative", "Others"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
 
@@ -156,7 +157,10 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
                                                                          colnames(sig_data)))]
 
             sig_data$annotationNameLevels <- factor(sig_data[,annotationColName],
-                                                    levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+                                                    levels = c("Control", "Latent",
+                                                               "PTB", "OD",
+                                                               "Positive", "Negative",
+                                                               "Others"))
 
             # Create a custom color scale to deal with different factors
             myColors <- RColorBrewer::brewer.pal(length(levels(sig_data$annotationNameLevels)),"Set1")
@@ -592,9 +596,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet = 
 
       frame_facet <- do.call(rbind,frame_facet1)
       return(frame_facet)
-
     }
-
     frame_facet <- data.frame(facet_rect_position(datta,frames))
     if (nrow(frame_facet) == 0){
 
