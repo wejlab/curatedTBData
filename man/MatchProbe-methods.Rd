@@ -4,22 +4,23 @@
 \alias{MatchProbe}
 \alias{MatchProbe,SummarizedExperiment-method}
 \alias{MatchProbe,MultiAssayExperiment-method}
-\title{S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.}
+\title{S4 method matches probeID to gene symbol by creating MultiAssayExperiement
+object from either SummarizedExperiment or MultiAssayExperiment Object.}
 \usage{
 MatchProbe(theObject, ...)
 
 \S4method{MatchProbe}{SummarizedExperiment}(
   theObject,
-  UseAssay,
-  FUN = mean,
+  useAssay,
+  FUN = median,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
 
 \S4method{MatchProbe}{MultiAssayExperiment}(
   theObject,
-  UseAssay,
-  FUN = mean,
+  useAssay,
+  FUN = median,
   createExperimentName = "assay_MatchProbe",
   only.matrix = FALSE
 )
@@ -29,12 +30,17 @@ MatchProbe(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{UseAssay}{A character indicats the assay names (partial name) of the SummarizedExperiment Object.}
+\item{useAssay}{A character indicats the assay names (partial name) of the
+SummarizedExperiment Object.}
 
-\item{createExperimentName}{A character specifying the names of the new experiment matrix.}
+\item{createExperimentName}{A character specifying the names of the new
+experiment matrix.}
 
-\item{only.matrix}{A logical value. Default is FALSE. TRUE for only output the matched matrix.}
+\item{only.matrix}{\code{boolean}. A logical value indicates whether return the
+processed matrix only.
+The default is FALSE. TRUE for only output the matched matrix.}
 }
 \description{
-S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+S4 method matches probeID to gene symbol by creating MultiAssayExperiement
+object from either SummarizedExperiment or MultiAssayExperiment Object.
 }

@@ -5,7 +5,7 @@
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
 #' @param annotationCondition A vector indicates conditions want to be subsetted.
-#' @param UseAssay A character indicates the name of the assay (expression matrix) within the object.
+#' @param useAssay A character indicates the name of the assay (expression matrix) within the object.
 #' Need this argument when the input is a SummarizedExperiment object.
 #' @param experiment_name A character indicates the name of the experiment within MultiAssayExperiment object.
 #' Expect \code{theObject[[experiment_name]]} to be a matrix. Two special cases are:
@@ -23,15 +23,15 @@ setGeneric(name="subset_curatedTBData", function(theObject,...){
 setMethod("subset_curatedTBData",
           signature="SummarizedExperiment",
           function(theObject, annotationColName, annotationCondition,
-                   UseAssay="counts",...){
+                   useAssay="counts",...){
 
             # Check whether assay exists in the object
             assay_names <- SummarizedExperiment::assayNames(theObject)
-            assay_name_index <- which(assay_names %in% UseAssay)
-            assay_name_exclude <- which(assay_names != UseAssay)
+            assay_name_index <- which(assay_names %in% useAssay)
+            assay_name_exclude <- which(assay_names != useAssay)
 
             if(length(assay_name_index)==0){
-              stop(paste(UseAssay,"is/are not found within the object"))
+              stop(paste(useAssay,"is/are not found within the object"))
             }
 
             n <- length(annotationCondition)
@@ -53,7 +53,7 @@ setMethod("subset_curatedTBData",
 #' @rdname subset_curatedTBData-methods
 setMethod("subset_curatedTBData",
           signature="MultiAssayExperiment",
-          function(theObject, annotationColName, annotationCondition, UseAssay=NULL,
+          function(theObject, annotationColName, annotationCondition, useAssay=NULL,
                    experiment_name,...){
             # Check whether experiment exists in the object
             if(experiment_name != "All"){
@@ -181,15 +181,15 @@ check_annotation <- function(theObject, annotationColName, annotationCondition){
 #'                                Normalization(x, microarray_method = "quantile",
 #'                                RNAseq_method = "TMM", experiment_name = "assay_raw"))
 #' object_match <- lapply(object_norm, function(x)
-#'                                MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+#'                                MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
 #'                                createExperimentName = "assay_MatchProbe"))
 #' sobject <- CombineObjects(object_match, list_name,
 #'                           experiment_name = "assay_MatchProbe")
 #' @export
-CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
+CombineObjects <- function(object_list, experiment_name=NULL, useAssay=NULL,
                            list_name=NULL){
   # Check the element witin list
-  if(is.null(experiment_name) && is.null(UseAssay)){
+  if(is.null(experiment_name) && is.null(useAssay)){
     stop(paste("Please specify experiment name of the MultiAssayExperiment Object or
                assay name of the SummarizedExperiment Object."))
   }
@@ -210,7 +210,7 @@ CombineObjects <- function(object_list, experiment_name=NULL, UseAssay=NULL,
   if(class(object_list[[1]]) == "SummarizedExperiment"){
 
     dat_exprs_match <- lapply(object_list, function(x)
-      SummarizedExperiment::assays(x)[[UseAssay]] %>% data.frame)
+      SummarizedExperiment::assays(x)[[useAssay]] %>% data.frame)
 
   }
 

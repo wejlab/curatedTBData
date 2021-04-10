@@ -4,16 +4,18 @@
 \alias{heatmap_auc}
 \title{Obtain ridge plots for emprirical AUC distribution for signature scores.}
 \usage{
-heatmap_auc(combine_dat, GSE_sig, signatureColNames, facet = TRUE)
+heatmap_auc(combine_dat, GSE_sig = NULL, signatureColNames, facet = TRUE)
 }
 \arguments{
-\item{combine_dat}{A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.}
+\item{combine_dat}{A dataframe contains signatures, datsets name, and AUC.
+Such dataset can be obtained from \code{\link[curatedTBData]{combine_auc}}.}
 
-\item{GSE_sig}{A dataframe contains information about eacch signature and its traning dataset name.}
+\item{GSE_sig}{A dataframe contains information about each signature and its traning dataset name.
+Defult is NULL.}
 
 \item{signatureColNames}{A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"}
 
-\item{facet}{Logical value. True if want to group signatures into groups. Default is TRUE.}
+\item{facet}{Boolean. TRUE if want to group signatures into groups. Default is TRUE.}
 }
 \value{
 Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
