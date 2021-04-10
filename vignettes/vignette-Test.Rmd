@@ -83,7 +83,7 @@ object_list_RNA_seq <- get_curatedTBData(
                              geo_access = geo_RNA_seq$`GEO accession`)
 ```
 
-## Load a list of RNA-seq data
+## Load a list of Microarray data
 ```{r load a list of microarray studies, results='hide', eval=FALSE}
 geo_microarray <- DataSummary %>% 
   dplyr::filter(stringr::str_detect(.data$GeneralType, "Microarray")) %>%
@@ -187,15 +187,17 @@ Matching probes to symbol using raw data is straight-forward, we use the normali
 ```{r normalized/matched sample, cache=TRUE, results="hide"}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
+
 # Normalization. For RNA-seq data, we use raw data from original for normalization (Not the self-processed dat) by specifying the experiment_name=assay_raw
 
 object_norm <- bplapply(objects_list, function(x) 
   Normalization(x, microarray_method = "quantile", RNAseq_method = "TMM",
-                experiment_name = "assay_raw"), BPPARAM = param) 
+                experiment_name = "assay_raw"), 
+  BPPARAM = SerialParam(progressbar=TRUE)) 
 
 # Match Probe to gene symbols
 
-# Use Assay specifying which assay to use, 
+# UseAssay specifying which assay to use, 
 # No argument for experiemnt_name in MatchProbe, because assay_reprocess has mapped to gene symbol
 # Reduce the runnning time using aggregate instead of dplyr
 object_match1 <- bplapply(object_norm, function(x) 
@@ -205,7 +207,8 @@ object_match1 <- bplapply(object_norm, function(x)
 
 # Remove samples with TBStatus == NA
 object_match <- bplapply(object_match1, function(x) 
-  x[,which(colData(x)[,"TBStatus"] != "NA")], BPPARAM = param)
+  x[,which(colData(x)[,"TBStatus"] != "NA")], 
+  BPPARAM = SerialParam(progressbar=TRUE))
 
 # Import the list of TB signatures from TBSignatureProfiler
 TBsignatures <- TBSignatureProfiler::TBsignatures
@@ -214,12 +217,12 @@ TBsignatures <- TBSignatureProfiler::TBsignatures
 ```{r, results="hide",include=FALSE, eval=FALSE}
 #Initialize parallel
 param <- SerialParam(progressbar=TRUE)
-
 object_match1 <- readRDS("~/Desktop/object_match1.RDS")
 
 # Remove samples with TBStatus == NA
 object_match <- bplapply(object_match1, function(x) 
-                            x[,which(colData(x)[,"TBStatus"]!= "NA")], BPPARAM = param)
+                            x[,which(colData(x)[,"TBStatus"]!= "NA")], 
+                         BPPARAM = param)
 
 # Define the list of TB signatures
 TBsignatures <- TBSignatureProfiler::TBsignatures
@@ -240,6 +243,21 @@ sobject <- CombineObjects(object_match1,
                           list_name = geo_microarray$`GEO accession`, 
                           experiment_name = "assay_MatchProbe")
 
+# Make merge study with genes more than 10000. Remove GSE6112 (7658), 
+# GSE74092 (281), GSEXXXX (7515)
+geo_rna_seq <- DataSummary %>% dplyr::as_tibble() %>%
+  dplyr::filter(stringr::str_detect(.data$GeneralType, "RNA-seq")) %>%
+  dplyr::select(.data$`GEO accession`)
+index_remove <- which(names(object_match1) %in% c("GSE6112", "GSE74092", "GSEXXXX"))
+forGabeMerge <- CombineObjects(object_match1, 
+                          list_name = names(object_match1)[-index_remove], 
+                          experiment_name = "assay_MatchProbe")
+forGabe1 <- lapply(object_match1, function(x) {
+  x[["assay_raw"]] = NULL
+  x
+})
+saveRDS(forGabe1, "~/Desktop/curatedTBData_list.RDS")
+saveRDS(forGabeMerge, "~/Dropbox/Gabe/MergedStudy.RDS")
 ```
 
 ## Batch Correction

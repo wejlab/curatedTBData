@@ -8,7 +8,7 @@ usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}
 CombineObjects(
   object_list,
   experiment_name = NULL,
-  UseAssay = NULL,
+  useAssay = NULL,
   list_name = NULL
 )
 }
@@ -33,7 +33,7 @@ object_norm <- lapply(data_list, function(x)
                                Normalization(x, microarray_method = "quantile",
                                RNAseq_method = "TMM", experiment_name = "assay_raw"))
 object_match <- lapply(object_norm, function(x)
-                               MatchProbe(x, UseAssay = c("TMM","quantile","RMA"),
+                               MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
                                createExperimentName = "assay_MatchProbe"))
 sobject <- CombineObjects(object_match, list_name,
                           experiment_name = "assay_MatchProbe")

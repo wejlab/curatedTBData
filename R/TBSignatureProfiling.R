@@ -1,4 +1,4 @@
-#' Subset signatures scores and disease status from Coldata of SummarizedExperiment Objects.
+#' Subset signatures scores and disease status from column data of SummarizedExperiment Objects.
 #' @name SignatureFilter
 #' @param sig_list SummarizedExperiment object(s) obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 #' Names of each list should be the GEO accession of the study.
@@ -101,7 +101,8 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% dplyr::filter(.data$GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
-                                   levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+                                   levels = c("Control", "Latent", "PTB", "OD",
+                                              "Positive", "Negative", "Others"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
 
@@ -156,7 +157,10 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
                                                                          colnames(sig_data)))]
 
             sig_data$annotationNameLevels <- factor(sig_data[,annotationColName],
-                                                    levels = c("Control", "Latent", "PTB", "OD", "Positive", "Negative"))
+                                                    levels = c("Control", "Latent",
+                                                               "PTB", "OD",
+                                                               "Positive", "Negative",
+                                                               "Others"))
 
             # Create a custom color scale to deal with different factors
             myColors <- RColorBrewer::brewer.pal(length(levels(sig_data$annotationNameLevels)),"Set1")
@@ -196,10 +200,16 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
 #' @param signatureColNames A character/vector contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
 #' @param percent A number speciying the percentage of the confidence interval.
+#' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
+#' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
+#' @param BPPARAM An instance inherited from \code{bplappy}.
+#' See \code{\link[BiocParallel]{bplapply}} for details.
 #' @return A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
 #' @export
 get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureColNames,
-                      num.boot=NULL, percent=0.95){
+                      num.boot=NULL, percent=0.95, AUC.abs = FALSE,
+                      BPPARAM = BiocParallel::SerialParam(progressbar=TRUE)
+){
 
   # check signatureColNames
   index <- stats::na.omit(match(signatureColNames,colnames(SummarizedExperiment::colData(SE_scored))))
@@ -227,7 +237,11 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
-      aucs <- max(pred$AUC, 1 - pred$AUC)
+      if(AUC.abs){
+        aucs <- pred$AUC
+      }else{
+        aucs <- max(pred$AUC, 1 - pred$AUC)
+      }
       data.frame(Signature=i,P.value=round(pvals,4),AUC=round(aucs,4))
 
 
@@ -242,7 +256,7 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
   else{
     # Initialize parallel
-    param <- BiocParallel::SerialParam(progressbar=TRUE)
+    param <- BPPARAM
 
     sig_result <- BiocParallel::bplapply(signatureColNames, function(i, SE_scored, annotationData, lower, upper){
       score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
@@ -256,7 +270,11 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       }
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
-      aucs <- max(pred$AUC, 1 - pred$AUC)
+      if(AUC.abs){
+        aucs <- pred$AUC
+      }else{
+        aucs <- max(pred$AUC, 1 - pred$AUC)
+      }
       bootCI <- lapply(seq_len(num.boot), function(j, score, annotationData){
 
         index <- sample(seq_len(length(score)), replace = TRUE)
@@ -266,9 +284,15 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
         # Consider when resampling only has 1 cases, remove it
         if(length(unique(tmp_annotationData)) == 2){
           tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
-          tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+          if(AUC.abs){
+            tmp_auc <- tmp_pred$AUC
+          }
+          else{
+            tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+          }
           tmp_auc
-        }else{NA}
+        }
+        else{NA}
 
       }, score, annotationData)
 
@@ -281,7 +305,8 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
       dat <- data.frame(i,round(pvals,4), round(aucs,4),
                         round(LowerAUC,4), round(UpperAUC,4))
       colnames(dat) <- c("Signature","P.value","AUC",
-                         paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+                         paste0("CI lower.",lower*100,"%"),
+                         paste0("CI upper.",upper*100,"%"))
       dat
     }, SE_scored, annotationData, lower, upper, BPPARAM = param)
 
@@ -301,21 +326,30 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 #' @param signatureColNames A character/vector string contains name of gene signature.
 #' @param num.boot Number of bootstrapping.
 #' @param percent A number indicates the percentage of confidence interval.
+#' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
+#' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
+#' @param An instance inherited from \code{bplappy}.
+#' See \code{\link[BiocParallel]{bplapply}} for details.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
-                        num.boot=NULL, percent=0.95){
-  param <- BiocParallel::SerialParam(progressbar=TRUE)
-
+                        num.boot=NULL, percent=0.95, AUC.abs = FALSE,
+                        BPPARAM = BiocParallel::SerialParam(progressbar=TRUE)){
+  param <- BPPARAM
+  # Check if the input is a list
+  if (class(SE_scored_list) != "list"){
+    stop(sprintf("combine_auc only supports a list of SummarizedExperiment. Please convert the input to a list."))
+  }
   SE_scored_list_class <- class(SE_scored_list[[1]])
   if(SE_scored_list_class != "SummarizedExperiment"){
-    stop(paste("combine_auc only supports SummarizedExperiment. Your class:",SE_scored_list_class))
+    stop(sprintf("combine_auc only supports SummarizedExperiment. Your class: %s",
+                 SE_scored_list_class))
   }
 
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
-    get_auc_stats(x,annotationColName,
-                signatureColNames,num.boot, percent)
-  },BPPARAM = param)
+    get_auc_stats(x, annotationColName,
+                  signatureColNames, num.boot, percent, AUC.abs, BPPARAM)
+  }, BPPARAM = param)
   aucs_result_dat <- do.call(rbind,aucs_result)
 
   # re-order data based on their median AUC
@@ -370,7 +404,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   if (n==1){
     xbar <- x
     ci <- data.frame(xbar,NA, NA)
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
+                      paste0("CI upper.",upper*100,"%"))
     row.names(ci) <- NULL
 
     return(ci)
@@ -381,7 +416,7 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   # random resamples from x
   bootstrapsample <- lapply(seq_len(num.boot), function(i)
                                     sample(x, n, replace=TRUE))
-  bootstrapsample <- do.call(cbind,bootstrapsample)
+  bootstrapsample <- do.call(cbind, bootstrapsample)
 
   # Compute the means x∗
   bsmeans <-  colMeans(bootstrapsample)
@@ -397,7 +432,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
     ci  <-  xbar - c(d[2], d[1])
 
     ci <- data.frame(xbar,ci[1], ci[2])
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
+                      paste0("CI upper.",upper*100,"%"))
     row.names(ci) <- NULL
 
     return(ci)
@@ -406,7 +442,8 @@ bootstrap_mean_CI <- function(data,colName, percent=0.95,
   if (method == "percentile"){
     ci_percent <- stats::quantile(bsmeans, c(lower, upper), na.rm=TRUE)
     ci_percent <- data.frame(xbar,ci_percent[1], ci_percent[2])
-    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),paste0("CI upper.",upper*100,"%"))
+    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),
+                              paste0("CI upper.",upper*100,"%"))
     row.names(ci_percent) <- NULL
 
     return(ci_percent)
@@ -445,10 +482,15 @@ get_auc_distribution <- function(aucs_result){
 
 #' Obtain ridge plots for emprirical AUC distribution for signature scores.
 #' @name heatmap_auc
-#' @param combine_dat A dataframe contains signatures, datsets name, and AUC, can be obtained from `combine_auc`.
-#' @param GSE_sig A dataframe contains information about eacch signature and its traning dataset name.
+#' @param combine_dat A dataframe contains signatures, datsets name, and AUC.
+#' Such dataset can be obtained from \code{\link[curatedTBData]{combine_auc}}.
+#' @param GSE_sig A dataframe contains information about each signature and its traning dataset name.
+#' Defult is NULL.
 #' @param signatureColNames A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"
-#' @param facet Logical value. True if want to group signatures into groups. Default is TRUE.
+#' @param facet Boolean. TRUE if the users want to group signatures into groups.
+#' Default is TRUE.
+#' @param clustering Boolena. TRUE if the users want to perform clustering of the heatmap using hierarchical clustering.
+#' Default is TRUE.
 #' @return Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
 #' @examples
 #' combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51",
@@ -458,18 +500,29 @@ get_auc_distribution <- function(aucs_result){
 #'                    GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
 #' TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86",
 #'                       "Blankley_5")
-#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
-#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = FALSE)
+#' heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = TRUE)
 #'@export
-heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
+heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet = TRUE,
+                        clustering = TRUE, order_increase_avg = FALSE,
+                        x_axis_name = NULL){
 
   dat <- cbind(combine_dat[,c("Signature","GSE","AUC")])
   data_wide <- tidyr::spread(dat, .data$Signature, .data$AUC)
   row.names(data_wide) <- data_wide$GSE
   dat_input <- as.matrix(data_wide[,-1])
   dat_input[is.na(dat_input)] <- NA
+  if (order_increase_avg){
+    datasets_order_name <- apply(dat_input, 1,function(x) mean(x,na.rm=T)) %>%
+      sort(decreasing = TRUE) %>% names()
+    dat_input <- dat_input[match(datasets_order_name,row.names(dat_input)),]
+  }
 
-  if(unique(length(data_wide$GSE)) > 1){
+  if(!is.null(x_axis_name)){
+    dat_input <- dat_input[x_axis_name,]
+  }
+
+  if(unique(length(data_wide$GSE)) > 1 && clustering){
     # Clustering AUC values if unique(GSE)>1
     dd <- stats::dist(dat_input)
     hc <- stats::hclust(dd)
@@ -477,6 +530,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
   } else {
     dat_input1 <- dat_input
   }
+
 
   # Get mean AUC for each dataset
   dat_input1<- cbind(dat_input1,Avg=rowMeans(dat_input1, na.rm = TRUE))
@@ -486,13 +540,17 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
 
   # Get traning data position index
   datta$trian <- FALSE
-
   index <- NULL
-  for (i in seq_len(nrow(GSE_sig))){
-    kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
-    kk$indx <- row.names(kk)
-    indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
-    index <- c(index,indx)
+  if (is.null(GSE_sig)){
+    index <- NULL
+  }
+  else{
+    for (i in seq_len(nrow(GSE_sig))){
+      kk <- datta[grep(GSE_sig$Signature[i],datta$Var2),]
+      kk$indx <- row.names(kk)
+      indx <- kk[which(as.character(kk$Var1) %in% GSE_sig$GSE[i]),"indx"]
+      index <- c(index,indx)
+    }
   }
 
   # Label signature type
@@ -515,7 +573,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
   frames2$Var1 <- as.integer(frames$Var1)
   frames2$Var2 <- as.integer(frames$Var2)
 
-  if(facet==TRUE){
+  if(facet){
 
     # Functions to create correct traning index in facet grid
     facet_rect_position <- function(datta, frames){
@@ -538,9 +596,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
 
       frame_facet <- do.call(rbind,frame_facet1)
       return(frame_facet)
-
     }
-
     frame_facet <- data.frame(facet_rect_position(datta,frames))
     if (nrow(frame_facet) == 0){
 
@@ -579,8 +635,7 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
     }
 
   }
-
-  if (facet==FALSE){
+  else{
 
     p <- ggplot2::ggplot(data = datta, ggplot2::aes(x = .data$Var1, y = .data$Var2,
                                                     fill = .data$value)) +
@@ -595,11 +650,12 @@ heatmap_auc <- function(combine_dat,GSE_sig, signatureColNames, facet=TRUE){
       ggplot2::theme(axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),
                      axis.text.x = ggplot2::element_text(angle = 45, vjust = 1,
-                                       size = 12, hjust = 1),
+                                                         size = 12, hjust = 1),
                      axis.text.y = ggplot2::element_text(size = 12))
     return(p)
 
   }
+
 
 }
 

@@ -9,7 +9,9 @@ combine_auc(
   annotationColName,
   signatureColNames,
   num.boot = NULL,
-  percent = 0.95
+  percent = 0.95,
+  AUC.abs = FALSE,
+  BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)
 )
 }
 \arguments{
@@ -22,6 +24,12 @@ combine_auc(
 \item{num.boot}{Number of bootstrapping.}
 
 \item{percent}{A number indicates the percentage of confidence interval.}
+
+\item{AUC.abs}{Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
+If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).}
+
+\item{An}{instance inherited from \code{bplappy}.
+See \code{\link[BiocParallel]{bplapply}} for details.}
 }
 \value{
 A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.

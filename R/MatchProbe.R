@@ -1,9 +1,14 @@
-#' S4 method matches probeID to gene symbol by creating MultiAssayExperiement object from either SummarizedExperiment or MultiAssayExperiment Object.
+#' S4 method matches probeID to gene symbol by creating MultiAssayExperiement
+#' object from either SummarizedExperiment or MultiAssayExperiment Object.
 #' @name MatchProbe
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment Object.
-#' @param useAssay A character indicats the assay names (partial name) of the SummarizedExperiment Object.
-#' @param createExperimentName A character specifying the names of the new experiment matrix.
-#' @param only.matrix A logical value. Default is FALSE. TRUE for only output the matched matrix.
+#' @param useAssay A character indicats the assay names (partial name) of the
+#' SummarizedExperiment Object.
+#' @param createExperimentName A character specifying the names of the new
+#' experiment matrix.
+#' @param only.matrix \code{boolean}. A logical value indicates whether return the
+#' processed matrix only.
+#' The default is FALSE. TRUE for only output the matched matrix.
 #' @param ... Extra named arguments passed to function.
 #' @rdname MatchProbe-methods
 #' @exportMethod MatchProbe
@@ -112,20 +117,6 @@ setMethod("MatchProbe",
             sobject_exprs_symbol <- sobject_exprs_symbol[,-which(colnames(sobject_exprs_symbol)
                                                  %in% "SYMBOL")] %>% as.matrix()
 
-            # Use Imputation for missing expression profile
-            # Local Least square Imputation
-            # if(any(is.na(sobject_exprs_symbol))){
-            #   # Check whether more than 50% of the genes are complete
-            #   gene_mean <- apply(sobject_exprs_symbol, 1, mean)
-            #   if(sum(is.na(gene_mean)) > length(gene_mean)/2){
-            #     allVariables <- TRUE
-            #   } else {allVariables <- FALSE}
-            #
-            #   exprs_transpose <- pcaMethods::llsImpute(t(sobject_exprs_symbol),
-            #                                            allVariables = allVariables)
-            #   sobject_exprs_symbol <- t(exprs_transpose)
-            #
-            # }
 
             if(only.matrix){return(sobject_exprs_symbol)}
 
@@ -221,21 +212,6 @@ setMethod("MatchProbe",
 
               sobject_exprs_symbol <- sobject_exprs_symbol[,-which(
                 colnames(sobject_exprs_symbol) %in% 'SYMBOL')] %>% as.matrix()
-              # Use Imputation for missing expression profile
-              # Local Least square Imputation
-              # if(any(is.na(sobject_exprs_symbol))){
-              #   # Check whether more than 50% of the genes are complete
-              #   gene_mean <- apply(sobject_exprs_symbol, 1, mean)
-              #   if(sum(is.na(gene_mean)) > length(gene_mean)/2){
-              #     allVariables <- TRUE
-              #   } else {allVariables <- FALSE}
-              #
-              #   exprs_transpose <- pcaMethods::llsImpute(t(sobject_exprs_symbol),
-              #                                            k = 10, correlation="pearson",
-              #                                            allVariables = allVariables)
-              #   sobject_exprs_symbol <- t(exprs_transpose)
-              #
-              # }
 
               if(only.matrix){
                 return(sobject_exprs_symbol)

@@ -452,11 +452,13 @@ SCAN_reprocess_FALSE <- function(geo_access, include.SCAN){
 #' @description \code{get_curatedTBData} loads available curatedTBData.
 #' @name get_curatedTBData
 #' @param geo_access A character/vector that contains geo accession number. If All, get all avaible studies.
-#' @param include.SCAN A logical value indicates whether include normalized data processed by SCAN into the final output.
+#' @param include.SCAN \code{boolean}. A logical value indicates whether including
+#' normalized data processed by SCAN into the final output.
 #' The default in FALSE. SCAN-normalized results are available for
 #' Affymetrix Microarray: GSE31348, GSE36238, GSE41055, GSE54992, GSE73408
 #' Agilent two-color Microarray: GSE25534
-#' @param include.reprocess A logical value indicated whether include reprocessed RNA-seq data when available.
+#' @param include.reprocess \code{boolean}. A logical value indicated whether including
+#' reprocessed RNA-seq data.
 #' The default is TRUE. Reprocess results are available for
 #' Illumina RNA-seq: GSE94438, GSE79362, GSE89403, GSE107991, GSE107992, GSE107993,
 #' GSE107994, GSE101705, GSE107104, GSE112104
