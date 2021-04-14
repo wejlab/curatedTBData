@@ -19,8 +19,7 @@ setGeneric(name="MatchProbe", function(theObject,...){
 
 #' @rdname MatchProbe-methods
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
-setMethod("MatchProbe",
-          signature="SummarizedExperiment",
+setMethod("MatchProbe", signature = "SummarizedExperiment",
           function(theObject, useAssay, FUN = median,
                    createExperimentName = "assay_MatchProbe",
                    only.matrix=FALSE){
@@ -256,7 +255,6 @@ expandProbesets <- function(dat, sep){
   if(any(is.na(sobject_exprs_expand_result$SYMBOL))){
     stop("Expand probe sets contain NA's, please check")
   }
-
   sobject_exprs_result <- rbind(dat[-index,],sobject_exprs_expand_result)
   return(sobject_exprs_result)
 
