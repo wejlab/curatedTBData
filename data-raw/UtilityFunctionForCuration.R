@@ -1,3 +1,45 @@
+readRawData <- function(geo, sequencePlatform) {
+  urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
+  temp <- tempfile()
+  tempd <- tempdir()
+  if (sequencePlatform == "GPL6947") {
+    # Illumina Microarry V3
+    url_sub <- as.character(urls$url[1])
+    utils::download.file(url_sub, temp)
+    utils::untar(temp,exdir = tempd)
+    files <- list.files(tempd, pattern = "txt.*")
+    data_Non_normalized_list <- lapply(files, function(x)
+      read.delim(paste0(tempd,"/",x), header = TRUE,
+                 col.names = c("ID_REF", gsub("_.*", "", x),
+                               paste0(gsub("_.*", "", x), ".Pval")),
+                 stringsAsFactors = FALSE))
+    # Remove temporary files
+    unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+    data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
+      x[, -grep('.Pval', colnames(x), ignore.case = TRUE)])
+    return(data_Non_normalized_list_noPvalue)
+  } else if (sequencePlatform == "GPL10558") {
+    # Illumina Microarray V4
+    url_sub <- as.character(urls$url[2])
+    download.file(url_sub, temp)
+    data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
+      dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
+    unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+    data_non_pvalue <- data_Non_normalized[, -grep(".pVal", colnames(data_Non_normalized),
+                                                   ignore.case=TRUE)]
+    return(data_non_pvalue)
+  }
+}
+readRawColData <- function(gse) {
+  data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
+    GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
+  characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
+    sapply(data_characteristic, "[[",x))
+  characteristic_data_frame <- sub("(.*?): ","",characteristic_table) %>%
+    S4Vectors::DataFrame()
+  row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
+  return(characteristic_data_frame)
+}
 
 create_standard_coldata <- function(col_data) {
   standard_name_seq <- c("Age", "Gender", "Ethnicity", "TBStatus", "GeographicalRegion",
@@ -24,43 +66,44 @@ create_standard_coldata <- function(col_data) {
   return(dat_final)
 }
 
-relabel_TB <- function(dat_new){
-  dat_new$CultureStatus <- sub(".*\\((.*)\\).*", "\\1", dat_new$TBStatus)
+map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
+  sequence_result <- GEOquery::getGEO(sequencePlatform, GSEMatrix = FALSE)
+  sequence_result_dat <- sequence_result@dataTable@table
+  PROBES <- row.names(data_non_pvalue)
 
-  dat_new$CultureStatus <- ifelse(dat_new$CultureStatus==dat_new$TBStatus,
-                                  NA, dat_new$CultureStatus)
-
-
-  TBStatus <- TBStatus_temp <- dat_new$TBStatus
-
-  for (i in 1:length(TBStatus)){
-    if (TBStatus[i] == unique(TBStatus_temp)[1] || TBStatus[i] == unique(TBStatus_temp)[4]){
-      TBStatus[i] = 'PTB'
-    }
-    if (TBStatus[i] == unique(TBStatus_temp)[2] || TBStatus[i] == unique(TBStatus_temp)[5]){
-      TBStatus[i] = 'OD'
-    }
-    if (TBStatus[i] == unique(TBStatus_temp)[3]){
-      TBStatus[i] = 'LTBI'
-    }
+  if (sequencePlatform == "GPL6947") {
+    OUT <- AnnotationDbi::select(illuminaHumanv3.db::illuminaHumanv3.db, PROBES, "SYMBOL")
+  } else if (sequencePlatform == "GPL10558") {
+    OUT <- AnnotationDbi::select(illuminaHumanv4.db::illuminaHumanv4.db, PROBES, "SYMBOL")
   }
-  dat_new$TBStatus <- TBStatus
-  return(S4Vecotrs::DataFrame(dat_new))
+  OUT[is.na(OUT)] <- NA
+  # Map ProbeID to Gene Symbol
+  OUT_collapse <- OUT %>%
+    dplyr::group_by(PROBEID) %>%
+    dplyr::summarise(SYMBOL = paste(SYMBOL, collapse = "///"),
+                     times = length(unlist(strsplit(SYMBOL, "///"))))
+  data_non_pvalue$ID_REF <- row.names(data_non_pvalue)
+  data_final <- data_non_pvalue %>%
+    dplyr::left_join(OUT_collapse, by=c("ID_REF" = "PROBEID")) %>%
+    dplyr::left_join(sequence_result_dat, by = c("ID_REF" = "ID"))
+  # Create row data
+  row_data <- data_final %>%
+    dplyr::select(-grep("GSM", colnames(data_final))) %>%
+    S4Vectors::DataFrame()
+  return(row_data)
 }
 
-match_gene_symbol <- function(row_data){
+match_gene_symbol <- function(row_data) {
   Symbol_R <- row_data$SYMBOL
-  Symbol_plat <- row_data$Symbol
-
   # Use platform annotation as reference
-  Symbol_plat_new <- Symbol_plat
-  for (i in 1:length(Symbol_R)){
-    if (Symbol_plat_new[i] == ""){
+  Symbol_plat_new <- row_data$Symbol
+  for (i in 1:length(Symbol_R)) {
+    if (Symbol_plat_new[i] == "" || is.na(Symbol_plat_new[i]) ||
+        Symbol_plat_new[i] == "NA") {
       Symbol_plat_new[i] = Symbol_R[i]
     }
   }
   row_data$SYMBOL_NEW <- Symbol_plat_new
-
   return(row_data)
 }
 

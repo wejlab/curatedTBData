@@ -5,19 +5,13 @@ if (!require("magrittr", character.only = TRUE)) {
 source("data-raw/UtilityFunctionForCuration.R")
 
 ##### Read in Non-normalized data #####
-urls <- GEOquery::getGEOSuppFiles("GSE39939", fetch_files = FALSE)
-url_non_normalized <- as.character(urls$url[2])
-temp <- tempfile()
-utils::download.file(url_non_normalized,temp)
-GSE39939_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE)
-
-# Remove .Pval from the column
-GSE39939_Non_pvalue <- GSE39939_Non_normalized[,-grep('.Pval', colnames(GSE39939_Non_normalized))]
-dim(GSE39939_Non_pvalue)
+geo <- "GSE39939"
+sequencePlatform <- "GPL10558"
+GSE39939_Non_pvalue <- readRawData(geo, sequencePlatform)
 
 ##### Process Column names of the raw data. Map them to sample name #####
 # Obtain raw data information from GEO
-gse <- GEOquery::getGEO("GSE39939", GSEMatrix = FALSE)
+gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 
 description_id_raw <- sapply(1:length(names(GEOquery::GSMList(gse))),
                              function(x) GEOquery::GSMList(gse)[[x]]@dataTable@columns$Column[3])
@@ -35,49 +29,44 @@ colnames(GSE39939_Non_pvalue) <- ID_table$SampleID
 GSE39939_Non_normalized_counts <- GSE39939_Non_pvalue
 
 ##### Create column data #####
-data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
-  GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
-characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
-  sapply(data_characteristic, '[[',x))
-## Demo convert geographical region: Kenya to Kenya
-characteristic_data_frame <- sub('(.*?): ','',characteristic_table) %>% as_tibble()
+characteristic_data_frame <- readRawColData(gse)
 colnames(characteristic_data_frame) <- c("TBStatus","HIVStatus","GeographicalRegion")
-
-characteristic_data_frame <- dplyr::mutate(characteristic_data_frame,
-                                           Barcode=ID_table$DescriptionID) %>% DataFrame()
+characteristic_data_frame$Barcode <- ID_table$DescriptionID
 characteristic_data_frame$PneumoniaStatus <- "Negative"
 characteristic_data_frame$HIVStatus <- ifelse(characteristic_data_frame$HIVStatus == "HIV positive",
                                               "Positive", "Negative")
 characteristic_data_frame$Tissue <- "Whole Blood"
-row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
 
 col_info <- create_standard_coldata(characteristic_data_frame)
+
+relabel_TB <- function(dat_new) {
+  dat_new$CultureStatus <- sub(".*\\((.*)\\).*", "\\1", dat_new$TBStatus)
+
+  dat_new$CultureStatus <- ifelse(dat_new$CultureStatus==dat_new$TBStatus,
+                                  NA, dat_new$CultureStatus)
+
+  TBStatus <- TBStatus_temp <- dat_new$TBStatus
+
+  for (i in 1:length(TBStatus)){
+    if (TBStatus[i] == unique(TBStatus_temp)[1] || TBStatus[i] == unique(TBStatus_temp)[4]){
+      TBStatus[i] <- "PTB"
+    }
+    if (TBStatus[i] == unique(TBStatus_temp)[2] || TBStatus[i] == unique(TBStatus_temp)[5]){
+      TBStatus[i] <- "OD"
+    }
+    if (TBStatus[i] == unique(TBStatus_temp)[3]){
+      TBStatus[i] <- "LTBI"
+    }
+  }
+  dat_new$TBStatus <- TBStatus
+  return(S4Vecotrs::DataFrame(dat_new))
+}
+
 new_col_info <- relabel_TB(col_info)
 
 ###### Create Row data #####
-GPL10558_HumanHT <- GEOquery::getGEO("GPL10558", GSEMatrix = F)
-GPL10558_HumanHT_dat <- GPL10558_HumanHT@dataTable@table
-
-# Annotation
-PROBES <- row.names(GSE39939_Non_pvalue)
-OUT <- AnnotationDbi::select(illuminaHumanv4.db::illuminaHumanv4.db, PROBES, "SYMBOL")
-OUT[is.na(OUT)] <- NA
-
-# Map ProbeID to Gene Symbol
-OUT_collapse <- OUT %>% dplyr::group_by(PROBEID) %>%
-  dplyr::summarise(SYMBOL = paste(SYMBOL, collapse = "///"),
-                   times = length(unlist(strsplit(SYMBOL, "///"))))
-
-GSE39939_Non_pvalue$ID_REF <- row.names(GSE39939_Non_pvalue)
-GSE39939_final <- GSE39939_Non_pvalue %>%
-                  dplyr::eft_join(OUT_collapse, by = c("ID_REF" = "PROBEID")) %>%
-                  dplyr::left_join(GPL10558_HumanHT_dat, by = c("ID_REF" = "ID"))
-
-# Modify Row data annotation
-row_data <- GSE39939_final %>%
-  dplyr::select(-grep("GSM",colnames(GSE39939_final))) %>% DataFrame()
+row_data <- map_gene_symbol(GSE39939_Non_pvalues, sequencePlatform)
 new_row_data <- match_gene_symbol(row_data)
-
 ###### Create Metadata #####
 GSE39939_experimentData <- methods::new("MIAME",
                                name = "Victoria Wright",
@@ -93,7 +82,7 @@ GSE39939_sobject <- SummarizedExperiment::SummarizedExperiment(
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE39939_experimentData))
-save_raw_files(GSE39939_sobject, path = "data-raw/", geo = "GSE39939")
+save_raw_files(GSE39939_sobject, path = "data-raw/", geo = geo)
 
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)

@@ -117,7 +117,7 @@ setMethod("MatchProbe", signature = "SummarizedExperiment",
                                                  %in% "SYMBOL")] %>% as.matrix()
 
 
-            if(only.matrix){return(sobject_exprs_symbol)}
+            if(only.matrix) {return(sobject_exprs_symbol)}
 
             ## Create MultiAssayExperiment object Use methods from CreateSobject
             # assay_reprocess changes to name of assay_reduce in here
