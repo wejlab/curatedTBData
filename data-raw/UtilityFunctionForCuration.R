@@ -20,14 +20,33 @@ readRawData <- function(geo, sequencePlatform) {
     return(data_Non_normalized_list_noPvalue)
   } else if (sequencePlatform == "GPL10558") {
     # Illumina Microarray V4
-    url_sub <- as.character(urls$url[2])
+    index <- grep("*.txt.gz", unlist(urls$url))
+    if (length(index) == 0) {
+      stop("Raw data with txt.gz not found. Exit the function.")
+    }
+    if (length(index) != 1) {
+      message("More than one link selected, looking for non-nomarlized file")
+      url_temp <- urls$url[index]
+      index1 <- grep("non-normalized", url_temp)
+      if (length(index1) != 1) {
+        stop("Cannot identify the correct urls. Plases specifcy it manually")
+      }
+      url_sub <- url_temp[index1]
+    } else {
+      url_sub <- as.character(urls$url[index])
+    }
     download.file(url_sub, temp)
     data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
       dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
     unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-    data_non_pvalue <- data_Non_normalized[, -grep(".pVal", colnames(data_Non_normalized),
-                                                   ignore.case=TRUE)]
-    return(data_non_pvalue)
+    indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+    if(length(indexPvalue) == 0) {
+      message("Column(s) with p-value not found, return full datasets")
+      return(data_Non_normalized)
+    } else {
+      data_non_pvalue <- data_Non_normalized[, -indexPvalue]
+      return(data_non_pvalue)
+    }
   }
 }
 readRawColData <- function(gse) {
