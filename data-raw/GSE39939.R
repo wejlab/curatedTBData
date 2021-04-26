@@ -4,25 +4,24 @@ if (!require("magrittr", character.only = TRUE)) {
 }
 source("data-raw/UtilityFunctionForCuration.R")
 
-##### Read in Non-normalized data #####
+##### Read in raw data #####
 geo <- "GSE39939"
 sequencePlatform <- "GPL10558"
 GSE39939_Non_pvalue <- readRawData(geo, sequencePlatform)
 
-##### Process Column names of the raw data. Map them to sample name #####
+##### Match colnames to sample ID #####
 # Obtain raw data information from GEO
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 
 description_id_raw <- sapply(1:length(names(GEOquery::GSMList(gse))),
                              function(x) GEOquery::GSMList(gse)[[x]]@dataTable@columns$Column[3])
-# Example: Convert 6116725094_J.Detection Pval to 6116725094_J
-description_id <- sapply(1:length(description_id_raw),
-                         function(x) gsub("\\..*", "", description_id_raw[x]))
+# Example: Convert 6116725094_J.Detection to 6116725094_J
+description_id <- gsub("\\..*", "", description_id_raw)
+
 ID_table <- data.frame(SampleID = names(GEOquery::GSMList(gse)), DescriptionID = description_id)
 
 # Mapping descriptionID to SampleID
-colnames(GSE39939_Non_pvalue) <- sapply(1:ncol(GSE39939_Non_pvalue),
-                                        function(x) gsub(".*X|\\..*", "", colnames(GSE39939_Non_pvalue)[x]))
+colnames(GSE39939_Non_pvalue) <- gsub(".*X|\\..*", "", colnames(GSE39939_Non_pvalue))
 indx <- base::match(ID_table$DescriptionID, colnames(GSE39939_Non_pvalue))
 GSE39939_Non_pvalue <- GSE39939_Non_pvalue[,indx]
 colnames(GSE39939_Non_pvalue) <- ID_table$SampleID

@@ -5,32 +5,46 @@ if (!require("magrittr", character.only = TRUE)) {
 source("data-raw/UtilityFunctionForCuration.R")
 
 ##### Read in raw data #####
-##### Read in raw data #####
-geo <- "GSE42831"
+
+geo <- "GSE42832"
 sequencePlatform <- "GPL10558"
-GSE42831_Non_normalized_counts <- GSE42831_Non_pvalue <- readRawData(geo, sequencePlatform)
+GSE42832_Non_normalized_counts <- GSE42832_Non_pvalue <- readRawData(geo, sequencePlatform)
 
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
-colnames(GSE42831_Non_pvalue) <- colnames(GSE42831_Non_normalized_counts) <-
+colnames(GSE42832_Non_pvalue) <- colnames(GSE42832_Non_normalized_counts) <-
   names(GEOquery::GSMList(gse))
 
 ##### Create column data #####
 characteristic_data_frame <- readRawColData(gse)
-colnames(characteristic_data_frame) <- c("Treatment", "TreatmentResult",
-                                         "MeasurementTime", "PatientID")
-characteristic_data_frame$TBStatus <- "OD"
+colnames(characteristic_data_frame) <- c("TBStatus", "Tissue")
+TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
+unique(TBStatus_temp)
+for(i in 1:length(TBStatus)){
+  if(TBStatus_temp[i] == "TB"){
+    TBStatus[i] <- "PTB"
+  }
+  if(TBStatus_temp[i] == "Sarcoid"){
+    TBStatus[i] <- "OD"
+  }
+}
+characteristic_data_frame$TBStatus <- TBStatus
+Tissue <- Tissue_temp <- as.character(characteristic_data_frame$Tissue)
+Tissue[grep("whole blood", Tissue_temp)] <- "Whole Blood"
+characteristic_data_frame$Tissue <- Tissue
 
-characteristic_data_frame$MeasurementTime <- paste(characteristic_data_frame$MeasurementTime, "Day(s)")
-characteristic_data_frame$SarcoidosisStatus <- "Positive"
+SarcoidosisStatus <- rep("Negative", nrow(characteristic_data_frame))
+SarcoidosisStatus[grep("Sarcoid", TBStatus_temp)] <- "Positive"
+characteristic_data_frame$SarcoidosisStatus <- SarcoidosisStatus
+
 col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 
 ##### Create row data #####
-row_data <- map_gene_symbol(GSE42831_Non_pvalue, sequencePlatform)
+row_data <- map_gene_symbol(GSE42832_Non_pvalue, sequencePlatform)
 new_row_data <- match_gene_symbol(row_data)
 
 ##### Create meta data #####
-GSE42831_experimentData <- methods::new("MIAME",
+GSE42832_experimentData <- methods::new("MIAME",
                                         name = "Chole Bloom",
                                         lab = "MRC National Institute for Medical Research",
                                         contact = "cbloom@nimr.mrc.ac.uk",
@@ -44,12 +58,13 @@ GSE42831_experimentData <- methods::new("MIAME",
                                         pubMedIds = "23940611",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 
-GSE42831_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE42831_Non_normalized_counts = as.matrix(GSE42831_Non_normalized_counts)),
+GSE42832_sobject <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(GSE42832_Non_normalized_counts = as.matrix(GSE42832_Non_normalized_counts)),
   colData = new_col_info,
   rowData = new_row_data,
-  metadata = list(GSE42831_experimentData));GSE42831_sobject
-save_raw_files(GSE42831_sobject, path = "data-raw/", geo = geo)
+  metadata = list(GSE42832_experimentData));GSE42832_sobject
+save_raw_files(GSE42832_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+
 
 

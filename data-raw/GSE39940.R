@@ -14,13 +14,11 @@ gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 description_id_raw <- sapply(1:length(names(GEOquery::GSMList(gse))),
                              function(x) GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1[4])
 # Demo: Convert 'barcode: 6247215037_A' to 6247215037_A
-description_id <- sapply(1:length(description_id_raw),
-                         function(x) gsub("(.*?): ", "", description_id_raw[x]))
+description_id <- gsub("(.*?): ", "", description_id_raw)
+
 ID_table <- data.frame(SampleID = names(GEOquery::GSMList(gse)),
                        DescriptionID = description_id)
-colnames(GSE39940_Non_pvalue) <- sapply(1:ncol(GSE39940_Non_pvalue),
-                                        function(x) gsub(".*X|\\..*", "",
-                                                         colnames(GSE39940_Non_pvalue)[x]))
+colnames(GSE39940_Non_pvalue) <- gsub(".*X|\\..*", "", colnames(GSE39940_Non_pvalue))
 indx <- base::match(ID_table$DescriptionID, colnames(GSE39940_Non_pvalue))
 GSE39940_Non_pvalue <- GSE39940_Non_pvalue[,indx]
 colnames(GSE39940_Non_pvalue) <- ID_table$SampleID
