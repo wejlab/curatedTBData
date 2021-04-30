@@ -1,54 +1,91 @@
-readRawData <- function(geo, sequencePlatform) {
+readRawData <- function(geo, sequencePlatform, urlIndex = NULL) {
   urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
-  temp <- tempfile()
-  tempd <- tempdir()
   if (sequencePlatform == "GPL6947") {
     # Illumina Microarry V3
-    url_sub <- as.character(urls$url[1])
-    utils::download.file(url_sub, temp)
-    utils::untar(temp,exdir = tempd)
-    files <- list.files(tempd, pattern = "txt.*")
-    data_Non_normalized_list <- lapply(files, function(x)
-      read.delim(paste0(tempd,"/",x), header = TRUE,
-                 col.names = c("ID_REF", gsub("_.*", "", x),
-                               paste0(gsub("_.*", "", x), ".Pval")),
-                 stringsAsFactors = FALSE))
-    # Remove temporary files
-    unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-    data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
-      x[, -grep('.Pval', colnames(x), ignore.case = TRUE)])
-    return(data_Non_normalized_list_noPvalue)
+    result <- readRawDataGPL6947(urls, urlIndex)
+    return(result)
+
   } else if (sequencePlatform == "GPL10558") {
-    # Illumina Microarray V4
+    # Illumina Microarry V4
+    result <- readRawDataGPL10558(urls, urlIndex)
+    return(result)
+  } else if (sequencePlatform == "GPL570") {
+    result <- readRawDataGPL570(urls, urlIndex)
+    return(result)
+  }
+}
+
+readRawDataGPL6947 <- function(urls, urlIndex = NULL) {
+  temp <- tempfile()
+  tempd <- tempdir()
+  url_sub <- as.character(urls$url[1])
+  utils::download.file(url_sub, temp)
+  utils::untar(temp,exdir = tempd)
+  files <- list.files(tempd, pattern = "txt.*")
+  data_Non_normalized_list <- lapply(files, function(x)
+    read.delim(paste0(tempd,"/",x), header = TRUE,
+               col.names = c("ID_REF", gsub("_.*", "", x),
+                             paste0(gsub("_.*", "", x), ".Pval")),
+               stringsAsFactors = FALSE))
+  # Remove temporary files
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
+    x[, -grep('pval', colnames(x), ignore.case = TRUE)])
+  return(data_Non_normalized_list_noPvalue)
+}
+
+readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
+  temp <- tempfile()
+  tempd <- tempdir()
+  if (is.null(urlIndex)) {
     index <- grep("*.txt.gz", unlist(urls$url))
     if (length(index) == 0) {
-      stop("Raw data with txt.gz not found. Exit the function.")
+      stop("Raw data with txt.gz not found from supplementary file. Exit the function.")
     }
     if (length(index) != 1) {
       message("More than one link selected, looking for non-nomarlized file")
       url_temp <- urls$url[index]
       index1 <- grep("non-normalized", url_temp)
       if (length(index1) != 1) {
-        stop("Cannot identify the correct urls. Plases specifcy it manually")
+        stop("Cannot identify the correct urls. Plases specifcy it manually using the
+             urlIndex parameter.")
       }
-      url_sub <- url_temp[index1]
+      url_sub <- as.character(url_temp[index1])
     } else {
       url_sub <- as.character(urls$url[index])
     }
-    download.file(url_sub, temp)
-    data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
-      dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
-    unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-    indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
-    if(length(indexPvalue) == 0) {
-      message("Column(s) with p-value not found, return full datasets")
-      return(data_Non_normalized)
-    } else {
-      data_non_pvalue <- data_Non_normalized[, -indexPvalue]
-      return(data_non_pvalue)
-    }
+  } else {
+    url_sub <- as.character(urls$url[urlIndex])
+  }
+  # Illumina Microarray V4
+  utils::download.file(url_sub, temp)
+  data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
+    dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  if(length(indexPvalue) == 0) {
+    message("Column(s) with p-value not found, return full datasets")
+    return(data_Non_normalized)
+  } else {
+    data_non_pvalue <- data_Non_normalized[, -indexPvalue]
+    return(data_non_pvalue)
   }
 }
+
+readRawDataGPL570 <- function(urls, urlIndex = NULL) {
+  temp <- tempfile()
+  tempd <- tempdir()
+  url_cel <- as.character(urls$url[1])
+  utils::download.file(url_cel, temp)
+  utils::untar(temp, exdir = tempd)
+  celFiles <- list.files(path = tempd, pattern = "*.CEL", full.names = TRUE)
+  dataAffy <- affy::ReadAffy(filenames = celFiles)
+  data_normalized_rma <- Biobase::exprs(affy::rma(dataAffy))
+  # colnames(data_normalized_rma) <- gsub("_.*", "", colnames(data_normalized_rma))
+  return(data_normalized_rma)
+}
+
+################################################################################
 readRawColData <- function(gse) {
   data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
     GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
@@ -86,6 +123,7 @@ create_standard_coldata <- function(col_data) {
 }
 
 map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
+  data_non_pvalue <- data.frame(data_non_pvalue)
   sequence_result <- GEOquery::getGEO(sequencePlatform, GSEMatrix = FALSE)
   sequence_result_dat <- sequence_result@dataTable@table
   PROBES <- row.names(data_non_pvalue)
@@ -94,6 +132,10 @@ map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
     OUT <- AnnotationDbi::select(illuminaHumanv3.db::illuminaHumanv3.db, PROBES, "SYMBOL")
   } else if (sequencePlatform == "GPL10558") {
     OUT <- AnnotationDbi::select(illuminaHumanv4.db::illuminaHumanv4.db, PROBES, "SYMBOL")
+  } else if (sequencePlatform == "GPL570") {
+    index <- which(colnames(sequence_result_dat) == "Gene Symbol")
+    colnames(sequence_result_dat)[index] <- "Symbol"
+    OUT <- AnnotationDbi::select(hgu133plus2.db::hgu133plus2.db, PROBES, "SYMBOL")
   }
   OUT[is.na(OUT)] <- NA
   # Map ProbeID to Gene Symbol
