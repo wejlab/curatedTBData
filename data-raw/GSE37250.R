@@ -7,9 +7,9 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE37250"
 sequencePlatform <- "GPL10558"
-GSE37250_Non_pvalue <- readRawData(geo, sequencePlatform)
+GSE37250_Non_pvalues <- readRawData(geo, sequencePlatform)
 # Remove SYMBOL SEARCH_KEY ILMN_GENE CHROMOSOME DEFINITION SYNONYMS
-GSE37250_Non_pvalue <- GSE37250_Non_pvalue[, grep("X.*", colnames(GSE37250_Non_pvalue))]
+GSE37250_Non_pvalues <- GSE37250_Non_pvalues[, grep("X.*", colnames(GSE37250_Non_pvalues))]
 
 ##### Match colnames to sample ID #####
 # Obtain raw data information from GEO
@@ -21,11 +21,11 @@ description_id <- gsub("\\..*", "", description_id_raw)
 ID_table <- data.frame(SampleID = names(GEOquery::GSMList(gse)), DescriptionID = description_id)
 
 # Demo: convert X6247215025_L.AVG_Signal to 6247215025_L, should use \\. when mathcing .
-colnames(GSE37250_Non_pvalue) <- gsub(".*X|\\..*", "", colnames(GSE37250_Non_pvalue))
-indx <- base::match(ID_table$DescriptionID, colnames(GSE37250_Non_pvalue))
-GSE37250_Non_pvalue <- GSE37250_Non_pvalue[,indx]
-colnames(GSE37250_Non_pvalue) <- ID_table$SampleID
-GSE39939_Non_normalized_counts <- GSE37250_Non_pvalue
+colnames(GSE37250_Non_pvalues) <- gsub(".*X|\\..*", "", colnames(GSE37250_Non_pvalues))
+indx <- base::match(ID_table$DescriptionID, colnames(GSE37250_Non_pvalues))
+GSE37250_Non_pvalues <- GSE37250_Non_pvalues[,indx]
+colnames(GSE37250_Non_pvalues) <- ID_table$SampleID
+GSE37250_Non_normalized_counts <- GSE37250_Non_pvalues
 
 ##### Create column data #####
 characteristic_data_frame <- readRawColData(gse)
@@ -39,7 +39,7 @@ for(i in 1:length(TBStatus)){
   if(TBStatus_temp[i] == "active tuberculosis"){
     TBStatus[i] <- "PTB"
   }
-  if(TBStatus_temp[i]=="latent TB infection"){
+  if(TBStatus_temp[i] == "latent TB infection"){
     TBStatus[i] <- "LTBI"
   }
   if(TBStatus_temp[i] == "other disease"){
@@ -50,5 +50,42 @@ characteristic_data_frame$TBStatus <- TBStatus
 HIVStatus <- characteristic_data_frame$HIVStatus
 characteristic_data_frame$HIVStatus <- ifelse(HIVStatus == "HIV negative",
                                               "Negative", "Positive")
+index_PTB <- grep("PTB",characteristic_data_frame$TBStatus)
+characteristic_data_frame$sputum_culture <- NA
+characteristic_data_frame$sputum_culture[index_PTB] <- "M.tuberculosis"
+# Add TST information for LTBI
+TST <- rep(NA, nrow(characteristic_data_frame))
+index_latent_positive <- Reduce(intersect, list(which(characteristic_data_frame$TBStatus == "LTBI"),
+                                                which(characteristic_data_frame$HIVStatus == "Positive")))
+index_latent_negative <- Reduce(intersect, list(which(characteristic_data_frame$TBStatus == "LTBI"),
+                                                which(characteristic_data_frame$HIVStatus == "Negative")))
+TST[index_latent_positive] <- ">= 5mm"
+TST[index_latent_negative] <- ">= 10mm"
+characteristic_data_frame$TST <- TST
 
+col_info <- create_standard_coldata(characteristic_data_frame)
+new_col_info <- S4Vectors::DataFrame(col_info)
 
+###### Create Row data #####
+row_data <- map_gene_symbol(GSE37250_Non_pvalues, sequencePlatform)
+new_row_data <- match_gene_symbol(row_data)
+
+###### Create Metadata #####
+GSE37250_experimentData <- methods::new("MIAME",
+                                        name = "Victoria Wright",
+                                        lab = "Wright Fleming Institute",
+                                        contact = "v.wright@imperial.ac.uk",
+                                        title = "Detection of tuberculosis in HIV-infected and -uninfected African adults using whole blood RNA expression signatures: a case-control study.",
+                                        abstract = "Adults were recruited from Cape Town, South Africa (n=300) and Karonga, Malawi (n=237) who were either HIV+ or HIV - with either active TB, LTBI or OD.",
+                                        url = "10.1371/journal.pmed.1001538",
+                                        pubMedIds = "24167453",
+                                        other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
+GSE37250_sobject <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(GSE37250_Non_normalized_counts= as.matrix(GSE37250_Non_normalized_counts)),
+  colData = new_col_info,
+  rowData = new_row_data,
+  metadata = list(GSE37250_experimentData))
+save_raw_files(GSE37250_sobject, path = "data-raw/", geo = geo)
+
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)

@@ -32,11 +32,10 @@ isolate_sensitivity[grep("n.a", isolate_sensitivity)] <- NA
 characteristic_data_frame$isolate_sensitivity <- isolate_sensitivity
 characteristic_data_frame$DiabetesStatus <- "Negative"
 characteristic_data_frame$HIVStatus <- "Negative"
-title <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
-  GEOquery::GSMList(gse)[[x]]@header$title) %>% unlist
+title <- sapply(1:length(GEOquery::GSMList(gse)), function(x)
+  GEOquery::GSMList(gse)[[x]]@header$title)
 title_split <- strsplit(title,"_")
-PatientID <- sapply(title_split, function(x) x[3])
-characteristic_data_frame$PatientID <- PatientID
+characteristic_data_frame$PatientID <- sapply(title_split, function(x) x[3])
 Treatment <- ifelse(characteristic_data_frame$TBStatus == "PTB", "anti-mycobacterial treatment", NA)
 characteristic_data_frame$Treatment <- Treatment
 col_info <- create_standard_coldata(characteristic_data_frame)
