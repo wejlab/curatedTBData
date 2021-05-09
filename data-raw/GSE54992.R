@@ -61,7 +61,7 @@ GSE54992_experimentData <- new("MIAME",
                                other=list(Platform = "Affymetrix Human Genome U133 Plus 2.0 Array (GPL570)"))
 
 GSE54992_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE54992_normalized_counts= as.matrix(GSE54992_normalized_data)),
+  assays = list(GSE54992_normalized_data= as.matrix(GSE54992_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE54992_experimentData));GSE54992_sobject

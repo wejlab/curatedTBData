@@ -13,7 +13,7 @@ GSE19435_Non_normalized <- Reduce(function (x, y)
   merge(x, y, by = "ID_REF", all = FALSE),
   lapply(GSE19435_Non_normalized_list_noPvalue, function(x) {x}))
 row.names(GSE19435_Non_normalized) <- GSE19435_Non_normalized$ID_REF
-GSE19435_Non_normalized_counts <- GSE19435_Non_pvalue <- GSE19435_Non_normalized[-1]
+GSE19435_Non_normalized_data <- GSE19435_Non_pvalue <- GSE19435_Non_normalized[-1]
 
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -55,7 +55,7 @@ GSE19435_experimentData <- methods::new("MIAME",
                                         pubMedIds = "20725040",
                                         other = list(Platform = "Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)"))
 GSE19435_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE19435_Non_normalized_counts= as.matrix(GSE19435_Non_normalized_counts)),
+  assays = list(GSE19435_Non_normalized_data = as.matrix(GSE19435_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE19435_experimentData));GSE19435_sobject

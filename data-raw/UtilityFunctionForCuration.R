@@ -4,13 +4,18 @@ readRawData <- function(geo, sequencePlatform, urlIndex = NULL) {
     # Illumina Microarry V3
     result <- readRawDataGPL6947(urls, urlIndex)
     return(result)
-
+  } else if (sequencePlatform == "GPL6102") {
+    result <- readRawDataGPL6102(urls, urlIndex)
+    return(result)
   } else if (sequencePlatform == "GPL10558") {
     # Illumina Microarry V4
     result <- readRawDataGPL10558(urls, urlIndex)
     return(result)
   } else if (sequencePlatform == "GPL570") {
     result <- readRawDataGPL570(urls, urlIndex)
+    return(result)
+  } else if (sequencePlatform == "GPL6883") {
+    result <- readRawDataGPL6883(urls, urlIndex)
     return(result)
   }
 }
@@ -20,10 +25,10 @@ readRawDataGPL6947 <- function(urls, urlIndex = NULL) {
   tempd <- tempdir()
   url_sub <- as.character(urls$url[1])
   utils::download.file(url_sub, temp)
-  utils::untar(temp,exdir = tempd)
+  utils::untar(temp, exdir = tempd)
   files <- list.files(tempd, pattern = "txt.*")
   data_Non_normalized_list <- lapply(files, function(x)
-    read.delim(paste0(tempd,"/",x), header = TRUE,
+    read.delim(paste0(tempd, "/" ,x), header = TRUE,
                col.names = c("ID_REF", gsub("_.*", "", x),
                              paste0(gsub("_.*", "", x), ".Pval")),
                stringsAsFactors = FALSE))
@@ -33,6 +38,26 @@ readRawDataGPL6947 <- function(urls, urlIndex = NULL) {
     x[, -grep('pval', colnames(x), ignore.case = TRUE)])
   return(data_Non_normalized_list_noPvalue)
 }
+
+readRawDataGPL6102 <- function(urls, urlIndex = NULL) {
+  temp <- tempfile()
+  tempd <- tempdir()
+  url_sub <- as.character(urls$url[1])
+  utils::download.file(url_sub, temp)
+  utils::untar(temp, exdir = tempd)
+  files <- list.files(tempd, pattern = "txt.*")
+  data_Non_normalized_list <- lapply(files, function(x)
+    read.delim(paste0(tempd, "/", x), header = TRUE,
+               col.names = c("ID_REF", gsub("_.*", "", x),
+                             paste0(gsub("_.*", "", x), ".Pval")),
+               stringsAsFactors = FALSE))
+  # Remove temporary files
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
+    x[, -grep('pval', colnames(x), ignore.case = TRUE)])
+  return(data_Non_normalized_list_noPvalue)
+}
+
 
 readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
   temp <- tempfile()
@@ -47,7 +72,7 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
       url_temp <- urls$url[index]
       index1 <- grep("non-normalized", url_temp)
       if (length(index1) != 1) {
-        stop("Cannot identify the correct urls. Plases specifcy it manually using the
+        stop("Cannot identify the right urls. Plases specifcy it manually using the
              urlIndex parameter.")
       }
       url_sub <- as.character(url_temp[index1])
@@ -58,6 +83,42 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
     url_sub <- as.character(urls$url[urlIndex])
   }
   # Illumina Microarray V4
+  utils::download.file(url_sub, temp)
+  data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
+    dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  if(length(indexPvalue) == 0) {
+    message("Column(s) with p-value not found, return full datasets")
+    return(data_Non_normalized)
+  } else {
+    data_non_pvalue <- data_Non_normalized[, -indexPvalue]
+    return(data_non_pvalue)
+  }
+}
+readRawDataGPL6883 <- function(urls, urlIndex = NULL) {
+  temp <- tempfile()
+  tempd <- tempdir()
+  if (is.null(urlIndex)) {
+    index <- grep("*.txt.gz", unlist(urls$url))
+    if (length(index) == 0) {
+      stop("Raw data with txt.gz not found from supplementary file. Exit the function.")
+    }
+    if (length(index) != 1) {
+      message("More than one link selected, looking for non-nomarlized file")
+      url_temp <- urls$url[index]
+      index1 <- grep("non-normalized", url_temp)
+      if (length(index1) != 1) {
+        stop("Cannot identify the right urls. Plases specifcy it manually using the
+             urlIndex parameter.")
+      }
+      url_sub <- as.character(url_temp[index1])
+    } else {
+      url_sub <- as.character(urls$url[index])
+    }
+  } else {
+    url_sub <- as.character(urls$url[urlIndex])
+  }
   utils::download.file(url_sub, temp)
   data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
     dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
@@ -127,8 +188,9 @@ map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
   sequence_result <- GEOquery::getGEO(sequencePlatform, GSEMatrix = FALSE)
   sequence_result_dat <- sequence_result@dataTable@table
   PROBES <- row.names(data_non_pvalue)
-
-  if (sequencePlatform == "GPL6947") {
+  if (sequencePlatform == "GPL6102") {
+    OUT <- AnnotationDbi::select(illuminaHumanv2.db::illuminaHumanv2.db, PROBES, "SYMBOL")
+  } else if (sequencePlatform == "GPL6947" || sequencePlatform == "GPL6883") {
     OUT <- AnnotationDbi::select(illuminaHumanv3.db::illuminaHumanv3.db, PROBES, "SYMBOL")
   } else if (sequencePlatform == "GPL10558") {
     OUT <- AnnotationDbi::select(illuminaHumanv4.db::illuminaHumanv4.db, PROBES, "SYMBOL")
@@ -171,10 +233,10 @@ match_gene_symbol <- function(row_data) {
 save_raw_files <- function(sobject, path, geo) {
   column_data <- SummarizedExperiment::colData(sobject)
   row_data <- SummarizedExperiment::rowData(sobject)
-  assay_raw_counts <- SummarizedExperiment::assay(sobject)
+  assay_raw <- SummarizedExperiment::assay(sobject)
   meta_data <- S4Vectors::metadata(sobject)[[1]]
   lst <- list(column_data = column_data, row_data = row_data,
-              assay_raw_counts = assay_raw_counts,
+              assay_raw = assay_raw,
               meta_data = meta_data)
   lapply(1:length(lst), function(i) {
     saveRDS(lst[[i]], paste0(path, geo, "_", names(lst)[i], ".RDS"))
