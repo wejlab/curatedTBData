@@ -147,6 +147,7 @@ readRawDataGPL570 <- function(urls, urlIndex = NULL) {
 }
 
 ################################################################################
+# Functions to create column data
 readRawColData <- function(gse) {
   data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
     GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
@@ -157,7 +158,6 @@ readRawColData <- function(gse) {
   row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
   return(characteristic_data_frame)
 }
-
 create_standard_coldata <- function(col_data) {
   standard_name_seq <- c("Age", "Gender", "Ethnicity", "TBStatus", "GeographicalRegion",
                          "BcgVaccinated", "BirthRegion", "TST", "Tissue", "HIVStatus",
@@ -183,6 +183,7 @@ create_standard_coldata <- function(col_data) {
   return(dat_final)
 }
 
+# Functions to create row data
 map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
   data_non_pvalue <- data.frame(data_non_pvalue)
   sequence_result <- GEOquery::getGEO(sequencePlatform, GSEMatrix = FALSE)
@@ -230,6 +231,49 @@ match_gene_symbol <- function(row_data) {
   return(row_data)
 }
 
+# Perform normalization on probe level raw data
+normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
+                          method = NULL) {
+  if (dataType == "Microarray") {
+    data_Non_normalized[data_Non_normalized < 10] <- 10
+    datLog <- log(data_Non_normalized, base = 2) # log2 transformed data
+    if (platform == "Illumina" || platform == "Agilent") {
+      datNormed <- limma::normalizeBetweenArrays (datLog, method = method)
+      return(datNormed)
+    }
+  } else if (dataType == "RNA-seq") {
+    return(NULL)
+  }
+}
+probesetsToGenes <- function(row_data, data_normalized, FUN) {
+  row_data_sub <- row_data[which(row_data$ID_REF %in% row.names(data_normalized)),]
+  if (!all(row.names(data_normalized) == row_data_sub$ID_REF)){
+    stop("Input Summarized Experiment Object row names are not exactly the same with ID_REF from row Data, consider change")
+  }
+  exprs1 <- data_normalized %>%
+    dplyr::as_tibble() %>%
+    dplyr::mutate(SYMBOL = row_data_sub$SYMBOL_NEW) %>%
+    dplyr::filter(.data$SYMBOL != "NA") %>%
+    dplyr::filter(.data$SYMBOL != "")
+  if(length(grep("///", exprs1$SYMBOL)) != 0){
+    exprs1 <- expandProbesets(exprs1, sep = "///")
+  }
+  exprs2 <- stats::aggregate(. ~ SYMBOL, data = exprs1,
+                             FUN = FUN, na.action = na.pass)
+  row.names(exprs2) <- exprs2$SYMBOL
+
+  final <- as.matrix(exprs2[, -which(colnames(exprs2) == "SYMBOL")])
+  return(final)
+}
+# Match gene symbol to normalized data
+makeCuratedExprs <- function(row_data, data_Non_normalized, dataType,
+                             platform = NULL, method = NULL, FUN = median) {
+  data_normalized <- normalizeExprs(data_Non_normalized, dataType, platform, method)
+  dat_curated <- probesetsToGenes(row_data, data_normalized, FUN)
+  return(dat_curated)
+}
+
+# Save files in separate RDS file
 save_raw_files <- function(sobject, path, geo) {
   column_data <- SummarizedExperiment::colData(sobject)
   row_data <- SummarizedExperiment::rowData(sobject)
@@ -243,6 +287,30 @@ save_raw_files <- function(sobject, path, geo) {
   })
 }
 
+expandProbesets <- function(dat, sep){
+  times <- NULL
+  # Get index with duplicated symbol
+  index <- grep(sep, dat$SYMBOL)
+  sobject_exprs_dup <- dat[index,]
+
+  x_list <- strsplit(as.character(sobject_exprs_dup$SYMBOL), sep)
+  symbol_dup <- gsub(" ", "", unlist(x_list))
+  sobject_exprs_dup$times <- unlist(lapply(x_list, length))
+
+  # Expand rows based on their frequency
+  sobject_exprs_expand <- as.data.frame(lapply(sobject_exprs_dup, rep,
+                                               sobject_exprs_dup$times))
+  sobject_exprs_expand$SYMBOL <- symbol_dup
+  sobject_exprs_expand_result <- sobject_exprs_expand %>% dplyr::select(-times)
+
+  # double-check SYMBOL does not contain NA
+  if(any(is.na(sobject_exprs_expand_result$SYMBOL))){
+    stop("Expand probe sets contain NA's, please check")
+  }
+  sobject_exprs_result <- rbind(dat[-index,],sobject_exprs_expand_result)
+  return(sobject_exprs_result)
+
+}
 
 
 
