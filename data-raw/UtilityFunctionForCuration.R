@@ -84,17 +84,20 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
   }
   # Illumina Microarray V4
   utils::download.file(url_sub, temp)
-  data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
-    dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
+  # data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
+  #   dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
+  xr <- limma::read.ilmn(files = gzfile(temp))
+  yr <- limma::neqc(xr)
   unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
-  if(length(indexPvalue) == 0) {
-    message("Column(s) with p-value not found, return full datasets")
-    return(data_Non_normalized)
-  } else {
-    data_non_pvalue <- data_Non_normalized[, -indexPvalue]
-    return(data_non_pvalue)
-  }
+  final <- list(data_Non_normalized = xr$E, data_normalized = yr$E)
+  # indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  # if(length(indexPvalue) == 0) {
+  #   message("Column(s) with p-value not found, return full datasets")
+  #   return(data_Non_normalized)
+  # } else {
+  #   data_non_pvalue <- data_Non_normalized[, -indexPvalue]
+  #   return(data_non_pvalue)
+  # }
 }
 readRawDataGPL6883 <- function(urls, urlIndex = NULL) {
   temp <- tempfile()
@@ -235,10 +238,12 @@ match_gene_symbol <- function(row_data) {
 normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
                           method = NULL) {
   if (dataType == "Microarray") {
-    data_Non_normalized[data_Non_normalized < 10] <- 10
-    datLog <- log(data_Non_normalized, base = 2) # log2 transformed data
-    if (platform == "Illumina" || platform == "Agilent") {
-      datNormed <- limma::normalizeBetweenArrays (datLog, method = method)
+    # data_Non_normalized[data_Non_normalized < 10] <- 10
+    # datLog <- log(data_Non_normalized, base = 2) # log2 transformed data
+    if (platform == "Agilent") {
+      datBackground <- limma::backgroundCorrect.matrix(data_Non_normalized,
+                                                       method = "normexp")
+      datNormed <- limma::normalizeBetweenArrays(datBackground, method = method)
       return(datNormed)
     }
   } else if (dataType == "RNA-seq") {
@@ -248,7 +253,7 @@ normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
 probesetsToGenes <- function(row_data, data_normalized, FUN) {
   row_data_sub <- row_data[which(row_data$ID_REF %in% row.names(data_normalized)),]
   if (!all(row.names(data_normalized) == row_data_sub$ID_REF)){
-    stop("Input Summarized Experiment Object row names are not exactly the same with ID_REF from row Data, consider change")
+    stop("Row names are not exactly the same with ID_REF from row Data, consider change")
   }
   exprs1 <- data_normalized %>%
     dplyr::as_tibble() %>%
