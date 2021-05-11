@@ -21,6 +21,8 @@ col_name1 <- gsub(".*/", "", colnames(GSE28623_Non_normalized_data))
 colnames(GSE28623_Non_normalized_data) <- gsub("_.*", "", col_name1)
 GSE28623_Non_pvalue <- GSE28623_Non_normalized_data
 
+##### Create curated assay ####
+
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 characteristic_data_frame <- readRawColData(gse)
@@ -75,7 +77,9 @@ GSE28623_sobject <- SummarizedExperiment::SummarizedExperiment(
   metadata = list(GSE28623_experimentData));GSE28623_sobject
 save_raw_files(GSE28623_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-curatedExprs <- makeCuratedExprs(row_data = new_row_data, data_Non_normalized = GSE28623_Non_normalized_data,
+
+curatedExprs <- makeCuratedExprs(row_data = new_row_data,
+                                 data_Non_normalized = GSE28623_Non_normalized_data,
                                  dataType = "Microarray", platform = "Agilent",
                                  method = "quantile", FUN = median)
 saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))

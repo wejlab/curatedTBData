@@ -79,4 +79,8 @@ GSE34608_sobject <- SummarizedExperiment::SummarizedExperiment(
 save_raw_files(GSE34608_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 
-
+curatedExprs <- makeCuratedExprs(row_data = new_row_data,
+                                 data_Non_normalized = GSE34608_Non_normalized_data,
+                                 dataType = "Microarray", platform = "Agilent",
+                                 method = "quantile", FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))

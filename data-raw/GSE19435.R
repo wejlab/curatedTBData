@@ -61,3 +61,12 @@ GSE19435_sobject <- SummarizedExperiment::SummarizedExperiment(
   metadata = list(GSE19435_experimentData));GSE19435_sobject
 save_raw_files(GSE19435_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+
+curatedExprs <- makeCuratedExprs(row_data = new_row_data,
+                                 data_Non_normalized = GSE19435_Non_normalized_data,
+                                 dataType = "Microarray", platform = "Illumina",
+                                 method = "quantile", FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
+
+xr <- read.ilmn(files="sample probe profile.txt")
+yr <- neqc(xr)
