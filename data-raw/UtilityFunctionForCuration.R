@@ -1,4 +1,4 @@
-readRawData <- function(geo, sequencePlatform, urlIndex = NULL) {
+readRawData <- function(geo, sequencePlatform, urlIndex = NULL, matrix.only = FALSE) {
   urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
   if (sequencePlatform == "GPL6947") {
     # Illumina Microarry V3
@@ -9,7 +9,7 @@ readRawData <- function(geo, sequencePlatform, urlIndex = NULL) {
     return(result)
   } else if (sequencePlatform == "GPL10558") {
     # Illumina Microarry V4
-    result <- readRawDataGPL10558(urls, urlIndex)
+    result <- readRawDataGPL10558(urls, urlIndex, matrix.only)
     return(result)
   } else if (sequencePlatform == "GPL570") {
     result <- readRawDataGPL570(urls, urlIndex)
@@ -59,9 +59,9 @@ readRawDataGPL6102 <- function(urls, urlIndex = NULL) {
 }
 
 
-readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
+readRawDataGPL10558 <- function(urls, urlIndex = NULL, matrix.only = FALSE) {
   temp <- tempfile()
-  tempd <- tempdir()
+  # tempd <- tempdir()
   if (is.null(urlIndex)) {
     index <- grep("*.txt.gz", unlist(urls$url))
     if (length(index) == 0) {
@@ -84,20 +84,22 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL) {
   }
   # Illumina Microarray V4
   utils::download.file(url_sub, temp)
-  # data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
-  #   dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
-  xr <- limma::read.ilmn(files = gzfile(temp))
-  yr <- limma::neqc(xr)
+  data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
+    dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
   unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-  final <- list(data_Non_normalized = xr$E, data_normalized = yr$E)
-  # indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
-  # if(length(indexPvalue) == 0) {
-  #   message("Column(s) with p-value not found, return full datasets")
-  #   return(data_Non_normalized)
-  # } else {
-  #   data_non_pvalue <- data_Non_normalized[, -indexPvalue]
-  #   return(data_non_pvalue)
-  # }
+  if (matrix.only) {
+    return(data_Non_normalized)
+  }
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  if(length(indexPvalue) == 0) {
+    message("Column(s) with p-value not found, return full datasets")
+    return(data_Non_normalized)
+  } else {
+    xr <- new("EListRaw", list(E = data_Non_normalized[, -indexPvalue],
+                               other = list(Detection = data_Non_normalized[, indexPvalue])))
+    yr <- limma::neqc(xr)
+    return(list(data_Non_normalized = xr$E, data_normalized = yr$E))
+  }
 }
 readRawDataGPL6883 <- function(urls, urlIndex = NULL) {
   temp <- tempfile()
@@ -234,7 +236,25 @@ match_gene_symbol <- function(row_data) {
   return(row_data)
 }
 
-# Perform normalization on probe level raw data
+# Perform normalization on probe level for the raw data
+norm_probeToGenes_Agilent <- function(EListRaw, FUN = median) {
+  y <- limma::backgroundCorrect(EListRaw, method = "normexp")
+  y <- limma::normalizeBetweenArrays(y, method = "quantile")
+  # Filter control probes and probes with no symbol
+  Control <- y$genes$ControlType==1L
+  NoSymbol <- is.na(y$genes$GeneName)
+  yfilt <- y[!Control & !NoSymbol, ]
+  dataNorm <- data.frame(yfilt$E)
+  dataNorm$SYMBOL <- yfilt$genes$GeneName
+  exprs2 <- stats::aggregate(. ~ SYMBOL, data = dataNorm,
+                             FUN = FUN, na.action = na.pass)
+  row.names(exprs2) <- exprs2$SYMBOL
+
+  final <- as.matrix(exprs2[, -which(colnames(exprs2) == "SYMBOL")])
+  return(final)
+}
+#normalizeIllumina
+#normalizeHiseq
 normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
                           method = NULL) {
   if (dataType == "Microarray") {
