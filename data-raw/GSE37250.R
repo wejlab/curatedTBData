@@ -7,10 +7,15 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE37250"
 sequencePlatform <- "GPL10558"
-GSE37250_Non_pvalues <- readRawData(geo, sequencePlatform)
-# Remove SYMBOL SEARCH_KEY ILMN_GENE CHROMOSOME DEFINITION SYNONYMS
-GSE37250_Non_pvalues <- GSE37250_Non_pvalues[, grep("X.*", colnames(GSE37250_Non_pvalues))]
 
+GSE37250_raw_data <- readRawData(geo, sequencePlatform, matrix.only = TRUE)
+# Remove SYMBOL SEARCH_KEY ILMN_GENE CHROMOSOME DEFINITION SYNONYMS
+GSE37250_raw_data1 <- GSE37250_raw_data[, grep("X.*", colnames(GSE37250_raw_data))]
+indexPvalue <- grep("pval", colnames(GSE37250_raw_data1), ignore.case=TRUE)
+xr <- new("EListRaw", list(E = GSE37250_raw_data1[, -indexPvalue],
+                           other = list(Detection = GSE37250_raw_data1[, indexPvalue])))
+yr <- limma::neqc(xr)
+GSE37250_Non_pvalues <- xr$E
 ##### Match colnames to sample ID #####
 # Obtain raw data information from GEO
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -25,7 +30,7 @@ colnames(GSE37250_Non_pvalues) <- gsub(".*X|\\..*", "", colnames(GSE37250_Non_pv
 indx <- base::match(ID_table$DescriptionID, colnames(GSE37250_Non_pvalues))
 GSE37250_Non_pvalues <- GSE37250_Non_pvalues[,indx]
 colnames(GSE37250_Non_pvalues) <- ID_table$SampleID
-GSE37250_Non_normalized_counts <- GSE37250_Non_pvalues
+GSE37250_Non_normalized_data <- GSE37250_Non_pvalues
 
 ##### Create column data #####
 characteristic_data_frame <- readRawColData(gse)
@@ -81,11 +86,18 @@ GSE37250_experimentData <- methods::new("MIAME",
                                         pubMedIds = "24167453",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 GSE37250_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE37250_Non_normalized_counts= as.matrix(GSE37250_Non_normalized_counts)),
+  assays = list(GSE37250_Non_normalized_data = as.matrix(GSE37250_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE37250_experimentData))
 save_raw_files(GSE37250_sobject, path = "data-raw/", geo = geo)
 
+##### Create normalized curated assay #####
+GSE37250_normed <- yr$E[,indx]
+colnames(GSE37250_normed) <- ID_table$SampleID
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE37250_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)

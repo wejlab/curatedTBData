@@ -7,7 +7,8 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in Non-normalized data #####
 geo <- "GSE39940"
 sequencePlatform <- "GPL10558"
-GSE39940_Non_pvalue <- readRawData(geo, sequencePlatform)
+GSE39940_data_list <- readRawData(geo, sequencePlatform)
+GSE39940_Non_pvalue <- GSE39940_data_list$data_Non_normalized
 
 ##### Match colnames to sample ID #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -22,7 +23,7 @@ colnames(GSE39940_Non_pvalue) <- gsub(".*X|\\..*", "", colnames(GSE39940_Non_pva
 indx <- base::match(ID_table$DescriptionID, colnames(GSE39940_Non_pvalue))
 GSE39940_Non_pvalue <- GSE39940_Non_pvalue[,indx]
 colnames(GSE39940_Non_pvalue) <- ID_table$SampleID
-GSE39940_Non_normalized_counts <- GSE39940_Non_pvalue
+GSE39940_Non_normalized_data <- GSE39940_Non_pvalue
 
 ##### Create Column Data #####
 characteristic_data_frame <- readRawColData(gse)
@@ -64,10 +65,19 @@ GSE39940_experimentData <- methods::new("MIAME",
                                         pubMedIds = "24785206",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 GSE39940_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE39940_Non_normalized_counts= as.matrix(GSE39940_Non_normalized_counts)),
+  assays = list(GSE39940_Non_normalized_data = as.matrix(GSE39940_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE39940_experimentData))
 save_raw_files(GSE39940_sobject, path = "data-raw/", geo = geo)
 
+##### Create normalized curated assay #####
+GSE39940_normed <- GSE39940_data_list$data_normalized[,indx]
+colnames(GSE39940_normed) <- ID_table$SampleID
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE39940_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
+# Remove files in temporary directory
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)

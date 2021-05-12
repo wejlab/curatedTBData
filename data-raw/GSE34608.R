@@ -5,7 +5,7 @@ if (!require("magrittr", character.only = TRUE)) {
 source("data-raw/UtilityFunctionForCuration.R")
 
 ##### Read in raw data #####
-geo <- "GSE62147"
+geo <- "GSE34608"
 sequencePlatform <- "GPL6480"
 
 temp <- tempfile()
@@ -23,6 +23,11 @@ GSE34608_Non_normalized_data <- GSE34608_RNA$E
 row.names(GSE34608_Non_normalized_data) <- GSE34608_RNA$genes$ProbeName
 colnames(GSE34608_Non_normalized_data) <- gsub("_.*", "", filesRNA_reduce)
 GSE34608_Non_pvalue <- GSE34608_Non_normalized_data
+
+##### Create curated assay ####
+curatedExprs <- norm_probeToGenes_Agilent(GSE34608_RNA, FUN = median)
+colnames(curatedExprs) <- colnames(GSE34608_Non_normalized_data)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -79,8 +84,4 @@ GSE34608_sobject <- SummarizedExperiment::SummarizedExperiment(
 save_raw_files(GSE34608_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 
-curatedExprs <- makeCuratedExprs(row_data = new_row_data,
-                                 data_Non_normalized = GSE34608_Non_normalized_data,
-                                 dataType = "Microarray", platform = "Agilent",
-                                 method = "quantile", FUN = median)
-saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
+

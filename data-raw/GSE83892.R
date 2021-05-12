@@ -8,7 +8,8 @@ source("data-raw/UtilityFunctionForCuration.R")
 geo <- "GSE83892"
 sequencePlatform <- "GPL10558"
 # Used the normalized data, cannot identify description ID to sample ID in the non-normalized data
-GSE83892_Non_pvalues <- readRawData(geo, sequencePlatform)
+GSE83892_data_list <- readRawData(geo, sequencePlatform)
+GSE83892_Non_pvalues <- GSE83892_data_list$data_Non_normalized
 urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
 url_ID <- as.character(urls$url[1])
 temp_ID <- tempfile()
@@ -20,7 +21,7 @@ GSE83892_ID$DescriptionID <- paste0("X", GSE83892_ID$DescriptionID)
 indx <- match(GSE83892_ID$DescriptionID, colnames(GSE83892_Non_pvalues))
 GSE83892_Non_pvalues <- GSE83892_Non_pvalues[,indx]
 colnames(GSE83892_Non_pvalues) <- GSE83892_ID$SampleID
-GSE83892_Non_normalized_counts <- GSE83892_Non_pvalues
+GSE83892_Non_normalized_data <- GSE83892_Non_pvalues
 
 ##### Create column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -63,12 +64,19 @@ GSE83892_experimentData <- methods::new("MIAME",
                                         pubMedIds = "27932622",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 GSE83892_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE83892_Non_normalized_counts= as.matrix(GSE83892_Non_normalized_counts)),
+  assays = list(GSE83892_Non_normalized_data = as.matrix(GSE83892_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE83892_experimentData));GSE83892_sobject
 save_raw_files(GSE83892_sobject, path = "data-raw/", geo = geo)
 
+##### Create normalized curated assay #####
+GSE83892_normed <- GSE83892_data_list$data_normalized[,indx]
+colnames(GSE83892_normed) <- GSE83892_ID$SampleID
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE83892_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 

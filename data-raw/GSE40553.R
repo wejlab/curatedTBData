@@ -7,9 +7,13 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE40553"
 sequencePlatform <- "GPL10558"
-GSE40553_Non_pvalues_SA <- readRawData(geo, sequencePlatform, urlIndex = 4)
-GSE40553_Non_pvalues_UK <- readRawData(geo, sequencePlatform, urlIndex = 5)
+GSE40553_raw_SA <- readRawData(geo, sequencePlatform, urlIndex = 4, matrix.only = TRUE)
+indexPvalue_SA <- grep("pval", colnames(GSE40553_raw_SA), ignore.case = TRUE)
+GSE40553_Non_pvalues_SA <- GSE40553_raw_SA[, -indexPvalue_SA]
 
+GSE40553_raw_UK <- readRawData(geo, sequencePlatform, urlIndex = 5, matrix.only = TRUE)
+indexPvalue_UK <- grep("pval", colnames(GSE40553_raw_UK), ignore.case = TRUE)
+GSE40553_Non_pvalues_UK <- GSE40553_raw_UK[, -indexPvalue_UK]
 ##### Match colnames to sample ID #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 description_id_raw <- sapply(1:length(names(GEOquery::GSMList(gse))),
@@ -25,14 +29,32 @@ ID_table <- data.frame(SampleID = names(GEOquery::GSMList(gse)),
                        DescriptionID = description_id)
 # Merge two datasets
 GSE40553_Non_pvalues_ori <- merge(GSE40553_Non_pvalues_SA, GSE40553_Non_pvalues_UK,
-                                  by = "row.names", all = TRUE)
+                                  by = "row.names", all = TRUE) # Have NA for probes
+
 row.names(GSE40553_Non_pvalues_ori) <- GSE40553_Non_pvalues_ori$Row.names
-GSE40553_Non_pvalues <- GSE40553_Non_pvalues_ori %>% dplyr::select(-c("Row.names"))
+GSE40553_Non_pvalues_ori <- GSE40553_Non_pvalues_ori[, -1]
+# Match sample ID to GSM names
+GSE40553_Non_pvalues <- GSE40553_Non_pvalues_ori
 colnames(GSE40553_Non_pvalues) <- gsub("X", "", colnames(GSE40553_Non_pvalues))
 indx <- base::match(ID_table$DescriptionID, colnames(GSE40553_Non_pvalues))
 GSE40553_Non_pvalues <- GSE40553_Non_pvalues[,indx]
 colnames(GSE40553_Non_pvalues) <- ID_table$SampleID
-GSE40553_Non_normalized_counts <- GSE40553_Non_pvalues
+GSE40553_Non_normalized_data <- GSE40553_Non_pvalues
+
+# Create normalized data
+GSE40553_Non_pvalues_intersect <- merge(GSE40553_Non_pvalues_SA,
+                                        GSE40553_Non_pvalues_UK,
+                                        by = "row.names", all = FALSE)
+row.names(GSE40553_Non_pvalues_intersect) <- GSE40553_Non_pvalues_intersect$Row.names
+GSE40553_Non_pvalues_intersect <- GSE40553_Non_pvalues_intersect[, -1]
+GSE40553_pvalue_only_intersect <- merge(GSE40553_raw_SA[, indexPvalue_SA],
+                                        GSE40553_raw_UK[, indexPvalue_UK],
+                                        by = "row.names", all = FALSE)
+row.names(GSE40553_pvalue_only_intersect) <- GSE40553_pvalue_only_intersect$Row.names
+GSE40553_pvalue_only_intersect <- GSE40553_pvalue_only_intersect[, -1]
+xr <- new("EListRaw", list(E = GSE40553_Non_pvalues_intersect,
+                           other = list(Detection = GSE40553_pvalue_only_intersect)))
+yr <- limma::neqc(xr)
 
 ##### Create column data #####
 characteristic_data_frame <- readRawColData(gse)
@@ -76,12 +98,19 @@ Analysis of South African blood transcriptional profiles before treatment to ind
                                         pubMedIds = "23056259",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 GSE40553_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE40553_Non_normalized_counts= as.matrix(GSE40553_Non_normalized_counts)),
+  assays = list(GSE40553_Non_normalized_data = as.matrix(GSE40553_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE40553_experimentData))
 save_raw_files(GSE40553_sobject, path = "data-raw/", geo = geo)
 
+##### Create normalized curated assay #####
+GSE40553_normed <- yr$E[,indx]
+colnames(GSE40553_normed) <- ID_table$SampleID
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE40553_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 # Remove files in temporary directory
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 

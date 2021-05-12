@@ -5,13 +5,12 @@ if (!require("magrittr", character.only = TRUE)) {
 source("data-raw/UtilityFunctionForCuration.R")
 
 ##### Read in raw data #####
-##### Read in raw data #####
 geo <- "GSE42831"
 sequencePlatform <- "GPL10558"
-GSE42831_Non_normalized_counts <- GSE42831_Non_pvalue <- readRawData(geo, sequencePlatform)
-
+GSE42831_data_list <- readRawData(geo, sequencePlatform)
+GSE42831_Non_normalized_data <- GSE42831_Non_pvalue <- GSE42831_data_list$data_Non_normalized
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
-colnames(GSE42831_Non_pvalue) <- colnames(GSE42831_Non_normalized_counts) <-
+colnames(GSE42831_Non_pvalue) <- colnames(GSE42831_Non_normalized_data) <-
   names(GEOquery::GSMList(gse))
 
 ##### Create column data #####
@@ -45,11 +44,18 @@ GSE42831_experimentData <- methods::new("MIAME",
                                         other = list(Platform = "Illumina HumanHT-12 V4.0 expression beadchip (GPL10558)"))
 
 GSE42831_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE42831_Non_normalized_counts = as.matrix(GSE42831_Non_normalized_counts)),
+  assays = list(GSE42831_Non_normalized_data = as.matrix(GSE42831_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE42831_experimentData));GSE42831_sobject
 save_raw_files(GSE42831_sobject, path = "data-raw/", geo = geo)
+##### Create normalized curated assay #####
+GSE42831_normed <- GSE42831_data_list$data_normalized
+colnames(GSE42831_normed) <- names(GEOquery::GSMList(gse))
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE42831_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 
 
