@@ -6,9 +6,20 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE22098"
 sequencePlatform <- "GPL6947"
-GSE22098_Non_normalized_list_noPvalue1 <- readRawData(geo, sequencePlatform)
+urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
+temp <- tempfile()
+tempd <- tempdir()
+url_sub <- as.character(urls$url[1])
+utils::download.file(url_sub, temp)
+utils::untar(temp, exdir = tempd)
+files <- list.files(tempd, pattern = "txt.*")
+data_Non_normalized_list <- lapply(files, function(x)
+  read.delim(paste0(tempd, "/" ,x), header = TRUE,
+             col.names = c("ID_REF", gsub("_.*", "", x),
+                           paste0(gsub("_.*", "", x), ".Pval")),
+             stringsAsFactors = FALSE))
 # Take long time
-GSE22098_Non_normalized_list_noPvalue <- lapply(GSE22098_Non_normalized_list_noPvalue1, function(x) {
+data_Non_normalized_list_final <- lapply(data_Non_normalized_list, function(x) {
     # Remove duplicates in ID_REF
     x %>% dplyr::as_tibble() %>%
           dplyr::group_by(ID_REF) %>%
@@ -16,11 +27,15 @@ GSE22098_Non_normalized_list_noPvalue <- lapply(GSE22098_Non_normalized_list_noP
 # Merge list to a matrix based on the ID_REF
 GSE22098_Non_normalized <- Reduce(function(x, y)
   merge(x, y, by = "ID_REF", all = FALSE),
-  lapply(GSE22098_Non_normalized_list_noPvalue, function(x) {x}))
+  lapply(data_Non_normalized_list_final, function(x) {x}))
 
 row.names(GSE22098_Non_normalized) <- GSE22098_Non_normalized$ID_REF
-GSE22098_Non_normalized_counts <- GSE22098_Non_pvalue <- GSE22098_Non_normalized[-1]
-
+GSE22098_Non_normalized <- GSE22098_Non_normalized[, -1]
+indexPvalue <- grep("pval", colnames(GSE22098_Non_normalized), ignore.case = TRUE)
+xr <- new("EListRaw", list(E = GSE22098_Non_normalized[, -indexPvalue],
+                           other = list(Detection = GSE22098_Non_normalized[, indexPvalue])))
+yr <- limma::neqc(xr)
+GSE22098_Non_normalized_data <- GSE22098_Non_pvalue <- xr$E
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 characteristic_data_frame <- readRawColData(gse)
@@ -65,9 +80,16 @@ GSE22098_experimentData <- methods::new("MIAME",
                                         pubMedIds = "20725040",
                                         other = list(Platform = "Illumina HumanHT-12 V3.0 expression beadchip (GPL6947)"))
 GSE22098_sobject <- SummarizedExperiment::SummarizedExperiment(
-  assays = list(GSE22098_Non_normalized_counts= as.matrix(GSE22098_Non_normalized_counts)),
+  assays = list(GSE22098_Non_normalized_data = as.matrix(GSE22098_Non_normalized_data)),
   colData = new_col_info,
   rowData = new_row_data,
   metadata = list(GSE22098_experimentData));GSE22098_sobject
 save_raw_files(GSE22098_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+##### Create normalized curated assay #####
+GSE22098_normed <- yr$E
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE22098_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
+

@@ -34,9 +34,19 @@ readRawDataGPL6947 <- function(urls, urlIndex = NULL) {
                stringsAsFactors = FALSE))
   # Remove temporary files
   unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-  data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
-    x[, -grep('pval', colnames(x), ignore.case = TRUE)])
-  return(data_Non_normalized_list_noPvalue)
+  # data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
+  #   x[, -grep('pval', colnames(x), ignore.case = TRUE)])
+  message("Merge list into one matrix based on probe ID")
+  data_Non_normalized <- Reduce(function (x, y)
+    merge(x, y, by = "ID_REF", all = FALSE),
+    lapply(data_Non_normalized_list, function(x) {x}))
+  row.names(data_Non_normalized) <- data_Non_normalized$ID_REF
+  data_Non_normalized <- as.matrix(data_Non_normalized[, -1])
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  xr <- new("EListRaw", list(E = data_Non_normalized[, -indexPvalue],
+                             other = list(Detection = data_Non_normalized[, indexPvalue])))
+  yr <- limma::neqc(xr)
+  return(list(data_Non_normalized = xr$E, data_normalized = yr$E))
 }
 
 readRawDataGPL6102 <- function(urls, urlIndex = NULL) {

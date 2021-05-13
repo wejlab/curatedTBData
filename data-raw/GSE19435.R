@@ -7,13 +7,8 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE19435"
 sequencePlatform <- "GPL6947"
-GSE19435_Non_normalized_list_noPvalue <- readRawData(geo, sequencePlatform)
-# Merge list to a matrix based on the ID_REF
-GSE19435_Non_normalized <- Reduce(function (x, y)
-  merge(x, y, by = "ID_REF", all = FALSE),
-  lapply(GSE19435_Non_normalized_list_noPvalue, function(x) {x}))
-row.names(GSE19435_Non_normalized) <- GSE19435_Non_normalized$ID_REF
-GSE19435_Non_normalized_data <- GSE19435_Non_pvalue <- GSE19435_Non_normalized[-1]
+GSE19435_data_list <- readRawData(geo, sequencePlatform)
+GSE19435_Non_normalized_data <- GSE19435_Non_pvalue <- GSE19435_data_list$data_Non_normalized
 
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -60,13 +55,13 @@ GSE19435_sobject <- SummarizedExperiment::SummarizedExperiment(
   rowData = new_row_data,
   metadata = list(GSE19435_experimentData));GSE19435_sobject
 save_raw_files(GSE19435_sobject, path = "data-raw/", geo = geo)
-unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-
-curatedExprs <- makeCuratedExprs(row_data = new_row_data,
-                                 data_Non_normalized = GSE19435_Non_normalized_data,
-                                 dataType = "Microarray", platform = "Illumina",
-                                 method = "quantile", FUN = median)
+##### Create normalized curated assay #####
+GSE19435_normed <- GSE19435_data_list$data_normalized
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE19435_normed,
+                                 FUN = median)
 saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
-xr <- read.ilmn(files="sample probe profile.txt")
-yr <- neqc(xr)
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+
+
