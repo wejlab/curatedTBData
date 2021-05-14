@@ -14,7 +14,7 @@ urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
 utils::download.file(as.character(urls$url[2]), temp)
 utils::untar(temp, exdir = tempd)
 filesPath <- list.files(tempd, pattern = "GSM.*", full.names = TRUE)
-GSE62147_raw <- limma::read.maimages(filesPath, source="agilent", green.only = TRUE)
+GSE62147_raw <- limma::read.maimages(filesPath, source = "agilent", green.only = TRUE)
 GSE62147_Non_normalized_data <- GSE62147_raw$E
 row.names(GSE62147_Non_normalized_data) <- GSE62147_raw$genes$ProbeName
 col_name1 <- gsub(".*/", "", colnames(GSE62147_Non_normalized_data))

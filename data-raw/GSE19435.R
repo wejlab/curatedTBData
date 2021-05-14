@@ -62,6 +62,3 @@ curatedExprs <- probesetsToGenes(row_data = new_row_data,
                                  FUN = median)
 saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
-unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-
-

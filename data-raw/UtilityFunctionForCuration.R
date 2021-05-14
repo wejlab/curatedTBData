@@ -5,6 +5,7 @@ readRawData <- function(geo, sequencePlatform, urlIndex = NULL, matrix.only = FA
     result <- readRawDataGPL6947(urls, urlIndex)
     return(result)
   } else if (sequencePlatform == "GPL6102") {
+    # Illumina Microarry V2
     result <- readRawDataGPL6102(urls, urlIndex)
     return(result)
   } else if (sequencePlatform == "GPL10558") {
@@ -42,7 +43,11 @@ readRawDataGPL6947 <- function(urls, urlIndex = NULL) {
     lapply(data_Non_normalized_list, function(x) {x}))
   row.names(data_Non_normalized) <- data_Non_normalized$ID_REF
   data_Non_normalized <- as.matrix(data_Non_normalized[, -1])
-  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case = TRUE)
+  if(length(indexPvalue) == 0) {
+    message("Column(s) with p-value not found, return full datasets")
+    return(data_Non_normalized)
+  }
   xr <- new("EListRaw", list(E = data_Non_normalized[, -indexPvalue],
                              other = list(Detection = data_Non_normalized[, indexPvalue])))
   yr <- limma::neqc(xr)
@@ -61,11 +66,22 @@ readRawDataGPL6102 <- function(urls, urlIndex = NULL) {
                col.names = c("ID_REF", gsub("_.*", "", x),
                              paste0(gsub("_.*", "", x), ".Pval")),
                stringsAsFactors = FALSE))
-  # Remove temporary files
+  message("Merge list into one matrix based on probe ID")
+  data_Non_normalized <- Reduce(function (x, y)
+    merge(x, y, by = "ID_REF", all = FALSE),
+    lapply(data_Non_normalized_list, function(x) {x}))
   unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
-  data_Non_normalized_list_noPvalue <- lapply(data_Non_normalized_list, function(x)
-    x[, -grep('pval', colnames(x), ignore.case = TRUE)])
-  return(data_Non_normalized_list_noPvalue)
+  row.names(data_Non_normalized) <- data_Non_normalized$ID_REF
+  data_Non_normalized <- as.matrix(data_Non_normalized[, -1])
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case = TRUE)
+  if(length(indexPvalue) == 0) {
+    message("Column(s) with p-value not found, return full datasets")
+    return(data_Non_normalized)
+  }
+  xr <- new("EListRaw", list(E = data_Non_normalized[, -indexPvalue],
+                             other = list(Detection = data_Non_normalized[, indexPvalue])))
+  yr <- limma::neqc(xr)
+  return(list(data_Non_normalized = xr$E, data_normalized = yr$E))
 }
 
 
@@ -100,7 +116,7 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL, matrix.only = FALSE) {
   if (matrix.only) {
     return(data_Non_normalized)
   }
-  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
+  indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case = TRUE)
   if(length(indexPvalue) == 0) {
     message("Column(s) with p-value not found, return full datasets")
     return(data_Non_normalized)
@@ -111,7 +127,7 @@ readRawDataGPL10558 <- function(urls, urlIndex = NULL, matrix.only = FALSE) {
     return(list(data_Non_normalized = xr$E, data_normalized = yr$E))
   }
 }
-readRawDataGPL6883 <- function(urls, urlIndex = NULL) {
+readRawDataGPL6883 <- function(urls, urlIndex = NULL, matrix.only = FALSE) {
   temp <- tempfile()
   tempd <- tempdir()
   if (is.null(urlIndex)) {
@@ -138,13 +154,18 @@ readRawDataGPL6883 <- function(urls, urlIndex = NULL) {
   data_Non_normalized <- read.delim(gzfile(temp), row.names = 1, header = TRUE) %>%
     dplyr::select_if(~sum(!is.na(.)) > 0)  # delete columns that contain ONLY NAs
   unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  if (matrix.only) {
+    return(data_Non_normalized)
+  }
   indexPvalue <- grep("pval", colnames(data_Non_normalized), ignore.case=TRUE)
   if(length(indexPvalue) == 0) {
     message("Column(s) with p-value not found, return full datasets")
     return(data_Non_normalized)
   } else {
-    data_non_pvalue <- data_Non_normalized[, -indexPvalue]
-    return(data_non_pvalue)
+    xr <- new("EListRaw", list(E = data_Non_normalized[, -indexPvalue],
+                               other = list(Detection = data_Non_normalized[, indexPvalue])))
+    yr <- limma::neqc(xr)
+    return(list(data_Non_normalized = xr$E, data_normalized = yr$E))
   }
 }
 
@@ -329,6 +350,7 @@ expandProbesets <- function(dat, sep){
   sobject_exprs_dup <- dat[index,]
 
   x_list <- strsplit(as.character(sobject_exprs_dup$SYMBOL), sep)
+  # Remove white spapce in any gene symbol
   symbol_dup <- gsub(" ", "", unlist(x_list))
   sobject_exprs_dup$times <- unlist(lapply(x_list, length))
 

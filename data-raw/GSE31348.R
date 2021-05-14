@@ -42,6 +42,11 @@ GSE31348_sobject <- SummarizedExperiment::SummarizedExperiment(
 save_raw_files(GSE31348_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 
+##### Create normalized curated assay #####
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE31348_normalized_data,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 
 

@@ -7,8 +7,9 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE56153"
 sequencePlatform <- "GPL6883"
+GSE56153_data_list <- readRawData(geo, sequencePlatform)
 GSE56153_Non_pvalue <-
-  GSE56153_Non_normalized_data <- readRawData(geo, sequencePlatform)
+  GSE56153_Non_normalized_data <- GSE56153_data_list$data_Non_normalized
 
 ##### Create Column data #####
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
@@ -55,6 +56,14 @@ GSE56153_sobject <- SummarizedExperiment::SummarizedExperiment(
   metadata = list(GSE56153_experimentData));GSE56153_sobject
 save_raw_files(GSE56153_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+
+##### Create normalized curated assay #####
+GSE56153_normed <- GSE56153_data_list$data_normalized
+colnames(GSE56153_normed) <- names(GEOquery::GSMList(gse))
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE56153_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 
 

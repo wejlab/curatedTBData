@@ -7,14 +7,9 @@ source("data-raw/UtilityFunctionForCuration.R")
 ##### Read in raw data #####
 geo <- "GSE29536"
 sequencePlatform <- "GPL6102"
-GSE29536_Non_normalized_list_noPvalue <- readRawData(geo, sequencePlatform)
+GSE29536_data_list <- readRawData(geo, sequencePlatform)
 
-# Merge list to a matrix based on the ID_REF
-GSE29536_Non_normalized <- Reduce(function (x, y)
-  merge(x, y, by = "ID_REF", all = FALSE),
-  lapply(GSE29536_Non_normalized_list_noPvalue, function(x) {x}))
-row.names(GSE29536_Non_normalized) <- GSE29536_Non_normalized$ID_REF
-GSE29536_Non_normalized_data <- GSE29536_Non_pvalue <- GSE29536_Non_normalized[-1]
+GSE29536_Non_normalized_data <- GSE29536_Non_pvalue <- GSE29536_data_list$data_Non_normalized
 colnames(GSE29536_Non_normalized_data) <-
   colnames(GSE29536_Non_pvalue) <- gsub("\\..*", "", colnames(GSE29536_Non_pvalue))
 ##### Create Column data #####
@@ -59,3 +54,11 @@ GSE29536_sobject <- SummarizedExperiment::SummarizedExperiment(
 save_raw_files(GSE29536_sobject, path = "data-raw/", geo = geo)
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 
+##### Create normalized curated assay #####
+GSE29536_normed <- GSE29536_data_list$data_normalized
+colnames(GSE29536_normed) <- gsub("\\..*", "", colnames(GSE29536_normed))
+GSE29536_normed <- GSE29536_normed[, row.names(new_col_info)]
+curatedExprs <- probesetsToGenes(row_data = new_row_data,
+                                 data_normalized = GSE29536_normed,
+                                 FUN = median)
+saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
