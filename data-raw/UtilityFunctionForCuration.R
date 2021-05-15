@@ -235,6 +235,8 @@ map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
     index <- which(colnames(sequence_result_dat) == "Gene Symbol")
     colnames(sequence_result_dat)[index] <- "Symbol"
     OUT <- AnnotationDbi::select(hgu133plus2.db::hgu133plus2.db, PROBES, "SYMBOL")
+  } else if (sequencePlatform == "GPL11532") {
+
   }
   OUT[is.na(OUT)] <- NA
   # Map ProbeID to Gene Symbol
@@ -274,7 +276,7 @@ norm_probeToGenes_Agilent <- function(EListRaw, FUN = median) {
   # Filter control probes and probes with no symbol
   Control <- y$genes$ControlType==1L
   NoSymbol <- is.na(y$genes$GeneName)
-  yfilt <- y[!Control & !NoSymbol, ]
+  yfilt <- y[!Control && !NoSymbol, ]
   dataNorm <- data.frame(yfilt$E)
   dataNorm$SYMBOL <- yfilt$genes$GeneName
   exprs2 <- stats::aggregate(. ~ SYMBOL, data = dataNorm,
@@ -286,21 +288,21 @@ norm_probeToGenes_Agilent <- function(EListRaw, FUN = median) {
 }
 #normalizeIllumina
 #normalizeHiseq
-normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
-                          method = NULL) {
-  if (dataType == "Microarray") {
-    # data_Non_normalized[data_Non_normalized < 10] <- 10
-    # datLog <- log(data_Non_normalized, base = 2) # log2 transformed data
-    if (platform == "Agilent") {
-      datBackground <- limma::backgroundCorrect.matrix(data_Non_normalized,
-                                                       method = "normexp")
-      datNormed <- limma::normalizeBetweenArrays(datBackground, method = method)
-      return(datNormed)
-    }
-  } else if (dataType == "RNA-seq") {
-    return(NULL)
-  }
-}
+# normalizeExprs <- function(data_Non_normalized, dataType, platform = NULL,
+#                           method = NULL) {
+#   if (dataType == "Microarray") {
+#     # data_Non_normalized[data_Non_normalized < 10] <- 10
+#     # datLog <- log(data_Non_normalized, base = 2) # log2 transformed data
+#     if (platform == "Agilent") {
+#       datBackground <- limma::backgroundCorrect.matrix(data_Non_normalized,
+#                                                        method = "normexp")
+#       datNormed <- limma::normalizeBetweenArrays(datBackground, method = method)
+#       return(datNormed)
+#     }
+#   } else if (dataType == "RNA-seq") {
+#     return(NULL)
+#   }
+# }
 probesetsToGenes <- function(row_data, data_normalized, FUN) {
   row_data_sub <- row_data[which(row_data$ID_REF %in% row.names(data_normalized)),]
   if (!all(row.names(data_normalized) == row_data_sub$ID_REF)){

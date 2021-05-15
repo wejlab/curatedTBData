@@ -17,7 +17,7 @@ celFiles <- list.files(path = tempd, pattern = "*.CEL", full.names=TRUE)
 GSE41055_data.oligo <- oligo::read.celfiles(celFiles)
 
 GSE41055_normalized_rma <- Biobase::exprs(oligo::rma(GSE41055_data.oligo)) # A matrix
-colnames(GSE41055_normalized_rma) <- gsub('_.*','',colnames(GSE41055_normalized_rma))
+colnames(GSE41055_normalized_rma) <- gsub("_.*", "", colnames(GSE41055_normalized_rma))
 GSE41055_normalized_data <- GSE41055_normalized_rma
 
 ##### Create Column data #####
@@ -43,7 +43,7 @@ col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 
 ##### Create Row Data #####
-GPL5175 <- GEOquery::getGEO("GPL5175",GSEMatrix = FALSE)
+GPL5175 <- GEOquery::getGEO(sequencePlatform, GSEMatrix = FALSE)
 GPL5175_annotate <- GPL5175@dataTable@table
 GPL5175_annotate$ID <- as.character(GPL5175_annotate$ID)
 GSE41055_probeNames <- data.frame(row.names(GSE41055_normalized_data))
