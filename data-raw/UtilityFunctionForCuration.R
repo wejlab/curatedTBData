@@ -178,10 +178,26 @@ readRawDataGPL570 <- function(urls, urlIndex = NULL) {
   celFiles <- list.files(path = tempd, pattern = "*.CEL", full.names = TRUE)
   dataAffy <- affy::ReadAffy(filenames = celFiles)
   data_normalized_rma <- Biobase::exprs(affy::rma(dataAffy))
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
   # colnames(data_normalized_rma) <- gsub("_.*", "", colnames(data_normalized_rma))
   return(data_normalized_rma)
 }
 
+readDataGSE107995 <- function(geo) {
+  urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
+  url_sub1 <- as.character(urls$url[1])
+  temp1 <- tempfile()
+  utils::download.file(url_sub1, temp1)
+  data_Non_normalized <- readxl::read_excel(temp1)
+
+  url_sub2 <- as.character(urls$url[2])
+  temp2 <- tempfile()
+  utils::download.file(url_sub2, temp2)
+  data_normalized <- readxl::read_excel(temp2)
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  return(list(data_Non_normalized = data_Non_normalized,
+              data_normalized = data_normalized))
+}
 ################################################################################
 # Functions to create column data
 readRawColData <- function(gse) {
@@ -370,6 +386,42 @@ expandProbesets <- function(dat, sep){
   return(sobject_exprs_result)
 
 }
+
+# Match SRR number to sample ID
+matchSRRtoSampleID <- function(gse, assay_reprocess) {
+  experiment_accession <- lapply(gse@gsms, function(x) {
+    x_relation <- x@header$relation
+    index <- grep("SRA",x_relation)
+    gsub(".*=","",x@header$relation[index])
+  })
+  ID_table <- data.frame(sampleID = names(GEOquery::GSMList(gse)),
+                         experiment_accession = unlist(experiment_accession))
+  indx <- grep("BioProject", gse@header$relation)
+  BioProject <- gsub(".*/", "", gse@header$relation[indx])
+  urlMeta <- paste0("https://www.ebi.ac.uk/ena/portal/api/filereport?accession=",
+                    BioProject,"&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,fastq_ftp,submitted_ftp,sra_ftp&format=tsv&download=true")
+  temp <- tempfile()
+  utils::download.file(urlMeta, temp)
+  metadataInfo <- read.delim(temp)
+  unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
+  run_accession <- colnames(assay_reprocess)
+  assay_reprocess <- assay_reprocess[, match(metadataInfo$run_accession, run_accession)]
+  if (all(colnames(assay_reprocess) == metadataInfo$run_accession)) {
+    indx1 <- match(ID_table$experiment_accession, metadataInfo$experiment_accession)
+    assay_reprocess_edit <- assay_reprocess[,indx1]
+    colnames(assay_reprocess_edit) <- ID_table$sampleID
+    return(assay_reprocess_edit)
+  } else {
+    stop("Something went wrong. Please check manually")
+  }
+}
+
+
+
+
+
+
+
 
 
 
