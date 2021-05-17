@@ -3,12 +3,15 @@ if (!require("magrittr", character.only = TRUE)) {
   require("magrittr", character.only = TRUE)
 }
 source("data-raw/UtilityFunctionForCuration.R")
+
+#### Read in raw data ####
 geo <- "GSE101705"
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 urls <- GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
 temp <- tempfile()
 download.file(as.character(urls$url[1]), temp)
 GSE101705_normalized_raw <- readxl::read_excel(temp)
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 colnames(GSE101705_normalized_raw)[1] <- "ID_REF"
 GSE101705_normalized_counts <- as.matrix(GSE101705_normalized_raw[, -1])
 row.names(GSE101705_normalized_counts) <- GSE101705_normalized_raw$ID_REF

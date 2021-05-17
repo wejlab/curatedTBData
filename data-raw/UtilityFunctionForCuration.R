@@ -339,13 +339,6 @@ probesetsToGenes <- function(row_data, data_normalized, FUN) {
   final <- as.matrix(exprs2[, -which(colnames(exprs2) == "SYMBOL")])
   return(final)
 }
-# Match gene symbol to normalized data
-makeCuratedExprs <- function(row_data, data_Non_normalized, dataType,
-                             platform = NULL, method = NULL, FUN = median) {
-  data_normalized <- normalizeExprs(data_Non_normalized, dataType, platform, method)
-  dat_curated <- probesetsToGenes(row_data, data_normalized, FUN)
-  return(dat_curated)
-}
 
 # Save files in separate RDS file
 save_raw_files <- function(sobject, path, geo) {
@@ -391,15 +384,15 @@ expandProbesets <- function(dat, sep){
 matchSRRtoSampleID <- function(gse, assay_reprocess) {
   experiment_accession <- lapply(gse@gsms, function(x) {
     x_relation <- x@header$relation
-    index <- grep("SRA",x_relation)
-    gsub(".*=","",x@header$relation[index])
+    index <- grep("SRA", x_relation)
+    gsub(".*=", "", x@header$relation[index])
   })
   ID_table <- data.frame(sampleID = names(GEOquery::GSMList(gse)),
                          experiment_accession = unlist(experiment_accession))
   indx <- grep("BioProject", gse@header$relation)
   BioProject <- gsub(".*/", "", gse@header$relation[indx])
   urlMeta <- paste0("https://www.ebi.ac.uk/ena/portal/api/filereport?accession=",
-                    BioProject,"&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,fastq_ftp,submitted_ftp,sra_ftp&format=tsv&download=true")
+                    BioProject, "&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,fastq_ftp,submitted_ftp,sra_ftp&format=tsv&download=true")
   temp <- tempfile()
   utils::download.file(urlMeta, temp)
   metadataInfo <- read.delim(temp)

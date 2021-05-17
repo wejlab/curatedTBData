@@ -20,6 +20,7 @@ data_list_processed <- lapply(data_list, function(x) {
 
 data_Non_normalized_counts <- data_list_processed$data_Non_normalized
 data_normalized_counts <- data_list_processed$data_normalized
+
 #### Create Column Data ####
 characteristic_data_frame <- readRawColData(gse)
 colnames(characteristic_data_frame) <- c("Tissue", "TBStatus", "Outlier",
