@@ -4,7 +4,15 @@
 \alias{heatmap_auc}
 \title{Obtain ridge plots for emprirical AUC distribution for signature scores.}
 \usage{
-heatmap_auc(combine_dat, GSE_sig = NULL, signatureColNames, facet = TRUE)
+heatmap_auc(
+  combine_dat,
+  GSE_sig = NULL,
+  signatureColNames,
+  facet = TRUE,
+  clustering = TRUE,
+  order_increase_avg = FALSE,
+  x_axis_name = NULL
+)
 }
 \arguments{
 \item{combine_dat}{A dataframe contains signatures, datsets name, and AUC.
@@ -15,7 +23,11 @@ Defult is NULL.}
 
 \item{signatureColNames}{A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"}
 
-\item{facet}{Boolean. TRUE if want to group signatures into groups. Default is TRUE.}
+\item{facet}{Boolean. TRUE if the users want to group signatures into groups.
+Default is TRUE.}
+
+\item{clustering}{Boolena. TRUE if the users want to perform clustering of the heatmap using hierarchical clustering.
+Default is TRUE.}
 }
 \value{
 Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
@@ -31,6 +43,6 @@ GSE_sig_exp <- data.frame(Signature=c("Anderson","Anderson","Berry","Berry"),
                    GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
 TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86",
                       "Blankley_5")
-heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=FALSE)
-heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet=TRUE)
+heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = FALSE)
+heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = TRUE)
 }

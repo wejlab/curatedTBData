@@ -11,7 +11,7 @@ url_cel <- as.character(urls$url[1])
 temp <- tempfile()
 tempd <- tempdir()
 utils::download.file(url_cel,temp)
-utils::untar(temp,exdir = tempd)
+utils::untar(temp, exdir = tempd)
 
 celFiles <- list.files(path = tempd, pattern = "*.CEL", full.names=TRUE)
 data.affy <- affy::ReadAffy(filenames = celFiles)
@@ -65,7 +65,8 @@ unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 curatedExprs <- probesetsToGenes(row_data = new_row_data,
                                  data_normalized = GSE107731_normalized_data,
                                  FUN = median)
-saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
+curatedExprsSub <- curatedExprs[-which(row.names(curatedExprs) == "---"), ]
+saveRDS(curatedExprsSub, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 
 

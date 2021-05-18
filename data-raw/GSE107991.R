@@ -19,7 +19,13 @@ data_list_processed <- lapply(data_list, function(x) {
 })
 
 data_Non_normalized_counts <- data_list_processed$data_Non_normalized
-data_normalized_counts <- data_list_processed$data_normalized
+data_normalized_counts <- data_list_processed$data_normalized %>% data.frame()
+data_normalized_counts$SYMBOL <- data_list$data_normalized$Gene_name
+exprs2 <- stats::aggregate(. ~ SYMBOL, data = data_normalized_counts,
+                           FUN = median, na.action = na.pass)
+row.names(exprs2) <- exprs2$SYMBOL
+final <- as.matrix(exprs2[, -which(colnames(exprs2) == "SYMBOL")])
+saveRDS(final, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 #### Create Column Data ####
 characteristic_data_frame <- readRawColData(gse)
@@ -56,7 +62,6 @@ sobject <- SummarizedExperiment::SummarizedExperiment(
   rowData = new_row_data,
   metadata = list(experimentData));sobject
 save_raw_files(sobject, path = "data-raw/", geo = geo)
-saveRDS(data_normalized_counts, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 #### Add reprocessed RNA-seq counts ####
 GenomeVersion <- "hg38"
