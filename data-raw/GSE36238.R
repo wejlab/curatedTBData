@@ -15,7 +15,7 @@ gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 characteristic_data_frame <- readRawColData(gse)
 colnames(characteristic_data_frame) <- c("MeasurementTime", "Tissue","PatientID", "Treatment")
 characteristic_data_frame$Tissue <- "Whole Blood"
-characteristic_data_frame$TBStaus <- "PTB"
+characteristic_data_frame$TBStatus <- "PTB"
 characteristic_data_frame$Treatment <- ifelse(characteristic_data_frame$Treatment == "at diagnosis",
                                               "Pre-treatment", "2HRZE/4H3R3")
 characteristic_data_frame$GeographicalRegion <- "South Africa"

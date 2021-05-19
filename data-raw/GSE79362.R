@@ -38,9 +38,9 @@ colnames(GSE79362_Non_normalized_counts_final) <- ID_table$SampleID
 #### Create Column Data ####
 data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
   GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
-indx_diff <- which(sapply(data_characteristic,length)!=length(data_characteristic[[1]]))
+indx_diff <- which(sapply(data_characteristic,length) != length(data_characteristic[[1]]))
 data_characteristic[[indx_diff]][8] <- c("qft: NA")
-data_characteristic[[indx_diff]] <- c(data_characteristic[[indx_diff]],"tissue: blood")
+data_characteristic[[indx_diff]] <- c(data_characteristic[[indx_diff]], "tissue: blood")
 characteristic_table <- sapply(1:length(data_characteristic[[1]]), function(x)
   sapply(data_characteristic, "[[", x))
 characteristic_data_frame <- sub("(.*?): ", "",characteristic_table) %>%
@@ -54,7 +54,7 @@ TBStatus <- ifelse(TBStatus_temp == "case (TB progressor)", "PTB", "LTBI")
 characteristic_data_frame$TBStatus <- TBStatus
 Progression <- ifelse(TBStatus_temp == "case (TB progressor)", "Positive", "Negative")
 characteristic_data_frame$Progression <- Progression
-
+characteristic_data_frame$Gender <- ifelse(characteristic_data_frame$Gender == "male", "Male", "Female")
 qft_temp <- qft <- as.character(characteristic_data_frame$QFT_GIT)
 firstup <- function(x) {
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -76,9 +76,10 @@ download.file(urlMeta, tempMeta)
 GSE79362Metadata1 <- readxl::read_excel(tempMeta, sheet = "SupTab6_RNASeqMetadata")
 unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE)
 colnames(GSE79362Metadata1) <- GSE79362Metadata1[2,]
-GSE79362Metadata_sub <- GSE79362Metadata1[-c(1:2), c(1:3, 6)]
-colnames(GSE79362Metadata_sub) <- c("PatientID", "MeasurementTime", "TimeToTB",
+GSE79362Metadata_sub <- GSE79362Metadata1[-c(1:2), c(1:3, 5:6)]
+colnames(GSE79362Metadata_sub) <- c("PatientID", "MeasurementTime", "TimeToTB","DemographicalBins",
                                     "ACS_cohort")
+# The bin number in the metadata is not the same with bin on the GEO website, use GEO as the reference
 MeasurementTime <- GSE79362Metadata_sub$MeasurementTime
 MeasurementTime[grep("IC", MeasurementTime)] <- "End"
 MeasurementTime <- gsub("D", " Day(s)", MeasurementTime)

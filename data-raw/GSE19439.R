@@ -22,9 +22,13 @@ colnames(characteristic_data_frame) <- c("Age", "Gender", "Ethnicity", "TBStatus
                                          "isolate_sensitivity")
 TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
 unique(TBStatus_temp)
-TBStatus <- ifelse(TBStatus_temp == "Control (BCG+)", "Control", TBStatus_temp)
-TBStatus <- ifelse(TBStatus == "Latent", "LTBI", TBStatus)
-
+for (i in 1:length(TBStatus_temp)) {
+  if (TBStatus_temp[i] == "Control (BCG+)" || TBStatus_temp[i] == "Control (BCG-)") {
+    TBStatus[i] <- "Control"
+  } else if (TBStatus_temp[i] == "Latent") {
+    TBStatus[i] <- "LTBI"
+  }
+}
 characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$DiabetesStatus <- "Negative"
 characteristic_data_frame$HIVStatus <- "Negative"

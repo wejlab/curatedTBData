@@ -93,6 +93,9 @@ GSE74092_normalized_data <- limma::normalizeBetweenArrays(GSE74092_Non_normalize
 curatedExprs <- probesetsToGenes(row_data = new_row_data,
                                  data_normalized = GSE74092_normalized_data,
                                  FUN = median)
-saveRDS(curatedExprs, paste0("data-raw/", geo, "_assay_curated.RDS"))
+# Impute missing values in the exprs
+GSE74092_impute <- impute::impute.knn(curatedExprs)
+GSE74092_impute_dat <- GSE74092_impute$data
+saveRDS(GSE74092_impute_dat, paste0("data-raw/", geo, "_assay_curated.RDS"))
 
 
