@@ -37,5 +37,5 @@ Load all available datasets in the pakcage:
 
 ``` r
 library(curatedTBData)
-get_curatedTBData(geo_access = "All")
+curatedTBData("All")
 ```
