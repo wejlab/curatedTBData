@@ -40,15 +40,16 @@ characteristic_data_frame$Tissue <- "Whole Blood"
 TBStatus_list <- strsplit(characteristic_data_frame$TBStatus, "-")
 TBStatus <- TBStatus_temp <- unlist(lapply(TBStatus_list, function(x) x[1]),
                                     use.names = FALSE)
+unique(TBStatus_temp)
 for (i in 1:length(TBStatus_temp)) {
   if (TBStatus_temp[i] == "Active Tuberculosis") {
     TBStatus[i] = "PTB"
-  }
-  if (TBStatus_temp[i] == "Treated Active Tuberculosis") {
+  } else if (TBStatus_temp[i] == "Treated Active Tuberculosis") {
     TBStatus[i] = "PTB"
-  }
-  if (TBStatus_temp[i] == "Latent Tuberculosis ") {
+  } else if (TBStatus_temp[i] == "Latent Tuberculosis ") {
     TBStatus[i] = "LTBI"
+  } else if (TBStatus_temp[i] == "Control ") {
+    TBStatus[i] = "Control"
   }
 }
 characteristic_data_frame$TBStatus <- TBStatus

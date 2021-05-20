@@ -50,7 +50,7 @@ colnames(characteristic_data_frame) <- "TBStatus"
 TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
 unique(TBStatus_temp)
 TBStatus[grep('LTBI',TBStatus_temp)] <- "LTBI"
-TBStatus[grep('Healthy',TBStatus_temp)] <- "HealthyContact"
+TBStatus[grep('Healthy_contact',TBStatus_temp)] <- "LTBI"
 TBStatus[grep('_TB_',TBStatus_temp)] <- "PTB"
 TBStatus[grep('Pool',TBStatus_temp)] <- "Control"
 characteristic_data_frame$TBStatus <- TBStatus

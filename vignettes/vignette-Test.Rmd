@@ -62,10 +62,10 @@ DataSummary$`GEO accession`[-nrow(DataSummary)]
 # The following command takes about 5 miniutes
 objects_list <- curatedTBData(geoAccession = "All")
 # Load single data
-# curatedTBData(geo_access = "GSE39939")
+# curatedTBData("GSE39939")
 
 # Load Multiple Studies
-# curatedTBData(geo_access = c("GSE39939","GSE39940"))
+# curatedTBData(c("GSE39939","GSE39940"))
 ```
 
 ## Load all of the RNA-seq data
@@ -87,7 +87,7 @@ geo_microarray <- DataSummary %>%
 object_list_microarray <- curatedTBData(geo_RNA_seq$`GEO accession`)
 ```
 
-# Subsetting Objects
+# Subset Objects
 
 The major adavantage of using `SummarizedExperiment` and `MultiAssayExperiment` is the coordination of the meta-data and assays when subsetting.
 Both SummarizedExperiment and MultiAssayExperiment objects have similar buil-in fuction for subsetting samples based on column condition. For example, we want to select samples with only active TB, or with PTB or OD.
