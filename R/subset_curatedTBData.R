@@ -177,17 +177,11 @@ check_annotation <- function(theObject, annotationColName, annotationCondition){
 #' @examples
 #' list_name <-  c("GSE101705","GSE54992","GSE19444")
 #' data_list <-  get_curatedTBData(list_name)
-#' object_norm <- lapply(data_list, function(x)
-#'                                Normalization(x, microarray_method = "quantile",
-#'                                RNAseq_method = "TMM", experiment_name = "assay_raw"))
-#' object_match <- lapply(object_norm, function(x)
-#'                                MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
-#'                                createExperimentName = "assay_MatchProbe"))
-#' sobject <- CombineObjects(object_match, list_name,
-#'                           experiment_name = "assay_MatchProbe")
+#' sobject <- CombineObjects(data_list, list_name,
+#'                           experiment_name = "assay_curated")
 #' @export
-CombineObjects <- function(object_list, experiment_name=NULL, useAssay=NULL,
-                           list_name=NULL){
+CombineObjects <- function(object_list, list_name=NULL,
+                           experiment_name=NULL, useAssay=NULL){
   # Check the element witin list
   if(is.null(experiment_name) && is.null(useAssay)){
     stop(paste("Please specify experiment name of the MultiAssayExperiment Object or
