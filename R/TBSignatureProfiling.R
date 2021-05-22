@@ -101,7 +101,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "list", gset = "character"),
             p_boxplot <- lapply(unique(sig_data$GSE), function(x, gset){
               sig_data_gse <- sig_data %>% dplyr::filter(.data$GSE == x)
               sig_data_gse$annotationNameLevels <- factor(sig_data_gse[,annotationColName],
-                                   levels = c("Control", "Latent", "PTB", "OD",
+                                   levels = c("Control", "LTBI", "PTB", "OD",
                                               "Positive", "Negative", "Others"))
 
               if(sig_data_gse %>% dplyr::select(gset) %>% is.na() %>% all()){return(NULL)}
@@ -157,7 +157,7 @@ setMethod("BoxplotTBSig", signature (sig_list = "data.frame", gset = "character"
                                                                          colnames(sig_data)))]
 
             sig_data$annotationNameLevels <- factor(sig_data[,annotationColName],
-                                                    levels = c("Control", "Latent",
+                                                    levels = c("Control", "LTBI",
                                                                "PTB", "OD",
                                                                "Positive", "Negative",
                                                                "Others"))
@@ -655,7 +655,5 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, signatureColNames, facet = 
     return(p)
 
   }
-
-
 }
 
