@@ -151,7 +151,7 @@ batch1 <- colData(sobject)$GSE
 combat_edata1 <- sva::ComBat(dat = as.matrix(assay(sobject)), batch = batch1)
 # Add the batch corrected data to the original summarizedExperiment
 SummarizedExperiment::assays(sobject)[["Batch_corrected_data"]] <- combat_edata1
-
+sobject
 # To separate batch-corrected object into separate SummarizedExperiment object list:
 batch_sobject_list <- lapply(unique(colData(sobject)[,"GSE"]), function(x) {
   index_GSE <- which(colData(sobject)$GSE %in% x)
