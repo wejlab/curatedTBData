@@ -90,7 +90,7 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
   ####################################################
   SourceVersion  <- base::as.character(NA)
   ####################################################
-  Species <- base::as.character("Homo Sapiens")
+  Species <- base::as.character("Homo sapiens")
   ####################################################
   TaxonomyId <- base::as.character("9606")
   ####################################################
@@ -122,17 +122,18 @@ metadataRNASeq <- do.call(rbind, metadataRNASeqList)
 
 GSEBruno <- TitleAll[-indexGEO][1]
 metadataBruno <- createMetaData(GSEName = GSEBruno, isGEO = FALSE, dataType = "Microarray")
-metadataBruno$SourceType <- "tsv"
-metadataBruno$SourceUrl <- "10.1038/s41598-017-01767-4"
+metadataBruno$SourceType <- "TSV"
+metadataBruno$SourceUrl <- "https://pubmed.ncbi.nlm.nih.gov/28515464/"
 metadataBruno$DataProvider <- "Bruno B Andrade"
 
 GSETornheim <- TitleAll[-indexGEO][2]
 metadataTornheim <- createMetaData(GSEName = GSETornheim, isGEO = FALSE, dataType = "RNA-seq",
                                 containReprocess = FALSE)
-metadataTornheim$SourceType <- "fastq.gz"
+metadataTornheim$SourceType <- "FASTQ"
 metadataTornheim$SourceUrl <- "https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRP229386&o=acc_s%3Aa"
 metadataTornheim$DataProvider <- "The National Center for Biotechnology Information"
 
 metadata <- rbind(metadataMicroarray, metadataRNASeq, metadataBruno, metadataTornheim)
 utils::write.csv(metadata, "inst/extdata/metadata.csv", row.names = FALSE)
 
+ExperimentHubData::makeExperimentHubMetadata("~/Desktop/curatedTBData/")
