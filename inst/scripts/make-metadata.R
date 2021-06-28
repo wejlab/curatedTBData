@@ -76,7 +76,7 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
     BiocManager::version() %>%
     base::as.character()
   ####################################################
-  Genome <- base::as.character("9606")
+  Genome <- base::as.character(NA)
   ####################################################
   if (isGEO) {
     SourceType <- rep(base::as.character("tar.gz"))

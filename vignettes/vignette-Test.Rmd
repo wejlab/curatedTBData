@@ -193,7 +193,7 @@ ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent,
 ### Boxplot of all scores signatures{.tabset}
 
 ```{r ssgsea Boxplot for each signature PTB vs. Latent, cache=TRUE, results = "asis", fig.width=30, fig.height = 32, fig.wide=TRUE}
-for (i in names(TBsignatures)){
+for (i in names(TBsignatures)) {
 
   cat("####", i, "\n")
   
