@@ -12,11 +12,10 @@
 curatedTBData <- function(geoAccession) {
   if (!is.na(match("All", geoAccession))) {
     objectList <- .curatedTBDataLoadData(geoAccession, loadAll = TRUE)
-    return(objectList)
   } else {
     objectList <- .curatedTBDataLoadData(geoAccession, loadAll = FALSE)
-    return(objectList)
   }
+  return(objectList)
 }
 
 #' Load selected curatedTBData
