@@ -1,0 +1,200 @@
+---
+title: "EnsembleLearningFullData"
+author: "Xutao Wang"
+date: "7/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(BiocParallel)
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(ggridges)
+library(gridExtra)
+library(MultiAssayExperiment)
+library(SummarizedExperiment)
+library(TBSignatureProfiler)
+devtools::load_all()
+```
+
+```{r}
+objects_list <- curatedTBData(geoAccession = "All")
+```
+
+```{r}
+# Subset studies remove repeated measurement
+# Exclude GSE31348 (only PTB) GSE3628 (only PTB) GSE74092(RT-PCR)
+geo_nochange <- c("GSE28623", "GSE29536", "GSE34608", "GSE37250", "GSE39939",
+                  "GSE39940", "GSE41055", "GSE50834", "GSE62525", "GSE73408",
+                  "GSE83892", "GSE101705", "GSE107731")
+object_edit <- lapply(geo_nochange, function(x) {
+  Mobject <- objects_list[[x]]
+  dat <- Mobject[["assay_curated"]]
+  if (is.null(dat)) {
+    stop("check your assay_curated")
+  } 
+  SummarizedExperiment(assays = list(assay_curated = dat), 
+                       colData = colData(Mobject))
+})
+names(object_edit) <- geo_nochange
+
+## Combine GSE19491
+GSE19491_geo <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
+
+GSE19491_combine <- CombineObjects(objects_list,
+                                   list_name = GSE19491_geo,
+                                   experiment_name = "assay_curated")
+
+GSE19435_baseline <- objects_list$GSE19435[, objects_list$GSE19435$MeasurementTime
+                                           == "0_months"]
+GSE19491_final <- GSE19491_combine[, c(colnames(GSE19435_baseline)[["assay_curated"]],
+                                       colnames(objects_list$GSE19439)[["assay_curated"]],
+                                       colnames(objects_list$GSE19442)[["assay_curated"]],
+                                       colnames(objects_list$GSE19444)[["assay_curated"]],
+                                       colnames(objects_list$GSE22098)[["assay_curated"]])]
+object_edit$GSE19491_final <- GSE19491_final
+## Combine GSE42834
+GSE42834_geo <- c("GSE42825", "GSE42826", "GSE42827", "GSE42830", "GSE42831", "GSE42832")
+GSE42834_combine <- CombineObjects(objects_list,
+                                   list_name = GSE42834_geo,
+                                   experiment_name = "assay_curated")
+GSE42832_sobject_WB <- objects_list$GSE42832[, objects_list$GSE42832$Tissue ==
+                                               "Whole Blood"]
+GSE42834_final <- GSE42834_combine[,c(colnames(objects_list$GSE42825)[["assay_curated"]],
+                                               colnames(objects_list$GSE42826)[["assay_curated"]],
+                                               colnames(objects_list$GSE42827)[["assay_curated"]],
+                                               colnames(objects_list$GSE42830)[["assay_curated"]],
+                                               colnames(objects_list$GSE42831)[["assay_curated"]],
+                                               colnames(GSE42832_sobject_WB)[["assay_curated"]])]
+object_edit$GSE42834_final <- GSE42834_final
+## Subset GSE56153
+# Get PTB measurement at Baseline and Controls
+GSE56153_baseline <- objects_list$GSE56153[, objects_list$GSE56153$MeasurementTime
+                                           %in% c("0 weeks", NA)]
+object_edit$GSE56153_final <- SummarizedExperiment(
+  list(counts = GSE56153_baseline[["assay_curated"]]),
+  colData = colData(GSE56153_baseline))
+
+## Subset GSE54992
+# Only include samples at baseline
+GSE54992_baseline <- objects_list$GSE54992[,objects_list$GSE54992$MeasurementTime
+                                           == "Baseline"]
+object_edit$GSE54992_final <- SummarizedExperiment(
+  list(counts = GSE54992_baseline[["assay_curated"]]),
+  colData = colData(GSE54992_baseline))
+
+## GSE62147
+# Only include samples prior to treatment
+GSE62147_pre_treatment <- objects_list$GSE62147[, objects_list$GSE62147$MeasurementTime
+                                                == "recruit"]
+object_edit$GSE62147_final <- SummarizedExperiment(
+  list(counts = GSE62147_pre_treatment[["assay_curated"]]),
+  colData = colData(GSE62147_pre_treatment))
+
+## GSE69581
+# Exclude 10 subclinical samples
+GSE69581_PTB_Latent <- objects_list$GSE69581[, objects_list$GSE69581$TBStatus
+                                             %in% c("PTB", "LTBI")]
+object_edit$GSE69581_final <- SummarizedExperiment(
+  list(counts = GSE69581_PTB_Latent[["assay_curated"]]),
+  colData = colData(GSE69581_PTB_Latent))
+
+## GSE79362
+# Use the reprocessed RNA-seq, only inlude progressors and non-progressors at baseline
+counts.africa.baseline <- objects_list$GSE79362[["assay_reprocess_hg19"]]
+# Max 5 filter
+MaxFilter <- function(df, max.value = 10){
+  df.filtered <- df[which(apply(df,1,max) >= max.value),]
+  return(df.filtered)
+}
+counts.africa.baseline.filtered <- MaxFilter(counts.africa.baseline, 5)
+# Normalization
+counts.africa.baseline.norm <- TBSignatureProfiler::deseq2_norm_rle(counts.africa.baseline.filtered)
+GSE79362_train_full <- SummarizedExperiment(list(counts=counts.africa.baseline.norm),
+                                            colData = colData(objects_list$GSE79362))
+sample_baseline_GSE79362 <- colData(GSE79362_train_full)[, c("PatientID","MeasurementTime")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(GSE79362_train_full))) %>%
+  dplyr::arrange(MeasurementTime, PatientID) %>%
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+GSE79362_baseline <- GSE79362_train_full[,unique(sample_baseline_GSE79362$first)]
+object_edit$GSE79362_final <- GSE79362_baseline ## validated with the Brazil data
+
+## Subset GSE81746
+# Exclude the pooled PTB (Male)
+GSE81746_sub <- objects_list$GSE81746[,objects_list$GSE81746$Gender == "Male"]
+object_edit$GSE81746_final <- SummarizedExperiment(
+  list(counts = GSE81746_sub[["assay_curated"]]),
+  colData = colData(GSE81746_sub))
+
+## Subset GSE83456
+# Exclude EPTB 
+GSE83456_sub <- objects_list$GSE83456[,objects_list$GSE83456$TBStatus != "EPTB"]
+object_edit$GSE83456_final <- SummarizedExperiment(
+  list(counts = GSE83456_sub[["assay_curated"]]),
+  colData = colData(GSE83456_sub))
+
+## GSE84076
+# Take BCG vaccinated controls and LTBIs
+# Take PTB before treatment results
+GSE84076_BCG <- objects_list$GSE84076[, objects_list$GSE84076$BcgVaccinated == "Yes"]
+GSE84076_beforeTreat <- objects_list$GSE84076[, objects_list$GSE84076$TreatmentStatus == "Treatment-naive"]
+GSE84076_sub1 <- objects_list$GSE84076[,c(colnames(GSE84076_BCG)[["assay_curated"]],
+                                          colnames(GSE84076_beforeTreat)[["assay_curated"]])]
+object_edit$GSE84076_final <- SummarizedExperiment(list(counts = GSE84076_sub1[["assay_curated"]]),
+                                                   colData = colData(GSE84076_sub1))
+## GSE107994
+# Use the reprocessed RNA-seq, only include samples at baseline
+counts.gse107994.baseline <- objects_list$GSE107994[["assay_reprocess_hg38"]]
+# Max 5 filter
+counts.gse107994.baseline.filtered <- MaxFilter(counts.gse107994.baseline, 5)
+# Normalization
+counts.gse107994.baseline.norm <- TBSignatureProfiler::deseq2_norm_rle(counts.gse107994.baseline.filtered)
+
+GSE107994_test_full <- SummarizedExperiment(list(counts=counts.gse107994.baseline.norm),
+                                            colData = colData(objects_list$GSE107994))
+# index <- which(is.na(GSE107994_test_full$PatientID))
+sample_baseline_GSE107994 <- colData(GSE107994_test_full)[, c("PatientID","Progression")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(GSE107994_test_full))) %>%
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+
+# Patient_087 does not have baseline measurement
+GSE107994_baseline <- GSE107994_test_full[, unique(sample_baseline_GSE107994$first)]
+
+object_edit$GSE107994_final <- GSE107994_baseline
+
+## GSE94438
+# Use reprocessed RNA-seq, exclude samples with TBStatus NA
+counts.gse94438.baseline <- objects_list$GSE94438[["assay_reprocess_hg19"]]
+# Max 5 filter
+counts.gse94438.baseline.filtered <- MaxFilter(counts.gse94438.baseline, 5)
+# Normalization
+counts.gse94438.baseline.norm <- TBSignatureProfiler::deseq2_norm_rle(counts.gse94438.baseline.filtered)
+
+GSE94438_test_full <- SummarizedExperiment(list(counts=counts.gse94438.baseline.norm),
+                                           colData = colData(objects_list$GSE94438))
+attributes(row.names(GSE94438_test_full)) <- NULL
+GSE94438_test_full_NoNA <- GSE94438_test_full[,GSE94438_test_full$Progression %in% c("Positive","Negative")]
+object_edit$GSE94438_final <- GSE94438_test_full_NoNA
+
+## GSE89403
+# Only include samples collected at baseline
+GSE89403_sub <- objects_list$GSE89403[,objects_list$GSE89403$MeasurementTime == "Baseline"]
+object_edit$GSE89403_final <- SummarizedExperiment(
+  list(counts = GSE89403_sub[["assay_curated"]]),
+  colData = colData(GSE89403_sub)[colnames(GSE89403_sub[["assay_curated"]]),])
+
+## GSE94438
+
+
+```
+
