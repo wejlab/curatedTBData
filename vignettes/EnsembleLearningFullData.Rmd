@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r libraries, message=FALSE}
 library(BiocParallel)
 library(caret)
 library(dplyr)
@@ -23,6 +23,7 @@ library(TBSignatureProfiler)
 devtools::load_all()
 ```
 
+# Import Data
 ```{r}
 objects_list <- curatedTBData(geoAccession = "All")
 ```
@@ -32,7 +33,8 @@ objects_list <- curatedTBData(geoAccession = "All")
 # Exclude GSE31348 (only PTB) GSE3628 (only PTB) GSE74092(RT-PCR)
 geo_nochange <- c("GSE28623", "GSE29536", "GSE34608", "GSE37250", "GSE39939",
                   "GSE39940", "GSE41055", "GSE50834", "GSE62525", "GSE73408",
-                  "GSE83892", "GSE101705", "GSE107731")
+                  "GSE83892", "GSE101705", "GSE107731", "GSE107991", "GSE107992",
+                  "GSE107104", "GSE112104", "GSEBruno", "GSE25534", "GSE6112")
 object_edit <- lapply(geo_nochange, function(x) {
   Mobject <- objects_list[[x]]
   dat <- Mobject[["assay_curated"]]
@@ -187,14 +189,74 @@ GSE94438_test_full_NoNA <- GSE94438_test_full[,GSE94438_test_full$Progression %i
 object_edit$GSE94438_final <- GSE94438_test_full_NoNA
 
 ## GSE89403
-# Only include samples collected at baseline
-GSE89403_sub <- objects_list$GSE89403[,objects_list$GSE89403$MeasurementTime == "Baseline"]
+# Only include samples collected at baseline, or when it is measured at first time
+# Remove samples with TBStatus NA
+sample_baseline_GS89403 <- colData(objects_list$GSE89403)[, c("PatientID","MeasurementTime")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(objects_list$GSE89403))) %>%
+  dplyr::arrange(MeasurementTime, PatientID) %>%
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+GS89403_baseline <- objects_list$GSE89403[,unique(sample_baseline_GS89403$first)]
+GS89403_baseline_noNA <- GS89403_baseline[, !is.na(GS89403_baseline$TBStatus)]
 object_edit$GSE89403_final <- SummarizedExperiment(
-  list(counts = GSE89403_sub[["assay_curated"]]),
-  colData = colData(GSE89403_sub)[colnames(GSE89403_sub[["assay_curated"]]),])
+  list(counts = GS89403_baseline_noNA[["assay_curated"]]),
+  colData = colData(GS89403_baseline_noNA))
 
-## GSE94438
+## GSE107993
+# Only include samples collected at baseline, or when it is measured at first time
+sample_baseline_GSE107993 <- colData(objects_list$GSE107993)[, c("PatientID","MeasurementTime")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(objects_list$GSE107993))) %>%
+  dplyr::arrange(MeasurementTime, PatientID) %>%
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+GSE107993_baseline <- objects_list$GSE107993[, unique(sample_baseline_GSE107993$first)]
 
+object_edit$GSE107993_final <- SummarizedExperiment(
+  list(counts = GSE107993_baseline[["assay_curated"]]),
+  colData = colData(GSE107993_baseline)[colnames(GSE107993_baseline[["assay_curated"]]),])
+
+## GSETornheim
+# Subset samples collected at baseline, or when it is measured at the first time
+# Remove patients with EPTB
+sample_baseline_GSETornheim <- colData(objects_list$GSETornheim)[, c("PatientID", "MeasurementTime")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(objects_list$GSETornheim))) %>%
+  dplyr::arrange(MeasurementTime) %>% 
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+sample_baseline_GSEToenheim <- objects_list$GSETornheim[, unique(sample_baseline_GSETornheim$first)]
+sample_baseline_GSEToenheimSub <- sample_baseline_GSEToenheim[, sample_baseline_GSEToenheim$TBStatus %in% c("Control", "PTB")]
+object_edit$GSETornheim_final <- SummarizedExperiment(
+  list(counts = sample_baseline_GSEToenheimSub[["assay_curated"]]),
+  colData = colData(sample_baseline_GSEToenheimSub))
+
+## Subset GSE40553
+# Subset samples collected at baseline, or when it is measured at the first time
+sample_baseline_GSE40553 <- colData(objects_list$GSE40553)[, c("PatientID","MeasurementTime")] %>%
+  data.frame() %>%
+  dplyr::mutate(sample_name = row.names(colData(objects_list$GSE40553))) %>%
+  dplyr::arrange(MeasurementTime, PatientID) %>%
+  dplyr::group_by(PatientID) %>%
+  dplyr::mutate(first = dplyr::first(sample_name))
+GSE40553_baseline <- objects_list$GSE40553[, unique(sample_baseline_GSE40553$first)]
+object_edit$GSE40553_final <- SummarizedExperiment(
+  list(counts = GSE40553_baseline[["assay_curated"]]),
+  colData = colData(GSE40553_baseline))
+```
+
+# PTB vs. Control
+```{r}
 
 ```
+
+# PTB vs. Latent
+```{r}
+
+```
+
+# PTB vs. OD
+
+
 
