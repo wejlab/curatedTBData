@@ -30,6 +30,9 @@ for (i in 1:length(TBStatus_temp)) {
   }
 }
 characteristic_data_frame$TBStatus <- TBStatus
+BcgVaccinated <- ifelse(characteristic_data_frame$BcgVaccinated == "Not_Known",
+                        "Unknown", characteristic_data_frame$BcgVaccinated)
+characteristic_data_frame$BcgVaccinated <- BcgVaccinated
 characteristic_data_frame$DiabetesStatus <- "Negative"
 characteristic_data_frame$HIVStatus <- "Negative"
 characteristic_data_frame$Age <- as.numeric(characteristic_data_frame$Age)
@@ -55,11 +58,12 @@ bal_culture <- gsub("tuberculosis", "M.tuberculosis",
                     characteristic_data_frame$bal_culture)
 characteristic_data_frame$bal_culture <- bal_culture
 
-GFT_GIT <- rep(NA, nrow(characteristic_data_frame))
+QFT_GIT <- rep(NA, nrow(characteristic_data_frame))
 index_latent <- grep("LTBI", characteristic_data_frame$TBStatus)
-GFT_GIT[index_latent] <- "Positive"
-characteristic_data_frame$GFT_GIT <- GFT_GIT
+QFT_GIT[index_latent] <- "Positive"
+characteristic_data_frame$QFT_GIT <- QFT_GIT
 characteristic_data_frame$Tissue <- "Whole Blood"
+
 col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 

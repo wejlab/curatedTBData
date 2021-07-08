@@ -21,7 +21,7 @@ characteristic_data_frame$Treatment <- ifelse(characteristic_data_frame$Treatmen
 characteristic_data_frame$GeographicalRegion <- "South Africa"
 characteristic_data_frame$TreatmentResult <- "Definite Cure"
 characteristic_data_frame$SputumSmearStatus <- "Positive"
-characteristic_data_frame$DiabetsStatus <- "Negative"
+characteristic_data_frame$DiabetesStatus <- "Negative"
 characteristic_data_frame$SarcoidosisStatus <- "Negative"
 characteristic_data_frame$HIVStatus <- "Negative"
 col_info <- create_standard_coldata(characteristic_data_frame)

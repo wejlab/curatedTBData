@@ -69,6 +69,8 @@ for(i in 1:length(TBStatus_temp)) {
     TBStatus[i] <- NA
   }
 }
+TreatmentResult <- characteristic_data_frame$TreatmentResult
+characteristic_data_frame$TreatmentResult <- ifelse(TreatmentResult == "NA", NA, TreatmentResult)
 characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$LungDxStatus <- LungDxStatus
 characteristic_data_frame$MTPStatus <- MTPStatus

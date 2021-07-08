@@ -21,6 +21,9 @@ TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
 unique(TBStatus_temp)
 TBStatus <- ifelse(TBStatus_temp == "LATENT TB", "LTBI", TBStatus_temp)
 characteristic_data_frame$TBStatus <- TBStatus
+BcgVaccinated <- ifelse(characteristic_data_frame$BcgVaccinated == "Not Known",
+                        "Unknown", characteristic_data_frame$BcgVaccinated)
+characteristic_data_frame$BcgVaccinated <- BcgVaccinated
 characteristic_data_frame$Age <- as.numeric(characteristic_data_frame$Age)
 TST_temp <- characteristic_data_frame$TST
 TST <- as.numeric(ifelse(TST_temp == "n.a", NA, TST_temp))

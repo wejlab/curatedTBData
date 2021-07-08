@@ -39,7 +39,7 @@ characteristic_data_frame$PatientID <- gsub("_.*", "", title)
 characteristic_data_frame$GeographicalRegion <- "The Gambia"
 indexOD <- grep("Maf", characteristic_data_frame$PatientID)
 sputum_culture <- rep("M.tuberculosis", nrow(characteristic_data_frame))
-sputum_culture[indexOD] <- " M.africanum"
+sputum_culture[indexOD] <- "M.africanum"
 characteristic_data_frame$sputum_culture <- sputum_culture
 TBStatus <- rep("PTB", nrow(characteristic_data_frame))
 TBStatus[indexOD] <- "OD"

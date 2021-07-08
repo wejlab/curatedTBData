@@ -31,7 +31,17 @@ MeasurementTime[grep("Active", characteristic_data_frame$TreatmentResult)] <- "0
 MeasurementTime[grep("Treatment", characteristic_data_frame$TreatmentResult)] <- "8 weeks"
 MeasurementTime[grep("Recover", characteristic_data_frame$TreatmentResult)] <- "28 weeks"
 characteristic_data_frame$MeasurementTime <- MeasurementTime
-
+TreatmentResult <- TreatmentResult_temp <- characteristic_data_frame$TreatmentResult
+for (i in 1:length(TreatmentResult)) {
+  if (TreatmentResult_temp[i] == "Active") {
+    TreatmentResult[i] = "Pre-treatment"
+  } else if (TreatmentResult_temp[i] == "Treatment") {
+    TreatmentResult[i] = "Good-response"
+  } else {
+    TreatmentResult[i] = "Definite Cure"
+  }
+}
+characteristic_data_frame$TreatmentResult <- TreatmentResult
 col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 
