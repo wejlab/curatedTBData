@@ -27,6 +27,9 @@ unique(TBStatus_temp)
 TBStatus <- ifelse(TBStatus_temp == "Control (BCG+)", "Control", TBStatus_temp)
 characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$Age <- as.numeric(characteristic_data_frame$Age)
+BcgVaccinated <- ifelse(characteristic_data_frame$BcgVaccinated == "Not_Known",
+                        "Unknown", characteristic_data_frame$BcgVaccinated)
+characteristic_data_frame$BcgVaccinated <- BcgVaccinated
 # Replace n.a. or empty string with NA
 TST_temp <- characteristic_data_frame$TST
 TST <- as.numeric(ifelse(TST_temp == "n.a", NA, TST_temp))

@@ -9,13 +9,13 @@ urls <-  GEOquery::getGEOSuppFiles(geo, fetch_files = FALSE)
 temp <- tempfile()
 download.file(as.character(urls$url[1]), temp)
 GSE84076_raw <- read.delim(temp)
-row_info <- c("gene_id","gene_short_name","locus")
+row_info <- c("gene_id", "gene_short_name", "locus")
 
 GSE84076_normalized_counts <- GSE84076_raw %>%
   dplyr::select(-row_info) %>% as.matrix()
 row.names(GSE84076_normalized_counts) <- GSE84076_raw$locus
 GSE84076_normalized_curated <- GSE84076_raw %>%
-  dplyr::select(-c("gene_short_name","locus")) %>%
+  dplyr::select(-c("gene_short_name", "locus")) %>%
   dplyr::group_by(gene_id) %>% dplyr::summarise_all(mean)
 GSE84076_normalized_curated_avg <- as.matrix(GSE84076_normalized_curated[,-1])
 row.names(GSE84076_normalized_curated_avg) <- GSE84076_normalized_curated$gene_id
@@ -66,8 +66,8 @@ for (i in index_filter){
 }
 characteristic_data_frame$BcgVaccinated <- BcgVaccinated
 TreatmentStatus <- rep(NA, nrow(characteristic_data_frame))
-TreatmentStatus[which(TBStatus_temp == "Treated Active Tuberculosis")] <- "Treated"
-TreatmentStatus[TBStatus_temp == "Active Tuberculosis"] <- "Treatment-naive"
+TreatmentStatus[which(TBStatus_temp == "Treated Active Tuberculosis")] <- "Definite Cure"
+TreatmentStatus[TBStatus_temp == "Active Tuberculosis"] <- "Pre-treatment"
 characteristic_data_frame$TreatmentStatus <- TreatmentStatus
 characteristic_data_frame$GeographicalRegion <- "Brazil"
 characteristic_data_frame$HIVStatus <- "Negative"
