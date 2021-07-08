@@ -25,7 +25,7 @@ GSE73408_normalized_data <- GSE73408_normalized_rma
 gse <- GEOquery::getGEO(geo, GSEMatrix = FALSE)
 characteristic_data_frame <- readRawColData(gse)
 colnames(characteristic_data_frame) <- c("Tissue", "Gender", "TBStatus",
-                                         "Ethnicity", "Age", "BithCountry",
+                                         "Ethnicity", "Age", "BirthRegion",
                                          "DiabetesStatus", "SmokingStatus",
                                          "BCG")
 TBStatus <- TBStatus_temp <- as.character(characteristic_data_frame$TBStatus)
@@ -36,6 +36,9 @@ TBStatus[which(TBStatus_temp == "PNA")] <- "OD"
 characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$GeographicalRegion <- "USA"
 characteristic_data_frame$Tissue <- "Whole Blood"
+BirthRegion <- characteristic_data_frame$BirthRegion
+BirthRegion[grep("mexico", BirthRegion)] <- "Mexico"
+characteristic_data_frame$BirthRegion <- BirthRegion
 characteristic_data_frame$Age <- as.numeric(characteristic_data_frame$Age)
 DiabetesStatus <- rep("Negative", nrow(characteristic_data_frame))
 DiabetesStatus[grep("yes",characteristic_data_frame$DiabetesStatus)] <- "Positive"

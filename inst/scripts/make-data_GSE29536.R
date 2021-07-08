@@ -22,8 +22,8 @@ TBStatus <- ifelse(characteristic_data_frame_sub$disease_status == "PTB", "PTB",
 BcgVaccinated <- rep(NA, nrow(characteristic_data_frame_sub))
 index_bcg_pos <- which(characteristic_data_frame_sub$disease_status == "Control BCG+")
 index_bcg_neg <- which(characteristic_data_frame_sub$disease_status == "Control BCG-")
-BcgVaccinated[index_bcg_pos] <- "Positive"
-BcgVaccinated[index_bcg_neg] <- "Negative"
+BcgVaccinated[index_bcg_pos] <- "Yes"
+BcgVaccinated[index_bcg_neg] <- "No"
 col_info1 <- data.frame(TBStatus = TBStatus, BcgVaccinated = BcgVaccinated,
                        Tissue = "Whole Blood", GeographicalRegion = "UK",
                        HIVStatus = "Negative")

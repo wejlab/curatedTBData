@@ -52,7 +52,7 @@ Notes <- sapply(strsplit(data_title,"-"),function(x) x[2])
 characteristic_data_frame$TBStatus <-  ifelse(Notes == "H", "Control", "OD")
 StillStatus <- ifelse(Notes == "Still", "Positive", "Negative")
 AdultSLE_Status <- ifelse(Notes == "ASLE", "Positive", "Negative")
-PaediatricSLE_Status <- ifelse(Notes == "PSLE", "Positive", "Negative")
+PediatricSLE_Status <- ifelse(Notes == "PSLE", "Positive", "Negative")
 StaphStatus <- ifelse(Notes == "Staph", "Positive", "Negative")
 StrepStatus <- ifelse(Notes == "Strep", "Positive", "Negative")
 

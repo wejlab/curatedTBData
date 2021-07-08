@@ -42,12 +42,14 @@ colnames(India_metadata)[colnames(India_metadata) == "SiteofTB"] <- "TBStatus"
 colnames(India_metadata)[colnames(India_metadata) == "sex"] <- "Gender"
 India_metadata$Gender <- ifelse(India_metadata$Gender == "female", "Female", "Male")
 colnames(India_metadata)[colnames(India_metadata) == "isolate"] <- "PatientID"
+colnames(India_metadata)[colnames(India_metadata) == "visitmonth"] <- "MeasurementTime"
+India_metadata$MeasurementTime <- paste(India_metadata$MeasurementTime, "Month(s)")
 colnames(India_metadata)[colnames(India_metadata) == "AGE"] <- "Age"
 India_metadata$Age <- as.numeric(India_metadata$Age)
 colnames(India_metadata)[colnames(India_metadata) == "controltype"] <- "Progression"
 progress_info <- India_metadata$Progression
-progress_info[grep("nonconverter",India_metadata$Progression)] <- "Negative"
-progress_info[grep("converter",progress_info)] <- "Positive"
+progress_info[grep("nonconverter", India_metadata$Progression)] <- "Negative"
+progress_info[grep("converter", progress_info)] <- "Positive"
 India_metadata$Progression <- progress_info
 colnames(India_metadata)[colnames(India_metadata) == "tissue"] <- "Tissue"
 India_metadata$Tissue <- "Whole Blood"

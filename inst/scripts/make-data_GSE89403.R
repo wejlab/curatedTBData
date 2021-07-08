@@ -47,6 +47,7 @@ colnames(characteristic_data_frame) <- c("Tissue","SampleCode", "PatientID",
 characteristic_data_frame$mgit <- as.numeric(characteristic_data_frame$mgit)
 characteristic_data_frame$xpert <- as.numeric(characteristic_data_frame$xpert)
 characteristic_data_frame$tgrv <- as.numeric(characteristic_data_frame$tgrv)
+characteristic_data_frame$Tissue <- "Whole Blood"
 index <- grep("DX", characteristic_data_frame$MeasurementTime)
 characteristic_data_frame$MeasurementTime[index] <- "Baseline"
 TBStatus_temp <- TBStatus <- as.character(characteristic_data_frame$TBStatus)
@@ -68,6 +69,8 @@ for(i in 1:length(TBStatus_temp)) {
     TBStatus[i] <- NA
   }
 }
+TreatmentResult <- characteristic_data_frame$TreatmentResult
+characteristic_data_frame$TreatmentResult <- ifelse(TreatmentResult == "NA", NA, TreatmentResult)
 characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$LungDxStatus <- LungDxStatus
 characteristic_data_frame$MTPStatus <- MTPStatus
