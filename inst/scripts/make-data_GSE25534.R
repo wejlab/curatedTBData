@@ -63,6 +63,7 @@ for(i in 1:length(TBStatus)){
 }
 
 characteristic_data_frame$TBStatus <- TBStatus
+characteristic_data_frame$Tissue <- "Whole Blood"
 col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 

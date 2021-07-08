@@ -20,17 +20,19 @@ library(gridExtra)
 library(MultiAssayExperiment)
 library(SummarizedExperiment)
 library(TBSignatureProfiler)
+source("~/Desktop/practice/EnsembleTrainingScript.R")
 devtools::load_all()
 ```
 
 # Import Data
-```{r}
+```{r, message = FALSE, results = 'hide'}
 objects_list <- curatedTBData(geoAccession = "All")
 ```
 
-```{r}
+```{r, message = FALSE, results='hide'}
 # Subset studies remove repeated measurement
 # Exclude GSE31348 (only PTB) GSE3628 (only PTB) GSE74092(RT-PCR)
+# Expect 49 - 3 - 5 + 1 - 6 + 1 = 37
 geo_nochange <- c("GSE28623", "GSE29536", "GSE34608", "GSE37250", "GSE39939",
                   "GSE39940", "GSE41055", "GSE50834", "GSE62525", "GSE73408",
                   "GSE83892", "GSE101705", "GSE107731", "GSE107991", "GSE107992",
@@ -55,12 +57,12 @@ GSE19491_combine <- CombineObjects(objects_list,
 
 GSE19435_baseline <- objects_list$GSE19435[, objects_list$GSE19435$MeasurementTime
                                            == "0_months"]
-GSE19491_final <- GSE19491_combine[, c(colnames(GSE19435_baseline)[["assay_curated"]],
+GSE19491_edit <- GSE19491_combine[, c(colnames(GSE19435_baseline)[["assay_curated"]],
                                        colnames(objects_list$GSE19439)[["assay_curated"]],
                                        colnames(objects_list$GSE19442)[["assay_curated"]],
                                        colnames(objects_list$GSE19444)[["assay_curated"]],
                                        colnames(objects_list$GSE22098)[["assay_curated"]])]
-object_edit$GSE19491_final <- GSE19491_final
+object_edit$GSE19491_edit <- GSE19491_edit
 ## Combine GSE42834
 GSE42834_geo <- c("GSE42825", "GSE42826", "GSE42827", "GSE42830", "GSE42831", "GSE42832")
 GSE42834_combine <- CombineObjects(objects_list,
@@ -68,18 +70,23 @@ GSE42834_combine <- CombineObjects(objects_list,
                                    experiment_name = "assay_curated")
 GSE42832_sobject_WB <- objects_list$GSE42832[, objects_list$GSE42832$Tissue ==
                                                "Whole Blood"]
-GSE42834_final <- GSE42834_combine[,c(colnames(objects_list$GSE42825)[["assay_curated"]],
+GSE42834_edit <- GSE42834_combine[,c(colnames(objects_list$GSE42825)[["assay_curated"]],
                                                colnames(objects_list$GSE42826)[["assay_curated"]],
                                                colnames(objects_list$GSE42827)[["assay_curated"]],
                                                colnames(objects_list$GSE42830)[["assay_curated"]],
                                                colnames(objects_list$GSE42831)[["assay_curated"]],
                                                colnames(GSE42832_sobject_WB)[["assay_curated"]])]
-object_edit$GSE42834_final <- GSE42834_final
+object_edit$GSE42834_edit <- GSE42834_edit
+
+## Subset GSE19443
+# Subset samples with cell type: Neutrophils
+object_edit$GSE19443_edit <- objects_list$GSE19443[, objects_list$GSE19443$Tissue == "Neutrophils"]
+
 ## Subset GSE56153
 # Get PTB measurement at Baseline and Controls
 GSE56153_baseline <- objects_list$GSE56153[, objects_list$GSE56153$MeasurementTime
                                            %in% c("0 weeks", NA)]
-object_edit$GSE56153_final <- SummarizedExperiment(
+object_edit$GSE56153_edit <- SummarizedExperiment(
   list(counts = GSE56153_baseline[["assay_curated"]]),
   colData = colData(GSE56153_baseline))
 
@@ -87,7 +94,7 @@ object_edit$GSE56153_final <- SummarizedExperiment(
 # Only include samples at baseline
 GSE54992_baseline <- objects_list$GSE54992[,objects_list$GSE54992$MeasurementTime
                                            == "Baseline"]
-object_edit$GSE54992_final <- SummarizedExperiment(
+object_edit$GSE54992_edit <- SummarizedExperiment(
   list(counts = GSE54992_baseline[["assay_curated"]]),
   colData = colData(GSE54992_baseline))
 
@@ -95,7 +102,7 @@ object_edit$GSE54992_final <- SummarizedExperiment(
 # Only include samples prior to treatment
 GSE62147_pre_treatment <- objects_list$GSE62147[, objects_list$GSE62147$MeasurementTime
                                                 == "recruit"]
-object_edit$GSE62147_final <- SummarizedExperiment(
+object_edit$GSE62147_edit <- SummarizedExperiment(
   list(counts = GSE62147_pre_treatment[["assay_curated"]]),
   colData = colData(GSE62147_pre_treatment))
 
@@ -103,7 +110,7 @@ object_edit$GSE62147_final <- SummarizedExperiment(
 # Exclude 10 subclinical samples
 GSE69581_PTB_Latent <- objects_list$GSE69581[, objects_list$GSE69581$TBStatus
                                              %in% c("PTB", "LTBI")]
-object_edit$GSE69581_final <- SummarizedExperiment(
+object_edit$GSE69581_edit <- SummarizedExperiment(
   list(counts = GSE69581_PTB_Latent[["assay_curated"]]),
   colData = colData(GSE69581_PTB_Latent))
 
@@ -127,19 +134,19 @@ sample_baseline_GSE79362 <- colData(GSE79362_train_full)[, c("PatientID","Measur
   dplyr::group_by(PatientID) %>%
   dplyr::mutate(first = dplyr::first(sample_name))
 GSE79362_baseline <- GSE79362_train_full[,unique(sample_baseline_GSE79362$first)]
-object_edit$GSE79362_final <- GSE79362_baseline ## validated with the Brazil data
+object_edit$GSE79362_edit <- GSE79362_baseline ## validated with the Brazil data
 
 ## Subset GSE81746
 # Exclude the pooled PTB (Male)
 GSE81746_sub <- objects_list$GSE81746[,objects_list$GSE81746$Gender == "Male"]
-object_edit$GSE81746_final <- SummarizedExperiment(
+object_edit$GSE81746_edit <- SummarizedExperiment(
   list(counts = GSE81746_sub[["assay_curated"]]),
   colData = colData(GSE81746_sub))
 
 ## Subset GSE83456
-# Exclude EPTB 
+# Exclude patients with EPTB 
 GSE83456_sub <- objects_list$GSE83456[,objects_list$GSE83456$TBStatus != "EPTB"]
-object_edit$GSE83456_final <- SummarizedExperiment(
+object_edit$GSE83456_edit <- SummarizedExperiment(
   list(counts = GSE83456_sub[["assay_curated"]]),
   colData = colData(GSE83456_sub))
 
@@ -150,7 +157,7 @@ GSE84076_BCG <- objects_list$GSE84076[, objects_list$GSE84076$BcgVaccinated == "
 GSE84076_beforeTreat <- objects_list$GSE84076[, objects_list$GSE84076$TreatmentStatus == "Treatment-naive"]
 GSE84076_sub1 <- objects_list$GSE84076[,c(colnames(GSE84076_BCG)[["assay_curated"]],
                                           colnames(GSE84076_beforeTreat)[["assay_curated"]])]
-object_edit$GSE84076_final <- SummarizedExperiment(list(counts = GSE84076_sub1[["assay_curated"]]),
+object_edit$GSE84076_edit <- SummarizedExperiment(list(counts = GSE84076_sub1[["assay_curated"]]),
                                                    colData = colData(GSE84076_sub1))
 ## GSE107994
 # Use the reprocessed RNA-seq, only include samples at baseline
@@ -172,7 +179,7 @@ sample_baseline_GSE107994 <- colData(GSE107994_test_full)[, c("PatientID","Progr
 # Patient_087 does not have baseline measurement
 GSE107994_baseline <- GSE107994_test_full[, unique(sample_baseline_GSE107994$first)]
 
-object_edit$GSE107994_final <- GSE107994_baseline
+object_edit$GSE107994_edit <- GSE107994_baseline
 
 ## GSE94438
 # Use reprocessed RNA-seq, exclude samples with TBStatus NA
@@ -186,7 +193,7 @@ GSE94438_test_full <- SummarizedExperiment(list(counts=counts.gse94438.baseline.
                                            colData = colData(objects_list$GSE94438))
 attributes(row.names(GSE94438_test_full)) <- NULL
 GSE94438_test_full_NoNA <- GSE94438_test_full[,GSE94438_test_full$Progression %in% c("Positive","Negative")]
-object_edit$GSE94438_final <- GSE94438_test_full_NoNA
+object_edit$GSE94438_edit <- GSE94438_test_full_NoNA
 
 ## GSE89403
 # Only include samples collected at baseline, or when it is measured at first time
@@ -199,7 +206,7 @@ sample_baseline_GS89403 <- colData(objects_list$GSE89403)[, c("PatientID","Measu
   dplyr::mutate(first = dplyr::first(sample_name))
 GS89403_baseline <- objects_list$GSE89403[,unique(sample_baseline_GS89403$first)]
 GS89403_baseline_noNA <- GS89403_baseline[, !is.na(GS89403_baseline$TBStatus)]
-object_edit$GSE89403_final <- SummarizedExperiment(
+object_edit$GSE89403_edit <- SummarizedExperiment(
   list(counts = GS89403_baseline_noNA[["assay_curated"]]),
   colData = colData(GS89403_baseline_noNA))
 
@@ -213,7 +220,7 @@ sample_baseline_GSE107993 <- colData(objects_list$GSE107993)[, c("PatientID","Me
   dplyr::mutate(first = dplyr::first(sample_name))
 GSE107993_baseline <- objects_list$GSE107993[, unique(sample_baseline_GSE107993$first)]
 
-object_edit$GSE107993_final <- SummarizedExperiment(
+object_edit$GSE107993_edit <- SummarizedExperiment(
   list(counts = GSE107993_baseline[["assay_curated"]]),
   colData = colData(GSE107993_baseline)[colnames(GSE107993_baseline[["assay_curated"]]),])
 
@@ -228,7 +235,7 @@ sample_baseline_GSETornheim <- colData(objects_list$GSETornheim)[, c("PatientID"
   dplyr::mutate(first = dplyr::first(sample_name))
 sample_baseline_GSEToenheim <- objects_list$GSETornheim[, unique(sample_baseline_GSETornheim$first)]
 sample_baseline_GSEToenheimSub <- sample_baseline_GSEToenheim[, sample_baseline_GSEToenheim$TBStatus %in% c("Control", "PTB")]
-object_edit$GSETornheim_final <- SummarizedExperiment(
+object_edit$GSETornheim_edit <- SummarizedExperiment(
   list(counts = sample_baseline_GSEToenheimSub[["assay_curated"]]),
   colData = colData(sample_baseline_GSEToenheimSub))
 
@@ -241,22 +248,128 @@ sample_baseline_GSE40553 <- colData(objects_list$GSE40553)[, c("PatientID","Meas
   dplyr::group_by(PatientID) %>%
   dplyr::mutate(first = dplyr::first(sample_name))
 GSE40553_baseline <- objects_list$GSE40553[, unique(sample_baseline_GSE40553$first)]
-object_edit$GSE40553_final <- SummarizedExperiment(
+object_edit$GSE40553_edit <- SummarizedExperiment(
   list(counts = GSE40553_baseline[["assay_curated"]]),
   colData = colData(GSE40553_baseline))
+
 ```
 
-# PTB vs. Control
+# PTB vs. Control {.tabset}
+```{r, message=FALSE, results='hide'}
+# 25 in total
+multi_set_PTB_Control <- lapply(object_edit, function(x)
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("Control","PTB"), 
+                       useAssay = assayNames(x),
+                       experiment_name = "assay_curated")) %>% plyr::compact()
+ssgsea_PTB_Control <- lapply(multi_set_PTB_Control,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+ssgsea_PTB_Control_combine <- combine_auc(ssgsea_PTB_Control, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+ssgsea_PTB_Control_combine$GSE <- factor(ssgsea_PTB_Control_combine$GSE,
+                                         levels = unique(ssgsea_PTB_Control_combine$GSE))
+plage_PTB_Control <- lapply(multi_set_PTB_Control,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "PLAGE",
+                                  combineSigAndAlgorithm = TRUE))
+plage_PTB_Control_combine <- combine_auc(plage_PTB_Control, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+plage_PTB_Control_combine$GSE <- factor(plage_PTB_Control_combine$GSE,
+                                        levels = unique(ssgsea_PTB_Control_combine$GSE))
+```
+
 ```{r}
+mySignatures <- TBsignatures[-which(names(TBsignatures) %in% 
+                                      c("Gliddon_OD_3", "Hoang_OD_3", "LauxdaCosta_OD_3",
+                                        "Lee_4", "Rajan_HIV_5", "Roe_3",
+                                        "Sloot_HIV_2", "Suliman_4", "Suliman_RISK_2"))]
+ensembleSignaturesList <- lapply(1:40, function(x) {
+  set.seed(x)
+  index <- sample(length(names(mySignatures)), 10)
+  names(mySignatures)[index]
+})
+names(ensembleSignaturesList) <- paste0("Set", seq_len(length(ensembleSignaturesList)))
+# testWithScore_PTB_Control_ssGSEA <- testWithScore(ensembleSignaturesList, 
+#                                                   theObjectList = ssgsea_PTB_Control,
+#                                                   times = 200, method = "ssGSEA")
+# testWithScore_PTB_Control_PLAGE <- testWithScore(ensembleSignaturesList, 
+#                                                   theObjectList = plage_PTB_Control,
+#                                                   times = 200, method = "PLAGE")
+testWithScore_PTB_Control_ssGSEA <- readRDS("~/Desktop/practice/testWithScore_PTB_Control_ssGSEA.RDS")
+testWithScore_PTB_Control_PLAGE <- readRDS("~/Desktop/practice/testWithScore_PTB_Control_PLAGE.RDS")
 
+AUC_ssGSEA_sig_PTB_Control <- testWithScoreDataProcess(testWithScore_PTB_Control_ssGSEA, 
+                                                       "Combine_ssGSEA", "ssGSEA",
+                                                        combine = FALSE)
+AUC_plage_sig_PTB_Control <- testWithScoreDataProcess(testWithScore_PTB_Control_PLAGE, 
+                                                      "Combine_PLAGE", "PLAGE", 
+                                                       combine = FALSE)
+AUC_sig_PTB_Control <- rbind(do.call(rbind, AUC_ssGSEA_sig_PTB_Control),
+                             do.call(rbind, AUC_plage_sig_PTB_Control))
 ```
 
-# PTB vs. Latent
-```{r}
+## ssGSEA {.tabset}
 
+### Heatmap
+```{r, fig.width=12, fig.height = 20, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_Control_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Control using ssGSEA")
 ```
 
-# PTB vs. OD
+### Coefficient
+```{r, fig.width=10, fig.height=15}
+Coef_PTB_Control_ssGSEA <- getCoef(testWithScore_PTB_Control_ssGSEA)
+Coef_PTB_Control_ssGSEA_Df <- do.call(rbind, Coef_PTB_Control_ssGSEA)
+Coef_PTB_Control_ssGSEA_Df$Coefficient <- as.numeric(Coef_PTB_Control_ssGSEA_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_Control_ssGSEA_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using ssGSEA (PTB vs. Control)")
+```
 
+## PLAGE {.tabset}
 
+### Heatmap
+```{r, fig.width=12, fig.height = 20, fig.wide=TRUE}
+heatmap_auc(plage_PTB_Control_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. Control using PLAGE")
+```
 
+### Coefficient
+```{r, fig.width=10, fig.height=15}
+Coef_PTB_Control_PLAGE <- getCoef(testWithScore_PTB_Control_PLAGE)
+Coef_PTB_Control_PLAGE_Df <- do.call(rbind, Coef_PTB_Control_PLAGE)
+Coef_PTB_Control_PLAGE_Df$Coefficient <- as.numeric(Coef_PTB_Control_PLAGE_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_Control_PLAGE_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using PLAGE (PTB vs. Control)")
+```
+
+## Violin Plot
+```{r, fig.width=15, fig.height=15}
+AUC_PTB_Control <- make_violin_plot(ensembleSignaturesList, 
+                                    testWithScore_PTB_Control_ssGSEA,
+                                    testWithScore_PTB_Control_PLAGE)
+p_facet <- ggplot(AUC_PTB_Control$AUC_final, aes(Method, AUC, fill = SignatureType)) +
+  geom_split_violin() +
+  facet_wrap(~SetName) + 
+  geom_text(data = AUC_PTB_Control$signatureWithMaxAUC,
+            aes(x = Method, y = 0.925, label = Signature), size = 2.4) +
+  theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 8, face = "bold"))
+
+p_facet
+```
