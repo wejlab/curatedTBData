@@ -1,8 +1,12 @@
 ---
 title: "EnsembleLearningFullData"
 author: "Xutao Wang"
-date: "7/2/2021"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -10,26 +14,29 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r libraries, message=FALSE}
-library(BiocParallel)
-library(caret)
+# library(BiocParallel)
+# library(caret)
 library(dplyr)
 library(ggplot2)
-library(ggpubr)
-library(ggridges)
+# library(ggpubr)
+# library(ggridges)
+library(glmnet)
 library(gridExtra)
 library(MultiAssayExperiment)
 library(SummarizedExperiment)
 library(TBSignatureProfiler)
 source("~/Desktop/practice/EnsembleTrainingScript.R")
+#source("~/Desktop/curatedTBData/R/TBSignatureProfiling.R")
+#source("~/Desktop/curatedTBData/R/subset_curatedTBData.R")
 devtools::load_all()
 ```
 
 # Import Data
-```{r, message = FALSE, results = 'hide'}
+```{r, message = FALSE, results = 'hide', eval=FALSE}
 objects_list <- curatedTBData(geoAccession = "All")
 ```
 
-```{r, message = FALSE, results='hide'}
+```{r, message = FALSE, results='hide', eval=FALSE}
 # Subset studies remove repeated measurement
 # Exclude GSE31348 (only PTB) GSE3628 (only PTB) GSE74092(RT-PCR)
 # Expect 49 - 3 - 5 + 1 - 6 + 1 = 37
@@ -253,9 +260,14 @@ object_edit$GSE40553_edit <- SummarizedExperiment(
   colData = colData(GSE40553_baseline))
 
 ```
+```{r}
+# saveRDS(object_edit, "~/Desktop/object_edit.RDS")
+object_edit <- readRDS("~/Desktop/object_edit.RDS")
+# SignatureInfoTraining <- load("~/Desktop/curatedTBData/data/SignatureInfoTraining.rda")
+```
 
 # PTB vs. Control {.tabset}
-```{r, message=FALSE, results='hide'}
+```{r, message=FALSE, results='hide', warning=FALSE}
 # 25 in total
 multi_set_PTB_Control <- lapply(object_edit, function(x)
   subset_curatedTBData(x, annotationColName = "TBStatus", 
@@ -292,9 +304,10 @@ plage_PTB_Control_combine$GSE <- factor(plage_PTB_Control_combine$GSE,
 
 ```{r}
 mySignatures <- TBsignatures[-which(names(TBsignatures) %in% 
-                                      c("Gliddon_OD_3", "Hoang_OD_3", "LauxdaCosta_OD_3",
+                                      c("Gliddon_OD_3", "Hoang_OD_3",
+                                        "LauxdaCosta_OD_3",
                                         "Lee_4", "Rajan_HIV_5", "Roe_3",
-                                        "Sloot_HIV_2", "Suliman_4", "Suliman_RISK_2"))]
+                                        "Suliman_RISK_2"))]
 ensembleSignaturesList <- lapply(1:40, function(x) {
   set.seed(x)
   index <- sample(length(names(mySignatures)), 10)
@@ -309,21 +322,12 @@ names(ensembleSignaturesList) <- paste0("Set", seq_len(length(ensembleSignatures
 #                                                   times = 200, method = "PLAGE")
 testWithScore_PTB_Control_ssGSEA <- readRDS("~/Desktop/practice/testWithScore_PTB_Control_ssGSEA.RDS")
 testWithScore_PTB_Control_PLAGE <- readRDS("~/Desktop/practice/testWithScore_PTB_Control_PLAGE.RDS")
-
-AUC_ssGSEA_sig_PTB_Control <- testWithScoreDataProcess(testWithScore_PTB_Control_ssGSEA, 
-                                                       "Combine_ssGSEA", "ssGSEA",
-                                                        combine = FALSE)
-AUC_plage_sig_PTB_Control <- testWithScoreDataProcess(testWithScore_PTB_Control_PLAGE, 
-                                                      "Combine_PLAGE", "PLAGE", 
-                                                       combine = FALSE)
-AUC_sig_PTB_Control <- rbind(do.call(rbind, AUC_ssGSEA_sig_PTB_Control),
-                             do.call(rbind, AUC_plage_sig_PTB_Control))
 ```
 
 ## ssGSEA {.tabset}
 
 ### Heatmap
-```{r, fig.width=12, fig.height = 20, fig.wide=TRUE}
+```{r, fig.width=13, fig.height=18, fig.wide=TRUE}
 # Import signature and data information
 heatmap_auc(ssgsea_PTB_Control_combine, SignatureInfoTraining, 
             names(TBsignatures), facet = TRUE, clustering = FALSE) + 
@@ -331,45 +335,394 @@ heatmap_auc(ssgsea_PTB_Control_combine, SignatureInfoTraining,
 ```
 
 ### Coefficient
-```{r, fig.width=10, fig.height=15}
-Coef_PTB_Control_ssGSEA <- getCoef(testWithScore_PTB_Control_ssGSEA)
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_Control_ssGSEA <- getCoef(testWithScore_PTB_Control_ssGSEA, ensembleSignaturesList)
 Coef_PTB_Control_ssGSEA_Df <- do.call(rbind, Coef_PTB_Control_ssGSEA)
 Coef_PTB_Control_ssGSEA_Df$Coefficient <- as.numeric(Coef_PTB_Control_ssGSEA_Df$Coefficient)
 # Making plot
 ggplot(Coef_PTB_Control_ssGSEA_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
-  theme_bw() + ggtitle("Coefficient Distribution using ssGSEA (PTB vs. Control)")
+  theme_bw() + ggtitle("Coefficient Distribution using ssGSEA (PTB vs. Control)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of Set
+```{r}
+AUC_PTB_Control <- readRDS("~/Desktop/practice/AUC_PTB_Control.RDS")
+outperform_Control_ssGSEA <- compareAUC(AUC_PTB_Control$AUC_final, 
+                                 ensembleSignaturesList, "ssGSEA")
+DT::datatable(outperform_Control_ssGSEA)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_Control_ssGSEA$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_Control_ssGSEA[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
 ```
 
 ## PLAGE {.tabset}
 
 ### Heatmap
-```{r, fig.width=12, fig.height = 20, fig.wide=TRUE}
+```{r, fig.width=13, fig.height=18, fig.wide=TRUE, warning=FALSE}
 heatmap_auc(plage_PTB_Control_combine, SignatureInfoTraining, 
             names(TBsignatures), facet = TRUE, clustering = FALSE) + 
   ggtitle("Heatmap of AUC for PTB vs. Control using PLAGE")
 ```
 
 ### Coefficient
-```{r, fig.width=10, fig.height=15}
-Coef_PTB_Control_PLAGE <- getCoef(testWithScore_PTB_Control_PLAGE)
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_Control_PLAGE <- getCoef(testWithScore_PTB_Control_PLAGE, ensembleSignaturesList)
 Coef_PTB_Control_PLAGE_Df <- do.call(rbind, Coef_PTB_Control_PLAGE)
 Coef_PTB_Control_PLAGE_Df$Coefficient <- as.numeric(Coef_PTB_Control_PLAGE_Df$Coefficient)
 # Making plot
 ggplot(Coef_PTB_Control_PLAGE_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
-  theme_bw() + ggtitle("Coefficient Distribution using PLAGE (PTB vs. Control)")
+  theme_bw() + ggtitle("Coefficient Distribution using PLAGE (PTB vs. Control)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of each combination
+```{r}
+# AUC_PTB_Control <- readRDS("~/Desktop/practice/AUC_PTB_Control.RDS")
+outperform_Control_PLAGE <- compareAUC(AUC_PTB_Control$AUC_final, 
+                                       ensembleSignaturesList, "PLAGE")
+DT::datatable(outperform_Control_PLAGE)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_Control_PLAGE$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_Control_PLAGE[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
 ```
 
 ## Violin Plot
-```{r, fig.width=15, fig.height=15}
-AUC_PTB_Control <- make_violin_plot(ensembleSignaturesList, 
-                                    testWithScore_PTB_Control_ssGSEA,
-                                    testWithScore_PTB_Control_PLAGE)
-p_facet <- ggplot(AUC_PTB_Control$AUC_final, aes(Method, AUC, fill = SignatureType)) +
-  geom_split_violin() +
-  facet_wrap(~SetName) + 
-  geom_text(data = AUC_PTB_Control$signatureWithMaxAUC,
-            aes(x = Method, y = 0.925, label = Signature), size = 2.4) +
-  theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 8, face = "bold"))
-
-p_facet
+```{r, fig.width=14, fig.height=10}
+# AUC_PTB_Control <- make_violin_plot(ensembleSignaturesList, 
+#                                     testWithScore_PTB_Control_ssGSEA,
+#                                     testWithScore_PTB_Control_PLAGE)
+# saveRDS(AUC_PTB_Control,"~/Desktop/practice/AUC_PTB_Control.RDS")
+# AUC_PTB_Control <- readRDS("~/Desktop/practice/AUC_PTB_Control.RDS")
+p_control <- show_voilin_plot(AUC_PTB_Control, y = 0.75)
+p_control + theme(axis.text.x = element_text(size = 12),
+                  axis.text.y = element_text(size = 12))
 ```
+
+# PTB vs. LTBI {.tabset}
+```{r, message=FALSE, results='hide', warning=FALSE}
+# 25 in total
+multi_set_PTB_LTBI <- lapply(object_edit, function(x)
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("PTB","LTBI"), 
+                       useAssay = assayNames(x),
+                       experiment_name = "assay_curated")) %>% plyr::compact()
+ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+ssgsea_PTB_LTBI_combine <- combine_auc(ssgsea_PTB_LTBI, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+ssgsea_PTB_LTBI_combine$GSE <- factor(ssgsea_PTB_LTBI_combine$GSE,
+                                         levels = unique(ssgsea_PTB_LTBI_combine$GSE))
+plage_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "PLAGE",
+                                  combineSigAndAlgorithm = TRUE))
+plage_PTB_LTBI_combine <- combine_auc(plage_PTB_LTBI, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+plage_PTB_LTBI_combine$GSE <- factor(plage_PTB_LTBI_combine$GSE,
+                                        levels = unique(ssgsea_PTB_LTBI_combine$GSE))
+```
+
+```{r}
+testWithScore_PTB_LTBI_ssGSEA <- readRDS("~/Desktop/practice/testWithScore_PTB_LTBI_ssGSEA.RDS")
+testWithScore_PTB_LTBI_PLAGE <- readRDS("~/Desktop/practice/testWithScore_PTB_LTBI_PLAGE.RDS")
+
+# AUC_ssGSEA_sig_PTB_LTBI <- testWithScoreDataProcess(testWithScore_PTB_LTBI_ssGSEA, 
+#                                                    "Combine_ssGSEA", "ssGSEA",
+#                                                     combine = FALSE)
+# AUC_plage_sig_PTB_LTBI <- testWithScoreDataProcess(testWithScore_PTB_LTBI_PLAGE, 
+#                                                    "Combine_PLAGE", "PLAGE", 
+#                                                     combine = FALSE)
+# AUC_sig_PTB_LTBI <- rbind(do.call(rbind, AUC_ssGSEA_sig_PTB_LTBI),
+#                           do.call(rbind, AUC_plage_sig_PTB_LTBI))
+```
+
+## ssGSEA {.tabset}
+
+### Heatmap
+```{r, fig.width=13, fig.height=18, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. LTBI using ssGSEA")
+```
+
+### Coefficient
+
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_LTBI_ssGSEA <- getCoef(testWithScore_PTB_LTBI_ssGSEA, ensembleSignaturesList)
+Coef_PTB_LTBI_ssGSEA_Df <- do.call(rbind, Coef_PTB_LTBI_ssGSEA)
+Coef_PTB_LTBI_ssGSEA_Df$Coefficient <- as.numeric(Coef_PTB_LTBI_ssGSEA_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_LTBI_ssGSEA_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using ssGSEA (PTB vs. LTBI)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of Set
+```{r}
+AUC_PTB_LTBI <- readRDS("~/Desktop/practice/AUC_PTB_LTBI.RDS")
+outperform_LTBI_ssGSEA <- compareAUC(AUC_PTB_LTBI$AUC_final, 
+                                 ensembleSignaturesList, "ssGSEA")
+DT::datatable(outperform_LTBI_ssGSEA)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_LTBI_ssGSEA$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_LTBI_ssGSEA[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
+```
+
+## PLAGE {.tabset}
+
+### Heatmap
+```{r, fig.width=13, fig.height=18, fig.wide=TRUE, warning=FALSE}
+heatmap_auc(plage_PTB_LTBI_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. LTBI using PLAGE")
+```
+
+### Coefficient
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_LTBI_PLAGE <- getCoef(testWithScore_PTB_LTBI_PLAGE, ensembleSignaturesList)
+Coef_PTB_LTBI_PLAGE_Df <- do.call(rbind, Coef_PTB_LTBI_PLAGE)
+Coef_PTB_LTBI_PLAGE_Df$Coefficient <- as.numeric(Coef_PTB_LTBI_PLAGE_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_LTBI_PLAGE_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using PLAGE (PTB vs. LTBI)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of Set
+```{r}
+# AUC_PTB_LTBI <- readRDS("~/Desktop/practice/AUC_PTB_LTBI.RDS")
+outperform_LTBI_PLAGE <- compareAUC(AUC_PTB_LTBI$AUC_final, 
+                                 ensembleSignaturesList, "PLAGE")
+DT::datatable(outperform_LTBI_PLAGE)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_LTBI_PLAGE$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_LTBI_PLAGE[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
+```
+
+## Violin Plot
+```{r, fig.width=14, fig.height=10}
+# AUC_PTB_LTBI <- make_violin_plot(ensembleSignaturesList, 
+#                                     testWithScore_PTB_LTBI_ssGSEA,
+#                                     testWithScore_PTB_LTBI_PLAGE)
+# saveRDS(AUC_PTB_LTBI, "~/Desktop/practice/AUC_PTB_LTBI.RDS")
+AUC_PTB_LTBI <- readRDS("~/Desktop/practice/AUC_PTB_LTBI.RDS")
+p_LTBI <- show_voilin_plot(AUC_PTB_LTBI, y = 0.8)
+p_LTBI + theme(axis.text.x = element_text(size = 12),
+               axis.text.y = element_text(size = 12))
+```
+
+# PTB vs. OD {.tabset}
+```{r, message=FALSE, results='hide', warning=FALSE}
+# 25 in total
+multi_set_PTB_OD <- lapply(object_edit, function(x)
+  subset_curatedTBData(x, annotationColName = "TBStatus", 
+                       annotationCondition = c("PTB","OD"), 
+                       useAssay = assayNames(x),
+                       experiment_name = "assay_curated")) %>% plyr::compact()
+ssgsea_PTB_OD <- lapply(multi_set_PTB_OD,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+ssgsea_PTB_OD_combine <- combine_auc(ssgsea_PTB_OD, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+ssgsea_PTB_OD_combine$GSE <- factor(ssgsea_PTB_OD_combine$GSE,
+                                         levels = unique(ssgsea_PTB_OD_combine$GSE))
+plage_PTB_OD <- lapply(multi_set_PTB_OD,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x),
+                                  signatures = TBsignatures, 
+                                  algorithm = "PLAGE",
+                                  combineSigAndAlgorithm = TRUE))
+plage_PTB_OD_combine <- combine_auc(plage_PTB_OD, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignatures), 
+                                num.boot = NULL, percent = 0.95)
+plage_PTB_OD_combine$GSE <- factor(plage_PTB_OD_combine$GSE,
+                                        levels = unique(ssgsea_PTB_OD_combine$GSE))
+```
+
+```{r}
+testWithScore_PTB_OD_ssGSEA <- readRDS("~/Desktop/practice/testWithScore_PTB_OD_ssGSEA.RDS")
+testWithScore_PTB_OD_PLAGE <- readRDS("~/Desktop/practice/testWithScore_PTB_OD_PLAGE.RDS")
+
+# AUC_ssGSEA_sig_PTB_OD <- testWithScoreDataProcess(testWithScore_PTB_OD_ssGSEA, 
+#                                                        "Combine_ssGSEA", "ssGSEA",
+#                                                         combine = FALSE)
+# AUC_plage_sig_PTB_OD <- testWithScoreDataProcess(testWithScore_PTB_OD_PLAGE, 
+#                                                       "Combine_PLAGE", "PLAGE", 
+#                                                        combine = FALSE)
+# AUC_sig_PTB_OD <- rbind(do.call(rbind, AUC_ssGSEA_sig_PTB_OD),
+#                         do.call(rbind, AUC_plage_sig_PTB_OD))
+```
+
+## ssGSEA {.tabset}
+### Heatmap
+```{r, fig.width=13, fig.height=18, fig.wide=TRUE}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_OD_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. LTBI using ssGSEA")
+```
+
+### Coefficient
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_OD_ssGSEA <- getCoef(testWithScore_PTB_OD_ssGSEA, ensembleSignaturesList)
+Coef_PTB_OD_ssGSEA_Df <- do.call(rbind, Coef_PTB_OD_ssGSEA)
+Coef_PTB_OD_ssGSEA_Df$Coefficient <- as.numeric(Coef_PTB_OD_ssGSEA_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_OD_ssGSEA_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using ssGSEA (PTB vs. OD)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of Set
+```{r}
+AUC_PTB_OD <- readRDS("~/Desktop/practice/AUC_PTB_OD.RDS")
+outperform_OD_ssGSEA <- compareAUC(AUC_PTB_OD$AUC_final, 
+                                 ensembleSignaturesList, "ssGSEA")
+DT::datatable(outperform_OD_ssGSEA)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_OD_ssGSEA$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_OD_ssGSEA[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
+```
+
+## PLAGE {.tabset}
+### Heatmap
+```{r, fig.width=10, fig.height=15, fig.wide=TRUE, warning=FALSE}
+heatmap_auc(plage_PTB_OD_combine, SignatureInfoTraining, 
+            names(TBsignatures), facet = TRUE, clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. OD using PLAGE")
+```
+
+### Coefficient
+```{r, fig.width=10, fig.height=10}
+Coef_PTB_OD_PLAGE <- getCoef(testWithScore_PTB_OD_PLAGE, ensembleSignaturesList)
+Coef_PTB_OD_PLAGE_Df <- do.call(rbind, Coef_PTB_OD_PLAGE)
+Coef_PTB_OD_PLAGE_Df$Coefficient <- as.numeric(Coef_PTB_OD_PLAGE_Df$Coefficient)
+# Making plot
+ggplot(Coef_PTB_OD_PLAGE_Df, aes(x = Coefficient, y = Signature)) + geom_boxplot() +
+  theme_bw() + ggtitle("Coefficient Distribution using PLAGE (PTB vs. OD)") +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+```
+
+### Analysis of Set
+```{r}
+# AUC_PTB_OD <- readRDS("~/Desktop/practice/AUC_PTB_OD.RDS")
+outperform_OD_PLAGE <- compareAUC(AUC_PTB_OD$AUC_final, 
+                                 ensembleSignaturesList, "PLAGE")
+DT::datatable(outperform_OD_PLAGE)
+# Find Sets with combine > individual and display its coefficient
+```
+
+```{r, results='hide'}
+for (i in outperform_OD_ssGSEA$SetName) {
+  cat("####", i, "\n")
+  
+  coefTab <- Coef_PTB_OD_PLAGE[[i]] %>%  
+    dplyr::mutate(Coef = as.numeric(Coefficient)) %>% 
+    dplyr::group_by(Signature) %>% 
+    dplyr::summarise(mean = round(mean(Coef), 4))
+  print(DT::datatable(coefTab))
+  
+  cat("\n\n")
+}
+```
+
+## Violin Plot
+```{r, fig.width=14, fig.height=10}
+# AUC_PTB_OD <- make_violin_plot(ensembleSignaturesList, 
+#                                testWithScore_PTB_OD_ssGSEA,
+#                                testWithScore_PTB_OD_PLAGE)
+# saveRDS(AUC_PTB_OD, "~/Desktop/practice/AUC_PTB_OD.RDS")
+AUC_PTB_OD <- readRDS("~/Desktop/practice/AUC_PTB_OD.RDS")
+p_OD <- show_voilin_plot(AUC_PTB_OD, y = 0.68)
+p_OD + theme(axis.text.x = element_text(size = 12),
+             axis.text.y = element_text(size = 12))
+```
+

@@ -1,6 +1,6 @@
 Package: curatedTBData
 Type: Package
-Title: Curation of exsiting 42 tuberculosis transcriptomic studies
+Title: Curation of exsiting 49 tuberculosis transcriptomic studies
 Version: 0.1.0
 Authors@R: person("Xutao", "Wang", email = "xutaow@bu.com",
   role = c("aut", "cre"))
@@ -14,7 +14,6 @@ Imports:
     Biobase,
     BiocParallel,
     dplyr,
-    edgeR,
     ggplot2,
     ggridges,
     gridExtra,
@@ -39,18 +38,14 @@ Suggests:
     affy,
     AnnotationDbi,
     DT,
+    edgeR,
     plyr,
     GEOquery,
     GSVA,
-    hgu133plus2.db,
-    illuminaHumanv4.db,
-    illuminaHumanv3.db,
     magick,
     rmarkdown,
     roxygen2,
-    singscore,
     sva,
-    SCAN.UPC,
     TBSignatureProfiler,
     testthat
 biocViews:
