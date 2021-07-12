@@ -67,6 +67,8 @@ characteristic_data_frame$GeographicalRegion <- "South Africa"
 characteristic_data_frame$Tissue <- "Whole Blood"
 hist_TB <- ifelse(characteristic_data_frame$PreviousTB == "n", "No", "Yes")
 characteristic_data_frame$PreviousTB <- hist_TB
+Gender <- characteristic_data_frame$Gender
+characteristic_data_frame$Gender = ifelse(Gender == "female", "Female", "Male")
 characteristic_data_frame$Age <- as.numeric(characteristic_data_frame$Age)
 characteristic_data_frame$TST <- as.numeric(characteristic_data_frame$TST)
 # Download patient information online
