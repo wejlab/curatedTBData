@@ -48,6 +48,7 @@ characteristic_data_frame$TBStatus <- TBStatus
 characteristic_data_frame$Barcode <- ID_table$DescriptionID
 characteristic_data_frame$GeographicalRegion <- "South Africa"
 characteristic_data_frame$HIVStatus <- "Positive"
+characteristic_data_frame$Treatment <- "Untreated"
 col_info <- create_standard_coldata(characteristic_data_frame)
 new_col_info <- S4Vectors::DataFrame(col_info)
 

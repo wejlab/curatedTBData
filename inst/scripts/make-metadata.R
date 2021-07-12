@@ -33,48 +33,84 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
       } else {
         stop("check your reprocessVersion paratmeter")
       }
-      Title <- paste0(GSEName, sep = "_", c(dataCategory, assay_reprocess))
+      dataCategory <- c(dataCategory, assay_reprocess)
+      Title <- paste0(GSEName, sep = "_", dataCategory)
     }
   }
   Description <- rep(0, length(Title))
   RDataClass <- rep(0, length(Title))
+  Tags <- rep(0, length(Title)) # Add tags from review
   for (i in seq_len(length(Title))) {
-    tt_split <- strsplit(Title[i], "_")
-    GSE <- tt_split[[1]][1]
-    tt <- Title[i]
-    if(length(grep("assay_raw", tt)) == 1){
-      Description[i] <- paste("Raw transcriptome data derived from GEO accession", GSE)
-      RDataClass[i] <- "matrix"
-    }
-    if(length(grep("assay_curated", tt)) == 1){
-      Description[i] <- paste("Curated transcriptome data derived from GEO accession", GSE)
-      RDataClass[i] <- "matrix"
-    }
-    if(length(grep("assay_curated", tt)) == 1){
-      Description[i] <- paste("Curated transcriptome data derived from GEO accession", GSE)
-      RDataClass[i] <- "matrix"
-    }
-    if(length(grep("column_data", tt)) == 1){
-      Description[i] <- paste("Clinical information for samples derived from GEO accession", GSE)
-      RDataClass[i] <- "DFrame"
-    }
-    if(length(grep("meta_data", tt) == 1)){
-      Description[i] <- paste("Meta data information for samples derived from GEO accession", GSE)
-      RDataClass[i] <- "MIAME"
-    }
-    if(length(grep("row_data", tt) == 1)){
-      Description[i] <- paste("Probe set information for samples for derived from GEO accession", GSE)
-      RDataClass[i] <- "DFrame"
-    }
-    if(length(grep("assay_reprocess", tt)) == 1){
-      Description[i] <- paste("Reprocessed RNA-seq data derived from GEO accession", GSE)
-      RDataClass[i] <- "matrix"
+    if (isGEO) {
+      if(length(grep("assay_raw", Title[i])) == 1) {
+        Description[i] <- paste("Raw transcriptome data derived from GEO accession:", GSEName)
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_raw", sep = ":")
+      }
+      if(length(grep("assay_curated", Title[i])) == 1){
+        Description[i] <- paste("Curated transcriptome data derived from GEO accession:", GSEName)
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_curated", sep = ":")
+      }
+      if(length(grep("column_data", Title[i])) == 1){
+        Description[i] <- paste("Clinical information for samples derived from GEO accession:", GSEName)
+        RDataClass[i] <- "DFrame"
+        Tags[i] <- paste(GSEName, "column_data", sep = ":")
+      }
+      if(length(grep("meta_data", Title[i]) == 1)){
+        Description[i] <- paste("Meta data information for samples derived from GEO accession:", GSEName)
+        RDataClass[i] <- "MIAME"
+        Tags[i] <- paste(GSEName, "meta_data", sep = ":")
+      }
+      if(length(grep("row_data", Title[i]) == 1)){
+        Description[i] <- paste("Probe set information for samples for derived from GEO accession:", GSEName)
+        RDataClass[i] <- "DFrame"
+        Tags[i] <- paste(GSEName, "row_data", sep = ":")
+      }
+      if(length(grep("assay_reprocess", Title[i])) == 1){
+        Description[i] <- paste("Reprocessed RNA-seq data derived from GEO accession:", GSEName)
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_reprocess", sep = ":")
+      }
+    } else {
+      GSE0 <- base::gsub("GSE","", GSEName)
+      if(length(grep("assay_raw", Title[i])) == 1){
+        Description[i] <- paste("Raw transcriptome data derived from", GSE0, "et.al")
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_raw", sep = ":")
+      }
+      if(length(grep("assay_curated", Title[i])) == 1){
+        Description[i] <- paste("Curated transcriptome data derived from", GSE0, "et.al")
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_curated", sep = ":")
+      }
+      if(length(grep("column_data", Title[i])) == 1){
+        Description[i] <- paste("Clinical information for samples derived from", GSE0, "et.al")
+        RDataClass[i] <- "DFrame"
+        Tags[i] <- paste(GSEName, "column_data", sep = ":")
+      }
+      if(length(grep("meta_data", Title[i]) == 1)){
+        Description[i] <- paste("Meta data information for samples derived from", GSE0, "et.al")
+        RDataClass[i] <- "MIAME"
+        Tags[i] <- paste(GSEName, "meta_data", sep = ":")
+      }
+      if(length(grep("row_data", Title[i]) == 1)){
+        Description[i] <- paste("Probe set information for samples for derived from", GSE0, "et.al")
+        RDataClass[i] <- "DFrame"
+        Tags[i] <- paste(GSEName, "row_data", sep = ":")
+      }
+      if(length(grep("assay_reprocess", Title[i])) == 1){
+        Description[i] <- paste("Reprocessed RNA-seq data derived from", GSE0, "et.al")
+        RDataClass[i] <- "matrix"
+        Tags[i] <- paste(GSEName, "assay_reprocess", sep = ":")
+      }
     }
   }
   ####################################################
-  BiocVersion <-
-    BiocManager::version() %>%
-    base::as.character()
+  # BiocVersion <-
+  #   BiocManager::version() %>%
+  #   base::as.character()
+  BiocVersion <- "3.14" # Edit based on review
   ####################################################
   Genome <- base::as.character(NA)
   ####################################################
@@ -102,10 +138,12 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
   ####################################################
   RDataPath <- sprintf("curatedTBData/data/%s.rda", Title)
   ####################################################
+  # Tags <- base::as.character("curatedTBData")
+  ####################################################
   metadata1 <- data.frame(Title, Description, BiocVersion, Genome, SourceType,
                           SourceUrl, SourceVersion, Species, TaxonomyId,
                           Coordinate_1_based, DataProvider, Maintainer, RDataClass,
-                          DispatchClass, RDataPath)
+                          DispatchClass, RDataPath, Tags)
   return(metadata1)
 }
 
