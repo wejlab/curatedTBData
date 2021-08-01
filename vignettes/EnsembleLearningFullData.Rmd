@@ -720,9 +720,17 @@ for (i in outperform_OD_ssGSEA$SetName) {
 #                                testWithScore_PTB_OD_ssGSEA,
 #                                testWithScore_PTB_OD_PLAGE)
 # saveRDS(AUC_PTB_OD, "~/Desktop/practice/AUC_PTB_OD.RDS")
-AUC_PTB_OD <- readRDS("~/Desktop/practice/AUC_PTB_OD.RDS")
+# AUC_PTB_OD <- readRDS("~/Desktop/practice/AUC_PTB_OD.RDS")
 p_OD <- show_voilin_plot(AUC_PTB_OD, y = 0.68)
 p_OD + theme(axis.text.x = element_text(size = 12),
              axis.text.y = element_text(size = 12))
+```
+
+```{r}
+mySelectedSet <- c("Set1", "Set11", "Set13", "Set14","Set15", "Set19")
+mySub <- AUC_PTB_OD$AUC_final %>% dplyr::filter(SetName %in% mySelectedSet)
+mySubWithMaxAUC <- AUC_PTB_OD$signatureWithMaxAUC %>% dplyr::filter(SetName %in% mySelectedSet)
+myOD <- list(AUC_final = mySub, signatureWithMaxAUC = mySubWithMaxAUC)
+p_myOD <- show_voilin_plot(myOD, y = 0.68)
 ```
 

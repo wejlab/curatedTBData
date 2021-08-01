@@ -44,6 +44,7 @@ vignettes/*.pdf
 
 # List RData
 *.rds
+data/GSE*.rda
 data-raw/*.RDS
 data-raw/*.RData
 
