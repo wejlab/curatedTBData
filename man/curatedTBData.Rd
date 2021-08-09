@@ -2,19 +2,28 @@
 % Please edit documentation in R/curatedTBData.R
 \name{curatedTBData}
 \alias{curatedTBData}
-\title{Import curatedTBData
-A function to load available curatedTBData from the package.}
+\title{Import curated Tuberculosis Data
+A function to access available curated Tuberculosis data from the Bioconductor's
+ExperimentHub services}
 \usage{
-curatedTBData(geoAccession)
+curatedTBData(geoAccession, dryrun = TRUE)
 }
 \arguments{
-\item{geoAccession}{A character/vector that contains geo accession information.
-If `geoAccession == All``, load all avaible studies in the package.}
+\item{geoAccession}{A string or vector of strings that contains geo accession information.}
+
+\item{dryrun}{Boolean. Indicate the whether downloading resources from the
+ExperimenttHub services. If `TRUE` (default), return the names of the resources.
+If `FALSE`, start downloading data.}
 }
 \value{
-A MultiAssayExperiment Object correpsonding to the `geoAccession`
+a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class]
 }
 \description{
-Import curatedTBData
-A function to load available curatedTBData from the package.
+Import curated Tuberculosis Data
+A function to access available curated Tuberculosis data from the Bioconductor's
+ExperimentHub services
+}
+\examples{
+curatedTBData("GSE39939")
+curatedTBData(c("GSE39939", "GSE39940"))
 }
