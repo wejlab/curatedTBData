@@ -4,14 +4,14 @@
 #'
 #' @param geoAccession A string or vector of strings that contains geo accession information.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
-#' ExperimenttHub services. If `TRUE` (default), return the names of the resources.
+#' ExperimenttHub services. If `TRUE`, return the names of the resources.
 #' If `FALSE`, start downloading data.
 #' @return a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class]
 #' @export
 #' @examples
 #' curatedTBData("GSE39939")
 #' curatedTBData(c("GSE39939", "GSE39940"))
-curatedTBData <- function(geoAccession, dryrun = TRUE) {
+curatedTBData <- function(geoAccession, dryrun = FALSW) {
   eh <- suppressWarnings(ExperimentHub::ExperimentHub())
   tbData <- AnnotationHub::query(eh, "curatedTBData")
   # List available data
