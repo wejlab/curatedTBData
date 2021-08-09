@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo=TRUE, cache.lazy = FALSE, message=FALSE, warning=FALS
 devtools::install_github("compbiomed/curatedTBData")
 ```
 
-```{r libraries, message=FALSE}
+```{r libraries, message=FALSE, warning=FALSE}
 library(BiocParallel)
 library(dplyr)
 library(ggplot2)
@@ -60,7 +60,7 @@ data("DataSummary", package = "curatedTBData")
 DataSummary$`GEO accession`[-nrow(DataSummary)]
 # Get a list of all data
 # The following command takes about 5 miniutes
-objects_list <- curatedTBData(geoAccession = "All")
+objects_list <- curatedTBData(DataSummary$`GEO accession`)
 # Load single data
 # curatedTBData("GSE39939")
 
@@ -212,7 +212,7 @@ DT::datatable(NULL)
 ### Table with T-tests & AUC{.tabset}
 
 ```{r ssgsea Table for each signature PTB vs. Latent, cache=TRUE, results = "asis"}
-for (i in names(TBsignatures)){
+for (i in names(TBsignatures)) {
 
   cat("####", i, "\n")
   

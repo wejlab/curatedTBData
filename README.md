@@ -21,21 +21,17 @@ data("DataSummary", package = "curatedTBData")
 View(DataSummary$`GEO accession`)
 ```
 
-Load specific studies:
+Load studies:
 
 ``` r
 library(curatedTBData)
 
-# Load Single Study
+# Load all studies
+curatedTBData(DataSummary$`GEO accession`)
+
+# Load single study
 curatedTBData("GSE39939")
 
-# Load Multiple Studies
+# Load multiple studies
 curatedTBData(c("GSE39939","GSE107993"))
-```
-
-Load all available datasets in the pakcage:
-
-``` r
-library(curatedTBData)
-curatedTBData("All")
 ```

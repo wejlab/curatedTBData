@@ -7,17 +7,17 @@ usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}
 \usage{
 CombineObjects(
   object_list,
+  list_name = NULL,
   experiment_name = NULL,
-  useAssay = NULL,
-  list_name = NULL
+  useAssay = NULL
 )
 }
 \arguments{
 \item{object_list}{A list contains expression data with probes mapped to gene symbol.}
 
-\item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
-
 \item{list_name}{A character/vector contains object name to be selected to merge.}
+
+\item{experiment_name}{A character/vector to choose the name of the experiment from MultiAssayExperiment Object.}
 }
 \value{
 A SummarizedExperiment Object contains combined data from several studies.
@@ -29,12 +29,6 @@ usually run after matching prob sets to gene symbol. See \code{\link{MatchProbe}
 \examples{
 list_name <-  c("GSE101705","GSE54992","GSE19444")
 data_list <-  get_curatedTBData(list_name)
-object_norm <- lapply(data_list, function(x)
-                               Normalization(x, microarray_method = "quantile",
-                               RNAseq_method = "TMM", experiment_name = "assay_raw"))
-object_match <- lapply(object_norm, function(x)
-                               MatchProbe(x, useAssay = c("TMM","quantile","RMA"),
-                               createExperimentName = "assay_MatchProbe"))
-sobject <- CombineObjects(object_match, list_name,
-                          experiment_name = "assay_MatchProbe")
+sobject <- CombineObjects(data_list, list_name,
+                          experiment_name = "assay_curated")
 }
