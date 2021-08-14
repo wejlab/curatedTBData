@@ -2,62 +2,100 @@
 #' A function to access available curated Tuberculosis data from the Bioconductor's
 #' ExperimentHub services
 #'
-#' @param geoAccession A string or vector of strings that contains geo accession information.
+#' @param dataNames A string or vector of strings that contain name of the datasets.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
-#' ExperimenttHub services. If `TRUE`, return the names of the resources.
-#' If `FALSE`, start downloading data.
-#' @return a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class]
+#' ExperimentHub services. If `TRUE` (Default), return the names of the available resources
+#' to be downloaded. If `FALSE`, start downloading data.
+#' @param curated.only Boolean. Indicate whether downloading resources for the curated version.
+#' If `TRUE` (Default), only download only download the curated gene expression profile and the clinical annotation information.
+#' If `FALSE`, download all the available resources.
+#' @return a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 #' @export
 #' @examples
 #' curatedTBData("GSE39939")
 #' curatedTBData(c("GSE39939", "GSE39940"))
-curatedTBData <- function(geoAccession, dryrun = FALSW) {
+curatedTBData <- function(dataNames, dryrun = TRUE, curated.only = TRUE) {
   eh <- suppressWarnings(ExperimentHub::ExperimentHub())
   tbData <- AnnotationHub::query(eh, "curatedTBData")
   # List available data
-  geoAccession_all <- unique(gsub("_.*", "", tbData$title))
-  indexMatch <- match(geoAccession, geoAccession_all)
-  geoAccession_sub <- geoAccession_all[indexMatch]
+  names_all <- unique(gsub("_.*", "", tbData$title))
+  indexMatch <- match(dataNames, names_all)
+  names_sub <- names_all[indexMatch]
 
-  if (any(is.na(geoAccession_sub))) {
-    if(all(is.na(geoAccession_sub))) {
+  if (any(is.na(names_sub))) {
+    if(all(is.na(names_sub))) {
       stop(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.
                    Check your input.",
-                   paste0(geoAccession, collapse = ", ")), call. = FALSE)
+                   paste0(dataNames, collapse = ", ")), call. = FALSE)
     } else {
-      indexNA <- which(is.na(geoAccession_sub))
+      indexNA <- which(is.na(names_sub))
       message(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.",
-                      paste0(geoAccession[indexNA], collapse = ", ")))
+                      paste0(dataNames[indexNA], collapse = ", ")))
     }
-    geoAccession_sub <- geoAccession_sub[!is.na(geoAccession_sub)]
+    names_sub <- names_sub[!is.na(names_sub)]
+  }
+  if(curated.only) {
+    message("Download curated version. Set curated.only = FALSE if want to download raw data.")
   }
   if (dryrun) {
-    return(sprintf("Attempt to download associated data for %s from the ExperimentHub service",
-                   paste0(geoAccession_sub, collapse = ", ")))
+    resources <- c()
+    for (geo in names_sub) {
+      resources <- c(resources, tbData$title[grep(geo, tbData$title)])
+    }
+    # Subset resources if curated.only = TRUE
+    # Remove assay_raw, row_data, meta_data
+    if (curated.only) {
+      resources <- resources[-grep(paste0(c("assay_raw", "row_data"),
+                                          collapse = "|"), resources)]
+    }
+    return(cat(sprintf("Attempt to download following resources for %s from the ExperimentHub service:\n%s",
+                       paste0(names_sub, collapse = ", "),
+                       paste0(resources, collapse = "\n"))))
   }
-
-  object_list <- lapply(geoAccession_sub, function(x) {
+  # availableCores <- parallel::detectCores()
+  # cores <- ifelse(availableCores - 4 <= 0, 1L, availableCores - 4)
+  df <- data.frame(ah_id = tbData$ah_id, title = tbData$title)
+  object_list <- lapply(names_sub, function(x, curated.only) {
     message(sprintf("Now downloading: %s", x))
+    # Find the index of related resources associated with the GSE names
     indexGSE <- grep(paste0(x, "_"), tbData$title)
-    data_list <- lapply(tbData$ah_id[indexGSE], function(y) suppressMessages(tbData[[y]]))
-    names(data_list) <- sub("^[^_]*_", "", tbData$title[indexGSE])
+    # Subset df based on the index
+    dfSub <- df[indexGSE, ]
+    if (curated.only) {
+      indexRemove <- grep(paste0(c("assay_raw", "row_data"),
+                                collapse = "|"), dfSub$title)
+      dfSub <- dfSub[-indexRemove, ]
+    }
+    # Data download step
+    data_list <- lapply(dfSub$ah_id, function(y) suppressMessages(tbData[[y]]))
+    names(data_list) <- sub("^[^_]*_", "", dfSub$title)
 
-    # Create MultiAssayExperiment Object
-    exprdat <- SummarizedExperiment::SummarizedExperiment(data_list[["assay_raw"]],
-                                                          rowData = data_list[["row_data"]])
-    objlist <- data_list[-which(names(data_list) %in% c("column_data", "assay_raw",
-                                                        "row_data", "meta_data"))]
-    objlist <- lapply(objlist, function(x) as.matrix(x))
-    objlist$object_raw <- exprdat
+    if (curated.only) {
+      objlist <- data_list[-which(names(data_list) %in% c("column_data", "meta_data"))]
+      objlist <- lapply(objlist, function(x) as.matrix(x))
+    } else {
+      # Create MultiAssayExperiment Object using all the resources
+      # Create SummarizedExperiment object from assay_raw and row_data
+      exprdat <- SummarizedExperiment::SummarizedExperiment(data_list[["assay_raw"]],
+                                                            rowData = data_list[["row_data"]])
+      # Filtered out assay_curated and/or assay_reprocess
+      objlist <- data_list[-which(names(data_list) %in% c("column_data", "assay_raw",
+                                                          "row_data", "meta_data"))]
+      objlist <- lapply(objlist, function(x) as.matrix(x))
+      objlist$object_raw <- exprdat
+    }
     listMap <- lapply(objlist, function(x) {
       data.frame(primary = colnames(x), colname = colnames(x), stringsAsFactors = FALSE)
     })
     dfMap <- MultiAssayExperiment::listToMap(listMap)
-    myMultiAssay <- MultiAssayExperiment::MultiAssayExperiment(
-      objlist, data_list[["column_data"]], dfMap)
+    myMultiAssay <- MultiAssayExperiment::MultiAssayExperiment(objlist,
+                                                               data_list[["column_data"]],
+                                                               dfMap)
     MultiAssayExperiment::metadata(myMultiAssay) <- list(data_list[["meta_data"]])
     myMultiAssay
-  })
-  names(object_list) <- geoAccession_sub
+  }, curated.only = curated.only)
+  message("Finished!")
+  names(object_list) <- names_sub
   return(object_list)
 }
+

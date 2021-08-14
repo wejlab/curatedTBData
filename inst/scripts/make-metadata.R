@@ -19,7 +19,7 @@ TitleGEORNASeq <- DataSummary[indexGEO, ] %>%
 #' @param isGEO Boolean. Indicate whether the data is downloaded from the Gene Expression Omnibus.
 #' @param DataType Whether it is a RNA sequencing or microarray data.
 #' @param containReprocess Boolean. Indicate whether the RNA-seq data contains reprocessing count matrix
-#' @param reprocessVersion The genome reference version specifically for reprocessing RNA-seq.
+#' @param reprocessVersion String. The genome reference version specifically for reprocessing RNA-seq.
 
 createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Microarray"),
                            containReprocess = FALSE, reprocessVersion = NULL) {

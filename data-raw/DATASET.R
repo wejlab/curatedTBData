@@ -16,6 +16,8 @@ purrr::walk2(dataAllList, paste0(names(dataAllList)), function(obj, name) {
 # Save Summary Table
 DataSummary <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
                                   sheet = "DataSummary")
+# Remove the last row: Total
+DataSummary <- DataSummary[-nrow(DataSummary),]
 usethis::use_data(DataSummary,compress = "xz", overwrite = TRUE)
 
 SignatureInfoTraining <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
