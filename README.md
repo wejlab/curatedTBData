@@ -1,10 +1,10 @@
 # curatedTBData
 
-The curatedTBData package collects 42 transcriptome studies for patients with turberculosis (TB) and other clinical information.
+The curatedTBData package collects 49 transcriptomic studies for patients with tuberculosis (TB) and other clinical conditions.
 
 ## Installation
 
-curatedTBData is under development. You can install the devel version via
+curatedTBData is under development. You can install the development version via
 GitHub:
 
 ``` r
