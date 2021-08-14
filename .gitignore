@@ -1,5 +1,3 @@
-# Ignore .gitignore
-*.gitignore
 
 # History files
 .Rhistory
@@ -85,7 +83,7 @@ unsrturl.bst
 .directory
 .dropbox
 .exrc
-.gdb.history               
+.gdb.history
 .gitattributes
 .gitmodules
 .hgtags
