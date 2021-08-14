@@ -26,12 +26,12 @@ Load studies:
 ``` r
 library(curatedTBData)
 
-# Load all studies
-curatedTBData(DataSummary$`GEO accession`)
+# List of all available resources with dryrun = TRUE
+curatedTBData(DataSummary$`GEO accession`, dryrun = TRUE)
 
-# Load single study
-curatedTBData("GSE39939")
+# Load full version of single study
+curatedTBData("GSE39939", dryrun = FALSE, curated.only = FALSE)
 
-# Load multiple studies
-curatedTBData(c("GSE39939","GSE107993"))
+# Load curated version of multiple studies
+curatedTBData(c("GSE39939","GSE107993"), dryrun = FALSE, curated.only = TRUE)
 ```

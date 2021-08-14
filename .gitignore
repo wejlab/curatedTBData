@@ -1,5 +1,5 @@
-# Ignore files in practice directory
-/practice/*
+# Ignore .gitignore
+*.gitignore
 
 # History files
 .Rhistory
@@ -8,10 +8,9 @@
 # Ignore something
 *.DS_Store
 
-
 # Session Data files
-.RData
-.Rproj
+*.RData
+*.Rproj
 
 # User-specific files
 .Ruserdata
