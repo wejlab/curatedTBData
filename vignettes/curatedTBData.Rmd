@@ -1,0 +1,81 @@
+---
+title: "curatedTBData"
+author: 
+- name: Xutao Wang
+  affiliation: 
+  - Section of Computational Biomedicine, Boston University School of Medicine,
+    Boston, MA, U.S.A.
+  email: xutaow@bu.edu
+package: curatedTBData
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{curatedTBData}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Installtion
+```{r install curatedTBData, eval = FALSE}
+# BiocManager::install("curatedTBData")
+devtools::install_github("compbiomed/curatedTBData")
+```
+
+# R packages
+```{r libraries, message=FALSE, warning=FALSE}
+library(curatedTBData)
+library(dplyr)
+library(DT)
+library(SummarizedExperiment)
+# devtools::load_all()
+library(curatedTBData)
+```
+
+# Access to MetaData
+The `DataSummary` table summarized the list of available studies and their metadata information contained in the curatedTBData package. This helps users to query the datasets
+in an easy and quick way.
+```{r}
+# Remove GeographicalRegion, Age, DiagnosisMethod, Notes, Tissue, HIVStatus for concise display
+DataSummary %>%
+  dplyr::select(-c(GeographicalRegion, Age, DiagnosisMethod, Notes, Tissue, 
+                   HIVStatus)) %>%
+  DT::datatable()
+```
+
+# Access curated tuberculosis gene expression profile
+Users can use `curatedTBData()` function to access data. There are three arguments in the function. The first argument `dataNames` represents the names of the data that are used to determine the resources of interests. Users can find all available resource names from `DataSummary$GEOAccession`. The second argument `dryrun` enables users to determine the resources available before actually downloading them. When `dryrun` is set to `TRUE`, the returned values are titles of the resources. The third argument `curated.only` allows the users to access the curated ready-to-use data. If `curated.only` is `TRUE`, the function only download the curated gene expression profile and the clinical annotation of the corresponding data. When `curated.only` is `FALSE`, the function will download all the available resources of the corresponding data.
+```{r}
+curatedTBData("GSE19439", dryrun = TRUE, curated.only = FALSE)
+```
+A list of `r Biocpkg("MultiAssayExperiment")` objects is returned when `dryrun` is `FALSE`. To save time, we set the `curated.only = TRUE` and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) from the Gene Expression Omnibus.
+```{r, warning=FALSE, collapse=TRUE, results='hide'}
+myGEO <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
+objectList <- curatedTBData(myGEO, dryrun = FALSE)
+objectList[1:2]
+```
+
+# Subset/Combine MultiAssayExperiment objects
+
+## Subset
+The major advantage of using `r Biocpkg("MultiAssayExperiment")` is the coordination of the meta-data and assays when sub-setting.The MultiAssayExperiment object has built-in function for subsetting samples based on column condition. For example, the following code shows how to select samples with only active TB.
+```{r}
+GSE19439 <- objectList$GSE19439
+GSE19439[, GSE19439$TBStatus == "PTB"]@ExperimentList # 13 samples
+```
+
+The following code shows how to subset patients with active TB and LTBI
+```{r}
+GSE19439[, GSE19439$TBStatus %in% c("PTB","LTBI")]@ExperimentList # 30 samples
+```
+
+## Dataset integeration
+
+
+## Batch correction
+
+# Example an
