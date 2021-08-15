@@ -6,10 +6,10 @@
 A function to access available curated Tuberculosis data from the Bioconductor's
 ExperimentHub services}
 \usage{
-curatedTBData(dataNames, dryrun = TRUE, curated.only = TRUE)
+curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
-\item{dataNames}{A string or vector of strings that contain name of the datasets.}
+\item{study_name}{A string or vector of strings that contain name of the datasets.}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
 ExperimentHub services. If `TRUE` (Default), return the names of the available resources

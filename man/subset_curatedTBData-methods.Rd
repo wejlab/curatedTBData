@@ -12,7 +12,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  useAssay = "counts",
+  assayName,
   ...
 )
 
@@ -20,27 +20,21 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  useAssay = NULL,
-  experiment_name,
+  assayName,
   ...
 )
 }
 \arguments{
-\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+\item{theObject}{A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
+/[MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.}
 
 \item{...}{Extra named arguments passed to function.}
 
 \item{annotationColName}{A character indicates feature of interest in the object's column data.}
 
-\item{annotationCondition}{A vector indicates conditions want to be subsetted.}
+\item{annotationCondition}{A vector indicates conditions want to be selected.}
 
-\item{useAssay}{A character indicates the name of the assay (expression matrix) within the object.
-Need this argument when the input is a SummarizedExperiment object.}
-
-\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.
-Expect \code{theObject[[experiment_name]]} to be a matrix. Two special cases are:
-When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
-When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
+\item{assayName}{A character indicates the name of the assay from the input object.}
 }
 \description{
 \code{subset_curatedTBData} selects desired samples from curatedTBData

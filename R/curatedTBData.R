@@ -2,7 +2,7 @@
 #' A function to access available curated Tuberculosis data from the Bioconductor's
 #' ExperimentHub services
 #'
-#' @param dataNames A string or vector of strings that contain name of the datasets.
+#' @param study_name A string or vector of strings that contain name of the datasets.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
 #' ExperimentHub services. If `TRUE` (Default), return the names of the available resources
 #' to be downloaded. If `FALSE`, start downloading data.
@@ -14,27 +14,28 @@
 #' @examples
 #' curatedTBData("GSE39939")
 #' curatedTBData(c("GSE39939", "GSE39940"))
-curatedTBData <- function(dataNames, dryrun = TRUE, curated.only = TRUE) {
+curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
+
   eh <- suppressWarnings(ExperimentHub::ExperimentHub())
   tbData <- AnnotationHub::query(eh, "curatedTBData")
   # List available data
   names_all <- unique(gsub("_.*", "", tbData$title))
-  indexMatch <- match(dataNames, names_all)
+  indexMatch <- match(study_name, names_all)
   names_sub <- names_all[indexMatch]
 
   if (any(is.na(names_sub))) {
-    if(all(is.na(names_sub))) {
+    if (all(is.na(names_sub))) {
       stop(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.
                    Check your input.",
-                   paste0(dataNames, collapse = ", ")), call. = FALSE)
+                   paste0(study_name, collapse = ", ")), call. = FALSE)
     } else {
       indexNA <- which(is.na(names_sub))
       message(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.",
-                      paste0(dataNames[indexNA], collapse = ", ")))
+                      paste0(study_name[indexNA], collapse = ", ")))
     }
     names_sub <- names_sub[!is.na(names_sub)]
   }
-  if(curated.only) {
+  if (curated.only) {
     message("Download curated version. Set curated.only = FALSE if want to download raw data.")
   }
   if (dryrun) {
@@ -52,8 +53,6 @@ curatedTBData <- function(dataNames, dryrun = TRUE, curated.only = TRUE) {
                        paste0(names_sub, collapse = ", "),
                        paste0(resources, collapse = "\n"))))
   }
-  # availableCores <- parallel::detectCores()
-  # cores <- ifelse(availableCores - 4 <= 0, 1L, availableCores - 4)
   df <- data.frame(ah_id = tbData$ah_id, title = tbData$title)
   object_list <- lapply(names_sub, function(x, curated.only) {
     message(sprintf("Now downloading: %s", x))
@@ -98,4 +97,3 @@ curatedTBData <- function(dataNames, dryrun = TRUE, curated.only = TRUE) {
   names(object_list) <- names_sub
   return(object_list)
 }
-
