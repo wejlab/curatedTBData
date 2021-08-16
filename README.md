@@ -1,10 +1,10 @@
 # curatedTBData
 
-The curatedTBData package collects 42 transcriptome studies for patients with turberculosis (TB) and other clinical information.
+The curatedTBData package collects 49 transcriptomic studies for patients with tuberculosis (TB) and other clinical conditions.
 
 ## Installation
 
-curatedTBData is under development. You can install the devel version via
+curatedTBData is under development. You can install the development version via
 GitHub:
 
 ``` r
@@ -26,12 +26,12 @@ Load studies:
 ``` r
 library(curatedTBData)
 
-# Load all studies
-curatedTBData(DataSummary$`GEO accession`)
+# List of all available resources with dryrun = TRUE
+curatedTBData(DataSummary$`GEO accession`, dryrun = TRUE)
 
-# Load single study
-curatedTBData("GSE39939")
+# Load full version of single study
+curatedTBData("GSE39939", dryrun = FALSE, curated.only = FALSE)
 
-# Load multiple studies
-curatedTBData(c("GSE39939","GSE107993"))
+# Load curated version of multiple studies
+curatedTBData(c("GSE39939","GSE107993"), dryrun = FALSE, curated.only = TRUE)
 ```

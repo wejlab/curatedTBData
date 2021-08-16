@@ -6,17 +6,22 @@
 A function to access available curated Tuberculosis data from the Bioconductor's
 ExperimentHub services}
 \usage{
-curatedTBData(geoAccession, dryrun = TRUE)
+curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
-\item{geoAccession}{A string or vector of strings that contains geo accession information.}
+\item{study_name}{A string or vector of strings that contain name of the datasets.
+`""` will return all available studies.}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
-ExperimenttHub services. If `TRUE` (default), return the names of the resources.
-If `FALSE`, start downloading data.}
+ExperimentHub services. If `TRUE` (Default), return the names of the available resources
+to be downloaded. If `FALSE`, start downloading data.}
+
+\item{curated.only}{Boolean. Indicate whether downloading resources for the curated version.
+If `TRUE` (Default), only download only download the curated gene expression profile and the clinical annotation information.
+If `FALSE`, download all the available resources.}
 }
 \value{
-a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class]
+a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 }
 \description{
 Import curated Tuberculosis Data
@@ -24,6 +29,6 @@ A function to access available curated Tuberculosis data from the Bioconductor's
 ExperimentHub services
 }
 \examples{
-curatedTBData("GSE39939")
-curatedTBData(c("GSE39939", "GSE39940"))
+curatedTBData("GSE39939", dryrun = TRUE)
+curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
 }
