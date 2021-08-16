@@ -12,7 +12,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  useAssay = "counts",
+  assayName = NULL,
   ...
 )
 
@@ -20,29 +20,37 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
+  assayName = NULL,
   useAssay = NULL,
-  experiment_name,
   ...
 )
 }
 \arguments{
-\item{theObject}{A SummarizedExperiment/MultiAssayExperiment object.}
+\item{theObject}{A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
+/[MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.}
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{annotationColName}{A character indicates feature of interest in the object's column data.}
+\item{annotationColName}{A string indicates feature of interest in the object's annotation data.}
 
-\item{annotationCondition}{A vector indicates conditions want to be subsetted.}
+\item{annotationCondition}{A vector of string indicates conditions want to be selected.}
 
-\item{useAssay}{A character indicates the name of the assay (expression matrix) within the object.
-Need this argument when the input is a SummarizedExperiment object.}
+\item{assayName}{A string indicates the name of the assay from the input object.
+The default is `NULL`. When assayName is `NULL`, the function selects the first
+assay along the assay list.}
 
-\item{experiment_name}{A character indicates the name of the experiment within MultiAssayExperiment object.
-Expect \code{theObject[[experiment_name]]} to be a matrix. Two special cases are:
-When experiment_name is "all". Perform whole MultiAssayExperiment subsetting, output is in the form of MultiAsaayExperiment object.
-When experiment_name is "assay_raw". Perform subsetting on the SummarizedExperiment Object.}
+\item{useAssay}{A string indicates the name of the assay when the
+[SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] is
+selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
+The default is `NULL`. When assayName is `NULL`, the function selects the first
+assay along the assay list.}
 }
 \description{
 \code{subset_curatedTBData} selects desired samples from curatedTBData
-database according to pre-specified conditions.
+database based pre-specified conditions.
+}
+\examples{
+obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
+subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
+                     annotationCondition = c("Control","PTB"))
 }

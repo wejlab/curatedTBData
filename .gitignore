@@ -1,5 +1,5 @@
-# Ignore files in practice directory
-/practice/*
+# Ignore .gitignore
+# .gitignore
 
 # History files
 .Rhistory
@@ -8,9 +8,9 @@
 # Ignore something
 *.DS_Store
 
-
 # Session Data files
-.RData
+*.RData
+*.Rproj
 
 # User-specific files
 .Ruserdata
@@ -85,7 +85,7 @@ unsrturl.bst
 .directory
 .dropbox
 .exrc
-.gdb.history               
+.gdb.history
 .gitattributes
 .gitmodules
 .hgtags

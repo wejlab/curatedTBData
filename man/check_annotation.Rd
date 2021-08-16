@@ -11,7 +11,7 @@ check_annotation(theObject, annotationColName, annotationCondition)
 
 \item{annotationColName}{A character indicates feature of interest in the object's column data.}
 
-\item{annotationCondition}{A vector indicates conditions want to be subsetted.}
+\item{annotationCondition}{A vector indicates conditions want to be chosen.}
 }
 \description{
 Check the annotation column name in the colData function

@@ -11,6 +11,7 @@ Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
+    AnnotationHub,
     Biobase,
     BiocParallel,
     dplyr,
@@ -18,11 +19,9 @@ Imports:
     ggridges,
     gridExtra,
     knitr,
-    limma,
     magrittr,
     methods,
     MultiAssayExperiment,
-    pcaMethods,
     RColorBrewer,
     reshape2,
     readr,
@@ -30,19 +29,13 @@ Imports:
     ROCit,
     stringr,
     SummarizedExperiment,
-    S4Vectors,
-    tibble,
-    tidyr,
-    utils
+    S4Vectors
 Suggests:
-    affy,
     AnnotationDbi,
+    BiocStyle,
     DT,
-    edgeR,
-    plyr,
-    GEOquery,
     GSVA,
-    magick,
+    knitr,
     rmarkdown,
     roxygen2,
     sva,
