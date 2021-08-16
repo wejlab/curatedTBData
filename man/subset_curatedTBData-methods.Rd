@@ -12,7 +12,7 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  assayName,
+  assayName = NULL,
   ...
 )
 
@@ -20,7 +20,8 @@ subset_curatedTBData(theObject, ...)
   theObject,
   annotationColName,
   annotationCondition,
-  assayName,
+  assayName = NULL,
+  useAssay = NULL,
   ...
 )
 }
@@ -30,13 +31,26 @@ subset_curatedTBData(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{annotationColName}{A character indicates feature of interest in the object's column data.}
+\item{annotationColName}{A string indicates feature of interest in the object's annotation data.}
 
-\item{annotationCondition}{A vector indicates conditions want to be selected.}
+\item{annotationCondition}{A vector of string indicates conditions want to be selected.}
 
-\item{assayName}{A character indicates the name of the assay from the input object.}
+\item{assayName}{A string indicates the name of the assay from the input object.
+The default is `NULL`. When assayName is `NULL`, the function selects the first
+assay along the assay list.}
+
+\item{useAssay}{A string indicates the name of the assay when the
+[SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] is
+selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
+The default is `NULL`. When assayName is `NULL`, the function selects the first
+assay along the assay list.}
 }
 \description{
 \code{subset_curatedTBData} selects desired samples from curatedTBData
-database according to pre-specified conditions.
+database based pre-specified conditions.
+}
+\examples{
+obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
+subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
+                     annotationCondition = c("Control","PTB"))
 }

@@ -9,7 +9,8 @@ ExperimentHub services}
 curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
-\item{study_name}{A string or vector of strings that contain name of the datasets.}
+\item{study_name}{A string or vector of strings that contain name of the datasets.
+`""` will return all available studies.}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
 ExperimentHub services. If `TRUE` (Default), return the names of the available resources
@@ -28,6 +29,6 @@ A function to access available curated Tuberculosis data from the Bioconductor's
 ExperimentHub services
 }
 \examples{
-curatedTBData("GSE39939")
-curatedTBData(c("GSE39939", "GSE39940"))
+curatedTBData("GSE39939", dryrun = TRUE)
+curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
 }

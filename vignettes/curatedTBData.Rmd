@@ -33,7 +33,7 @@ devtools::install_github("compbiomed/curatedTBData")
 library(curatedTBData)
 library(dplyr)
 library(SummarizedExperiment)
-# devtools::load_all()
+devtools::load_all()
 library(curatedTBData)
 ```
 
@@ -53,17 +53,31 @@ Users can use `curatedTBData()` function to access data. There are three argumen
 ```{r access data with dryrun}
 curatedTBData("GSE19439", dryrun = TRUE, curated.only = FALSE)
 ```
+To download complete data for a Microarry study (e.g. [GSE19439](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19439)), 
+we set `dryrun = FALSE` and `curated.only = FALSE`.
+There are two experiments for the microarray study. The first experiment is `assay_curated`, which is a `matrix` that represents the normalized, curated version of the gene expression profile. The second experiment is `assay_raw`, which is a `r Biocpkg("SummarziedExperiment")` object that contains the raw gene expression profile and  information about probe features.
+```{r download full data for GSE19439, warning=FALSE, results='hide'}
+GSE19439 <- curatedTBData("GSE19439", dryrun = FALSE, curated.only = FALSE)
+GSE19439
+```
+A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw fastq files using `r Biocpkg("Rsubread")`.
+```{r, warning=FALSE, results='hide'}
+GSE79362 <- curatedTBData("GSE79362", dryrun = FALSE, curated.only = FALSE)
+GSE79362
+```
+
 A list of `r Biocpkg("MultiAssayExperiment")` objects is returned when `dryrun` is `FALSE`.
-To save time, in the following example, we set the `curated.only = TRUE` and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) from the Gene Expression Omnibus.
+To save time, in the following example, we set the `curated.only = TRUE` and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) from the Gene Expression Omnibus. 
+For RNA sequencing data, both curated assay and reprocessed assay plus the metadata information were returned.
 ```{r access selected curated datasets microarray, warning=FALSE, results='hide'}
 myGEO <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
 objectList <- curatedTBData(myGEO, dryrun = FALSE, curated.only = TRUE)
 objectList[1:2]
 ```
 
-For RNA sequencing data, both curated assay and reprocessed assay plus the metadata information were returned.
-Here we retrieve the study from the adolescent cohort study [GSE79362](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE79362).
-```{r ACS RNA-seq, warning=FALSE, results='hide'}
+```{r ACS RNA-seq, warning=FALSE, results='hide', eval=FALSE, include=FALSE}
+# For RNA sequencing data, both curated assay and reprocessed assay plus the metadata information were returned.
+# Here we retrieve the study from the adolescent cohort study [GSE79362](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE79362).
 GSE79362 <- curatedTBData("GSE79362", dryrun = FALSE, curated.only = TRUE)
 GSE79362
 ```
@@ -92,11 +106,9 @@ removed from merging, because this study used quantitative PCR so they did not h
 ```{r combine objects single experiment name}
 GSE19491 <- combineObjects(objectList, experiment_name = "assay_curated")
 GSE19491
-
 # colData(GSE19491)$Study
 ```
-It is also possible to combine the given list of objects with different experiment names. 
-In this case, the `experiment_name` is vector of string that corresponds to the object within the input list.
+It is also possible to combine the given list of objects with different experiment names. In this case, the `experiment_name` is vector of string that corresponds to the object within the input list.
 ```{r commbine objects multiple experiment name}
 exp <- combineObjects(c(GSE79362[1], objectList[1]),
                       experiment_name = c("assay_reprocess_hg19", "assay_curated"))
@@ -104,22 +116,53 @@ exp
 ```
 ## Batch correction
 If datasets are merged, it is typically recommended to remove a very likely batch effect. We will use the `ComBat()` method from `r Biocpkg("sva")` to remove potential batch effect between studies. 
-In the following example, each study is viewed as one batch:
+In the following example, each study is viewed as one batch. The batch corrected
+assay will be stored in the SummarizedExperiment object.
 ```{r batch correction, message=FALSE}
 batch1 <- colData(GSE19491)$Study
 combat_edata1 <- sva::ComBat(dat = assay(GSE19491), batch = batch1)
-assays(GSE19491)[["Batch_corrected_counts"]] <- combat_edata1
+assays(GSE19491)[["Batch_corrected_assay"]] <- combat_edata1
+GSE19491
 ```
 
 # Example analysis
 ##  Active TB  vs. Latent infection using `TBSignatureprofiler`
-`r Biocpkg("TBSignatureprofiler")` is a package to evaluate the the performance of signatures across curated TB data. The function `subset_curatedTBDatat()` was used to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) for binary classification. In this example, each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm from `r Biocpkg("GSVA")`. 
-```{r calculate ssgsea for PTB vs LTBI, results = "hide", message=FALSE, warning=FALSE}
+`r Biocpkg("TBSignatureprofiler")` is a package to evaluate the the performance 
+of signatures across curated TB data. The function `subset_curatedTBDatat()` was 
+used to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) 
+for binary classification. 
+```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
 multi_set_PTB_Latent <- lapply(objectList, function(x)
   subset_curatedTBData(x, annotationColName = "TBStatus", 
                        annotationCondition = c("LTBI","PTB"), 
-                       experiment_name = "assay_curated"))
+                       assayName = "assay_curated"))
+# Remove NULL from the list
+multi_set_PTB_Latent <- multi_set_PTB_Latent[!sapply(multi_set_PTB_Latent, is.null)]
 ```
+In the following example, we profile the performance of ten TB gene signatures from the `TBsignatures`. Each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm from `r Biocpkg("GSVA")`. Please see
+`r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.
+```{r, results = "hide", message=FALSE, warning=FALSE}
+TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:10]
+ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
+                    function(x) TBSignatureProfiler::runTBsigProfiler(
+                                  input = x,
+                                  useAssay = assayNames(x)[1],
+                                  signatures = TBsignaturesSub, 
+                                  algorithm = "ssGSEA",
+                                  combineSigAndAlgorithm = TRUE))
+```
+
+The `combine_auc()` function allows the users to compute the area under the curve (AUC)
+metrics for the prediction scores along with the bootstrapped confidence interval.
+```{r}
+# Obtain p.value, AUC, and Bootstrapped Confidence Interval
+ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
+                                annotationColName = "TBStatus", 
+                                signatureColNames = names(TBsignaturesSub), 
+                                num.boot = 100, percent = 0.95)
+```
+
+
 
 # Session Info
 ```{r session info}
