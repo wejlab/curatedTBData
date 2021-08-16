@@ -154,12 +154,13 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
 
 The `combine_auc()` function allows the users to compute the area under the curve (AUC)
 metrics for the prediction scores along with the bootstrapped confidence interval.
-```{r}
+```{r, results='hide'}
 # Obtain p.value, AUC, and Bootstrapped Confidence Interval
 ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
                                 annotationColName = "TBStatus", 
                                 signatureColNames = names(TBsignaturesSub), 
                                 num.boot = 100, percent = 0.95)
+DT::datatable(ssgsea_PTB_Latent_combine)
 ```
 
 
