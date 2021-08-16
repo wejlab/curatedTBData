@@ -1,13 +1,24 @@
 #' @title Subsetting curatedTBData based on single/multiple conditions
 #' @description \code{subset_curatedTBData} selects desired samples from curatedTBData
-#' database according to pre-specified conditions.
+#' database based pre-specified conditions.
 #' @name subset_curatedTBData
 #' @param theObject A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
 #' /[MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
-#' @param annotationColName A character indicates feature of interest in the object's column data.
-#' @param annotationCondition A vector indicates conditions want to be selected.
-#' @param assayName A character indicates the name of the assay from the input object.
+#' @param annotationColName A string indicates feature of interest in the object's annotation data.
+#' @param annotationCondition A vector of string indicates conditions want to be selected.
+#' @param assayName A string indicates the name of the assay from the input object.
+#' The default is `NULL`. When assayName is `NULL`, the function selects the first
+#' assay along the assay list.
+#' @param useAssay A string indicates the name of the assay when the
+#' [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] is
+#' selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
+#' The default is `NULL`. When assayName is `NULL`, the function selects the first
+#' assay along the assay list.
 #' @param ... Extra named arguments passed to function.
+#' @examples
+#' obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
+#' subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
+#'                      annotationCondition = c("Control","PTB"))
 #' @rdname subset_curatedTBData-methods
 #' @exportMethod subset_curatedTBData
 
@@ -19,128 +30,108 @@ setGeneric(name = "subset_curatedTBData", function(theObject,...){
 setMethod("subset_curatedTBData",
           signature = "SummarizedExperiment",
           function(theObject, annotationColName, annotationCondition,
-                   assayName,...){
-            if (missing(assayName)) {
-              stop("Missing assayName value, please specify the assay name of the input object.")
+                   assayName = NULL,...) {
+            if (base::is.null(assayName)) {
+              if (base::length(SummarizedExperiment::assays(theObject)) >= 1) {
+                base::message("assayName not specified, select the first assay as default.")
+                assay_name_exclude <- -1
+              } else {
+                base::stop("No available assay from the input.")
+              }
+            } else {
+              # Check whether assay exists in the object
+              assay_names <- SummarizedExperiment::assayNames(theObject)
+              assay_name_index <- base::which(assay_names %in% assayName)
+              if(base::length(assay_name_index) == 0) {
+                base::stop(base::sprintf(
+                  "Assay with name: %s is not found from the input. The available assay(s) are %s.",
+                   assayName, base::paste0(names(theObject), collapse = ", ")))
+              }
+              assay_name_exclude <- base::which(assay_names != assayName)
             }
-            # Check whether assay exists in the object
-            assay_names <- SummarizedExperiment::assayNames(theObject)
-            assay_name_index <- which(assay_names %in% assayName)
-            assay_name_exclude <- which(assay_names != assayName)
-            if(length(assay_name_index) == 0) {
-              stop(sprintf("%s is/are not found from the object. Available assay(s) is/are %s",
-                           assayName, paste0(assay_names, collapse = ", ")))
+            col_info <- SummarizedExperiment::colData(theObject)
+            # Check whether annotationColName exists in the col data
+            if (!base::any(base::colnames(col_info) == annotationColName )) {
+              base::stop(base::sprintf(
+                "annotationColName: %s is not found in the clicnial information."))
             }
-
-            theObject_filter <- theObject[, SummarizedExperiment::colData(theObject)
-                                          [, annotationColName] %in% annotationCondition]
+            theObject_filter <- theObject[, col_info[, annotationColName] %in% annotationCondition]
+            # Set other assays to be NULL
             SummarizedExperiment::assays(theObject_filter)[assay_name_exclude] <- NULL
 
             annotation <- SummarizedExperiment::colData(theObject_filter)[, annotationColName]
-            if (length(unique(annotation)) == length(annotationCondition)) {
+            if (base::length(base::unique(annotation)) ==
+                base::length(annotationCondition)) {
               return(theObject_filter)
             } else {
-              message(sprintf("The condition %s is not found from the input data, NULL is returned.",
-                              annotationCondition[-match(unique(annotation), annotationCondition)]))
+              base::message(base::sprintf(
+                "The condition %s is not found from the input data, NULL is returned.",
+                 base::paste0(annotationCondition[-match(unique(annotation), annotationCondition)],
+                              collapse = ", ")))
             }
-          }
-)
+          })
 
 #' @rdname subset_curatedTBData-methods
 setMethod("subset_curatedTBData",
           signature = "MultiAssayExperiment",
-          function(theObject, annotationColName, annotationCondition, assayName,...){
+          function(theObject, annotationColName, annotationCondition,
+                   assayName = NULL, useAssay = NULL, ...){
             # Check whether assay exists in the object
-            if (!is.null(assayName)) {
-              experiment_name_index <- which(names(theObject) %in% assayName)
-              if(length(experiment_name_index) == 0){
-                stop(sprintf("%s is/are not found within the object", assayName))
+            if (base::is.null(assayName)) {
+              if (base::length(base::names(theObject)) >= 1) {
+                base::message("assayName not specified, select the first assay as default.")
+                assayName <- 1
+              } else {
+                stop("No available assay from the input.")
+              }
+            } else {
+              experiment_name_index <- base::which(base::names(theObject) %in%
+                                                     assayName)
+              if(base::length(experiment_name_index) == 0) {
+                base::stop(base::sprintf("Assay with name: %s is not found from the input.
+                                   The available assay(s) are %s.", assayName,
+                                         base::paste0(base::names(theObject),
+                                                      collapse = ", ")))
               }
             }
-
-            # For assayName == "all".
-            # Perform whole MultiAssayExperiment selection, output is MultiAsaayExperiment
-            if(assayName == "All"){
-
-              n <- length(annotationCondition)
-              theObject_filter <- theObject[,SummarizedExperiment::colData(theObject)
-                                            [,annotationColName] %in% annotationCondition]
-              result <- SummarizedExperiment::colData(theObject_filter)[,annotationColName]
-              if(length(unique(result)) == n){
-                return(theObject_filter)
-
-              }
-            } else if (assayName == "assay_raw"){
-              # Perform individual selection, assay_raw is SummarizedExperiment
-              # output is reduced SummarizedExperiment
-
-              theObject_sub <- theObject[[assayName]]
-              n <- length(annotationCondition)
-              col_data <-  SummarizedExperiment::colData(theObject)
-
+            theObject_sub <- theObject[[assayName]]
+            col_data <-  SummarizedExperiment::colData(theObject)
+            if (base::ncol(theObject_sub) != base::nrow(col_data)) {
+              index <- stats::na.omit(base::match(base::colnames(theObject_sub),
+                                                  base::row.names(col_data)))
+              col_data <- col_data[index, ]
+            }
+            if (base::class(theObject_sub)[1] == "SummarizedExperiment") {
+              # assay_raw is selected in the full version
               # For those datasets that do not include all samples from the study
-              if (ncol(theObject[[assayName]]) != nrow(col_data)){
-                index <- stats::na.omit(match(colnames(theObject[[experiment_name]]),
-                                         row.names(col_data)))
-                col_data <- col_data[index,]
-              }
-
               SummarizedExperiment::colData(theObject_sub) <- col_data
-              # subsetting annotationCondition
-              sobject_TBSig_filter <- theObject_sub[,SummarizedExperiment::colData(theObject_sub)
-                                                    [,annotationColName] %in% annotationCondition]
-              result <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
-                # check if both status are in the column data
-              if(length(unique(result)) == n){
-                return(sobject_TBSig_filter)
-              }
-
-            } else {
-              # Perform individual selection, output is SummarizedExperiment
-              # Potentially for TBSignatureProfiler
-              # assay_reduce matrix
-              col_data <-  SummarizedExperiment::colData(theObject)
-
-              # when not all samples are included in the expression matrix
-              # This is the cases with some RNA-seq studies
-              if (ncol(theObject[[assayName]]) != nrow(col_data)){
-                index <- stats::na.omit(match(colnames(theObject[[assayName]]),
-                                       row.names(col_data)))
-                col_data <- col_data[index,]
-              }
-
+              return(subset_curatedTBData(theObject_sub, annotationColName,
+                                          annotationCondition, useAssay))
+            } else if (base::class(theObject_sub)[1] == "matrix" ||
+                       base::class(theObject_sub)[1] == "data.frame") {
+              # assay_curated/assay_reprocess is selected
               # Set attribute to be NULL, ensure that row/column names have NULL attributes
-              colnames(theObject[[assayName]]) <- as.character(
-                                         colnames(theObject[[assayName]]))
-
-              row.names(theObject[[assayName]]) <- as.character(
-                                         row.names(theObject[[assayName]]))
+              base::colnames(theObject[[assayName]]) <- base::as.character(
+                base::colnames(theObject[[assayName]]))
+              base::row.names(theObject[[assayName]]) <- base::as.character(
+                base::row.names(theObject[[assayName]]))
 
               sobject_TBSig <- SummarizedExperiment::SummarizedExperiment(
-                                  assays=list(counts = as.matrix(theObject[[assayName]])),
-                                              colData = col_data)
-
-              # subsetting annotationCondition
-              sobject_TBSig_filter <- sobject_TBSig[,SummarizedExperiment::colData(sobject_TBSig)
-                                                    [,annotationColName] %in% annotationCondition]
-              result <- SummarizedExperiment::colData(sobject_TBSig_filter)[,annotationColName]
-              # check if both conditions are in the column data
-              if(length(unique(result)) == length(annotationCondition)){
-                return(sobject_TBSig_filter)
-              } else {
-                message(sprintf("The condition %s is not found from the input data, NULL is returned.",
-                                annotationCondition[-match(unique(result), annotationCondition)]))
-              }
+                assays = base::list(assay1 = base::as.matrix(theObject[[assayName]])),
+                colData = col_data)
+              return(subset_curatedTBData(sobject_TBSig, annotationColName,
+                                          annotationCondition, "assay1"))
+            } else {
+              base::stop(base::sprintf("The class of the selected assay class is not recognized.
+                           Selected assay has class: %s"),
+                         paste0(base::class(theObject_sub), collapse = ", "))
             }
-        }
-)
-
+          })
 
 #' Check the annotation column name in the colData function
 #' @param theObject A SummarizedExperiment/MultiAssayExperiment object.
 #' @param annotationColName A character indicates feature of interest in the object's column data.
-#' @param annotationCondition A vector indicates conditions want to be subsetted.
-#'
+#' @param annotationCondition A vector indicates conditions want to be chosen.
 #' @export
 check_annotation <- function(theObject, annotationColName, annotationCondition){
 
@@ -149,14 +140,12 @@ check_annotation <- function(theObject, annotationColName, annotationCondition){
   if(!is.na(match(annotationColName, col_names))){
 
     theObject_sub <- theObject[, SummarizedExperiment::colData(theObject)
-                               [,annotationColName] %in% annotationCondition]
-    result <- SummarizedExperiment::colData(theObject_sub)[,annotationColName]
+                               [, annotationColName] %in% annotationCondition]
+    result <- SummarizedExperiment::colData(theObject_sub)[, annotationColName]
     if(length(unique(result)) == n){
       return(theObject_sub)
     }
-
   }
-
 }
 
 #' Merge samples with common genes from selected studies
@@ -175,60 +164,70 @@ check_annotation <- function(theObject, annotationColName, annotationCondition){
 #' @export
 combineObjects <- function(object_list, experiment_name = NULL){
   # check the experiment_name argument
-  if(is.null(experiment_name)) {
-    stop("Missing experiment name for the MultiAssayExperiment object")
+  if(base::is.null(experiment_name)) {
+    base::stop("Missing experiment name for the MultiAssayExperiment object")
   }
   # check names of the input objects
-  if (is.null(names(object_list))) {
-    stop("names(object_list) should not be NULL. Add unique names for each object within the list.")
+  if (base::is.null(base::names(object_list))) {
+    base::stop("names(object_list) should not be NULL. Add unique names for each object within the list.")
   }
-  if (length(experiment_name) > 1) {
+  if (base::length(experiment_name) > 1) {
     # experiment name for the list of object is different
-    if (length(experiment_name) == length(object_list)) {
-      dat_exprs_match <- mapply(function(x, y) {
-        MultiAssayExperiment::experiments(x)[[y]] %>% as.data.frame
+    if (base::length(experiment_name) == base::length(object_list)) {
+      dat_exprs_match <- base::mapply(function(x, y) {
+        MultiAssayExperiment::experiments(x)[[y]] %>%
+          base::as.data.frame()
       }, object_list, experiment_name)
     } else {
-      stop("The length of input list is not the same as the length of the experiment name vector.")
+      base::stop("The length of input list is not the same as the length of the experiment name vector.")
     }
-
   } else {
-    dat_exprs_match <- lapply(object_list, function(x)
-      MultiAssayExperiment::experiments(x)[[experiment_name]] %>% as.data.frame)
+    dat_exprs_match <- base::lapply(object_list, function(x)
+      MultiAssayExperiment::experiments(x)[[experiment_name]] %>%
+        base::as.data.frame())
   }
-
-
   # Combine sample with common genes from a list of objects.
   # Input data type should be data.frame
-  dat_exprs_combine <- Reduce(function(x, y) merge(x, y, by = "id", all = FALSE),
-    lapply(dat_exprs_match, function(x) {
-      x$id <- rownames(x)
-      x}))
+  dat_exprs_combine <- base::Reduce(function(x, y)
+    base::merge(x, y, by = "id", all = FALSE),
+    base::lapply(dat_exprs_match, function(x) {
+      x$id <- base::row.names(x)
+      x
+    })
+  )
   row_names <- dat_exprs_combine$id
-  dat_exprs_count <- dat_exprs_combine %>% dplyr::select(-.data$id) %>% as.data.frame()
-  row.names(dat_exprs_count) <- row_names
+  dat_exprs_count <- dat_exprs_combine %>%
+    dplyr::select(-.data$id) %>%
+    base::as.data.frame()
+  base::row.names(dat_exprs_count) <- row_names
 
   # Create combined column data information
-  Sample1 <- lapply(object_list, function(x)
-    SummarizedExperiment::colData(x) %>% row.names())
+  Sample1 <- base::lapply(object_list, function(x)
+    SummarizedExperiment::colData(x) %>%
+      base::row.names())
 
-  Sample <- unlist(Sample1, use.names=FALSE)
-  col_data <- lapply(seq_len(length(object_list)), function(x) {
+  Sample <- base::unlist(Sample1, use.names=FALSE)
+  col_data <- base::lapply(base::seq_len(base::length(object_list)), function(x) {
     col_data <- SummarizedExperiment::colData(object_list[[x]])
-    col_data$Study <-names(object_list[x])
-    col_data
+    col_data$Study <- base::names(object_list[x])
+    base::as.data.frame(col_data)
   })
 
-  # Combine list into data frame with unequal columns
-  col_info <- plyr::rbind.fill(lapply(col_data, function(x) as.data.frame(x) ))
-  row.names(col_info) <- Sample
-
+  # Combine list into data frame with unequal columns, fill in NA
+  # when columns from studies are not found
+  rbindx <- function(dfs) {
+    ns <- base::unique(base::unlist(base::sapply(dfs, base::colnames)))
+    base::do.call(base::rbind, base::lapply(dfs, function(x) {
+      for(n in ns[!ns %in% base::colnames(x)]) {x[[n]] <- NA}; x }))
+  }
+  col_info <- rbindx(col_data)
+  base::row.names(col_info) <- Sample
   # Remove samples that does not exist in the count
-  index <- stats::na.omit(match(colnames(dat_exprs_count), Sample))
+  index <- stats::na.omit(base::match(base::colnames(dat_exprs_count), Sample))
   col_info <- col_info[index,]
-
   # Create output in the format of SummarizedExperiment
-  result <- SummarizedExperiment::SummarizedExperiment(assays = list(counts = as.matrix(dat_exprs_count)),
-                                                       colData = col_info)
+  result <- SummarizedExperiment::SummarizedExperiment(
+    assays = base::list(assay1 = as.matrix(dat_exprs_count)),
+    colData = col_info)
   return(result)
 }

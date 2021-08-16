@@ -319,58 +319,62 @@ get_auc_stats <- function(SE_scored, annotationColName = "TBStatus", signatureCo
 
 }
 
-#' Combine results from list. Calculate p-value and AUC values
+#' Combine results from the output `list`.
+#'
+#' Calculate p-value, AUC values, and bootstrapped confidence interval for the AUC.
 #' @name combine_auc
-#' @param SE_scored_list A list of SummarizedExperiment Object from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
-#' @param annotationColName A character string specifying the feature of interest in the object's column data
+#' @param SE_scored_list A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
+#' objects from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
+#' @param annotationColName A string specifying the feature of interest in the object's column data
 #' @param signatureColNames A character/vector string contains name of gene signature.
-#' @param num.boot Number of bootstrapping.
-#' @param percent A number indicates the percentage of confidence interval.
-#' @param AUC.abs Boolean. If AUC.abs = TRUE, return the AUC values from function \code{\link[ROCit]{rocit}}.
-#' If AUC.abs = FALSE, return the AUC values for max(AUC, 1-AUC).
+#' @param num.boot Integer. Number of bootstrapping.
+#' @param percent Numeric. A number between 0 and 1, indicating the percentage of confidence interval.
+#' @param AUC.abs Boolean. If AUC.abs = `TRUE`, return the AUC values from function \code{\link[ROCit]{rocit}}.
+#' If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.
 #' @param An instance inherited from \code{bplappy}.
 #' See \code{\link[BiocParallel]{bplapply}} for details.
-#' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across datasets.
+#' @return A data frame with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across studies.
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
-                        num.boot=NULL, percent=0.95, AUC.abs = FALSE,
-                        BPPARAM = BiocParallel::SerialParam(progressbar=TRUE)){
+                        num.boot = NULL, percent = 0.95, AUC.abs = FALSE,
+                        BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
   param <- BPPARAM
   # Check if the input is a list
-  if (class(SE_scored_list) != "list"){
-    stop(sprintf("combine_auc only supports a list of SummarizedExperiment. Please convert the input to a list."))
+  if (base::class(SE_scored_list)[1] != "list") {
+    base::stop(base::sprintf("Function only supports a list of SummarizedExperiment. The input class: %s.",
+                              base::class(SE_scored_list)[1]))
   }
-  SE_scored_list_class <- class(SE_scored_list[[1]])
+  SE_scored_list_class <- base::class(SE_scored_list[[1]])[1]
   if(SE_scored_list_class != "SummarizedExperiment"){
-    stop(sprintf("combine_auc only supports SummarizedExperiment. Your class: %s",
-                 SE_scored_list_class))
+    base::stop(base::sprintf("Function only supports SummarizedExperiment within the list. The input class: %s. ",
+                             SE_scored_list_class))
   }
 
-  aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x){
+  aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x) {
     get_auc_stats(x, annotationColName,
                   signatureColNames, num.boot, percent, AUC.abs, BPPARAM)
   }, BPPARAM = param)
-  aucs_result_dat <- do.call(rbind,aucs_result)
+  aucs_result_dat <- base::do.call(base::rbind, aucs_result)
 
   # re-order data based on their median AUC
   # Remove NA value
   aucs_result_dat1 <- stats::na.omit(aucs_result_dat)
-  aucs_result_dat_median <- aucs_result_dat1 %>% dplyr::group_by(.data$Signature) %>%
-                            dplyr::summarise_all(stats::median) %>%
-                            dplyr::arrange(dplyr::desc(.data$AUC))
+  aucs_result_dat_median <- aucs_result_dat1 %>%
+    dplyr::group_by(.data$Signature) %>%
+    dplyr::summarise_all(stats::median) %>%
+    dplyr::arrange(dplyr::desc(.data$AUC))
 
   # New addition: order signatures based on median AUC values
 
-  Signature_order <- as.character(aucs_result_dat_median$Signature)
+  Signature_order <- base::as.character(aucs_result_dat_median$Signature)
 
   # Re-order gene siganture, re-level
   # this step is to let ridge plot ordered based on median value
-  aucs_result_dat$Signature <- factor(aucs_result_dat$Signature,
-                                      levels = Signature_order)
+  aucs_result_dat$Signature <- base::factor(aucs_result_dat$Signature,
+                                            levels = Signature_order)
 
-  # label name of each dataset as "GSE"
-  aucs_result_dat$GSE <- gsub("\\..*","",row.names(aucs_result_dat))
-
+  # label name of each dataset under column "Study"
+  aucs_result_dat$Study <- base::gsub("\\..*", "", base::row.names(aucs_result_dat))
   return(aucs_result_dat)
 }
 
@@ -387,65 +391,65 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
 #' @return A data frame with lower and upper bootstrap confidence interval.
 #' @export
 #'
-bootstrap_mean_CI <- function(data,colName, percent=0.95,
-                              method=c("percentile","empirical"), num.boot){
+bootstrap_mean_CI <- function(data, colName, percent=0.95,
+                              method = c("percentile", "empirical"), num.boot){
 
-  if(missing(method)){method="empirical"}
+  if (missing(method)) {
+    method <- "empirical"
+    base::message(sprintf("Missing method argument. The default method used for bootstrap confidence interval is %s",
+                          method))
+  }
   method <- match.arg(method)
   # cat("The method used for bootstrap confidence interval is ",method)
-  lower <- (1-percent)/2
-  upper <- 1-lower
+  lower <- (1 - percent) / 2
+  upper <- 1 - lower
 
-  x <- unlist(data[,colName])
+  x <- base::unlist(data[, colName])
   x <- stats::na.omit(x) # Remove NA's in PLAGE method
 
   names(x) <- NULL
   n <- length(x)
-  if (n==1){
+  if (n == 1) {
     xbar <- x
-    ci <- data.frame(xbar,NA, NA)
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
-                      paste0("CI upper.",upper*100,"%"))
-    row.names(ci) <- NULL
-
+    ci <- base::data.frame(xbar,NA, NA)
+    base::colnames(ci) <- c("Mean AUC", base::paste0("CI lower.", lower*100, "%"),
+                            base::paste0("CI upper.", upper*100, "%"))
+    base::row.names(ci) <- NULL
     return(ci)
   }
   # sample mean
-  xbar  <-  mean(x)
-
+  xbar  <-  base::mean(x)
   # random resamples from x
-  bootstrapsample <- lapply(seq_len(num.boot), function(i)
-                                    sample(x, n, replace=TRUE))
-  bootstrapsample <- do.call(cbind, bootstrapsample)
+  bootstrapsample <- base::lapply(base::seq_len(num.boot), function(i)
+    base::sample(x, n, replace = TRUE))
+  bootstrapsample <- base::do.call(base::cbind, bootstrapsample)
 
   # Compute the means x∗
-  bsmeans <-  colMeans(bootstrapsample)
+  bsmeans <-  base::colMeans(bootstrapsample)
 
   if (method == "empirical"){
     # Compute deltastar for each bootstrap sample
     deltastar <-  bsmeans - xbar
 
     # Find the 0.0.25 and 0.975 quantile for deltastar
-    d <-  stats::quantile(deltastar, c(lower, upper),na.rm=TRUE)
+    d <-  stats::quantile(deltastar, c(lower, upper), na.rm=TRUE)
 
     # Calculate the confidence interval for the mean.
     ci  <-  xbar - c(d[2], d[1])
 
-    ci <- data.frame(xbar,ci[1], ci[2])
-    colnames(ci) <- c("Mean AUC",paste0("CI lower.",lower*100,"%"),
-                      paste0("CI upper.",upper*100,"%"))
-    row.names(ci) <- NULL
-
+    ci <- base::data.frame(xbar, ci[1], ci[2])
+    base::colnames(ci) <- c("Mean AUC", base::paste0("CI lower.",lower*100," %"),
+                            base::paste0("CI upper.", upper*100, "%"))
+    base::row.names(ci) <- NULL
     return(ci)
   }
 
   if (method == "percentile"){
-    ci_percent <- stats::quantile(bsmeans, c(lower, upper), na.rm=TRUE)
-    ci_percent <- data.frame(xbar,ci_percent[1], ci_percent[2])
-    colnames(ci_percent) <- c("Mean",paste0("CI lower.",lower*100,"%"),
-                              paste0("CI upper.",upper*100,"%"))
-    row.names(ci_percent) <- NULL
-
+    ci_percent <- stats::quantile(bsmeans, c(lower, upper), na.rm = TRUE)
+    ci_percent <- base::data.frame(xbar,ci_percent[1], ci_percent[2])
+    base::colnames(ci_percent) <- c("Mean", base::paste0("CI lower.", lower*100, "%"),
+                              base::paste0("CI upper.", upper*100, "%"))
+    base::row.names(ci_percent) <- NULL
     return(ci_percent)
   }
 

@@ -3,6 +3,7 @@
 #' ExperimentHub services
 #'
 #' @param study_name A string or vector of strings that contain name of the datasets.
+#' `""` will return all available studies.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
 #' ExperimentHub services. If `TRUE` (Default), return the names of the available resources
 #' to be downloaded. If `FALSE`, start downloading data.
@@ -12,85 +13,95 @@
 #' @return a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 #' @export
 #' @examples
-#' curatedTBData("GSE39939")
-#' curatedTBData(c("GSE39939", "GSE39940"))
+#' curatedTBData("GSE39939", dryrun = TRUE)
+#' curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
 curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
-
-  eh <- suppressWarnings(ExperimentHub::ExperimentHub())
+  # Access to experimenthub
+  eh <- base::suppressWarnings(ExperimentHub::ExperimentHub())
   tbData <- AnnotationHub::query(eh, "curatedTBData")
   # List available data
-  names_all <- unique(gsub("_.*", "", tbData$title))
-  indexMatch <- match(study_name, names_all)
+  names_all <- base::unique(gsub("_.*", "", tbData$title))
+  # Let study_name equals to all the the studies when "".
+  if (study_name == "") {
+    study_name <- names_all
+  }
+  indexMatch <- base::match(study_name, names_all)
   names_sub <- names_all[indexMatch]
 
-  if (any(is.na(names_sub))) {
-    if (all(is.na(names_sub))) {
-      stop(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.
-                   Check your input.",
-                   paste0(study_name, collapse = ", ")), call. = FALSE)
+  if (base::any(base::is.na(names_sub))) {
+    if (base::all(base::is.na(names_sub))) {
+      base::stop(base::sprintf(
+      "The curatedTBData for the input geo accession(s):%s is/are not available. Check your input.",
+                   base::paste0(study_name, collapse = ", ")), call. = FALSE)
     } else {
-      indexNA <- which(is.na(names_sub))
-      message(sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.",
-                      paste0(study_name[indexNA], collapse = ", ")))
+      indexNA <- base::which(base::is.na(names_sub))
+      base::message(
+        base::sprintf("The curatedTBData for the input geo accession(s):%s is/are not available.",
+                      base::paste0(study_name[indexNA], collapse = ", ")))
     }
-    names_sub <- names_sub[!is.na(names_sub)]
+    names_sub <- names_sub[!base::is.na(names_sub)]
   }
   if (curated.only) {
-    message("Download curated version. Set curated.only = FALSE if want to download raw data.")
+    base::message("Download curated version. Set curated.only = FALSE if want to download raw data.")
   }
   if (dryrun) {
     resources <- c()
     for (geo in names_sub) {
-      resources <- c(resources, tbData$title[grep(geo, tbData$title)])
+      resources <- c(resources, tbData$title[base::grep(geo, tbData$title)])
     }
     # Subset resources if curated.only = TRUE
     # Remove assay_raw, row_data, meta_data
     if (curated.only) {
-      resources <- resources[-grep(paste0(c("assay_raw", "row_data"),
+      resources <- resources[-base::grep(base::paste0(c("assay_raw", "row_data"),
                                           collapse = "|"), resources)]
     }
-    return(cat(sprintf("Attempt to download following resources for %s from the ExperimentHub service:\n%s",
-                       paste0(names_sub, collapse = ", "),
-                       paste0(resources, collapse = "\n"))))
+    return(base::cat(base::sprintf("Attempt to download following resources for %s from the ExperimentHub service:\n%s",
+                       base::paste0(names_sub, collapse = ", "),
+                       base::paste0(resources, collapse = "\n"))))
   }
-  df <- data.frame(ah_id = tbData$ah_id, title = tbData$title)
-  object_list <- lapply(names_sub, function(x, curated.only) {
-    message(sprintf("Now downloading: %s", x))
+  df <- base::data.frame(ah_id = tbData$ah_id, title = tbData$title)
+  object_list <- base::lapply(names_sub, function(x, curated.only) {
+    base::message(sprintf("Now downloading: %s", x))
     # Find the index of related resources associated with the GSE names
-    indexGSE <- grep(paste0(x, "_"), tbData$title)
+    indexGSE <- base::grep(paste0(x, "_"), tbData$title)
     # Subset df based on the index
     dfSub <- df[indexGSE, ]
     if (curated.only) {
-      indexRemove <- grep(paste0(c("assay_raw", "row_data"),
+      indexRemove <- base::grep(base::paste0(c("assay_raw", "row_data"),
                                 collapse = "|"), dfSub$title)
       dfSub <- dfSub[-indexRemove, ]
     }
     # Data download step
-    data_list <- lapply(dfSub$ah_id, function(y) suppressMessages(tbData[[y]]))
-    names(data_list) <- sub("^[^_]*_", "", dfSub$title)
+    data_list <- base::lapply(dfSub$ah_id, function(y)
+      base::suppressMessages(tbData[[y]]))
+    names(data_list) <- base::sub("^[^_]*_", "", dfSub$title)
 
     if (curated.only) {
-      objlist <- data_list[-which(names(data_list) %in% c("column_data", "meta_data"))]
-      objlist <- lapply(objlist, function(x) as.matrix(x))
+      objlist <- data_list[-base::which(base::names(data_list) %in%
+                                          c("column_data", "meta_data"))]
+      objlist <- base::lapply(objlist, function(x) base::as.matrix(x))
     } else {
-      # Create MultiAssayExperiment Object using all the resources
+      # Create MultiAssayExperiment object using all the resources
       # Create SummarizedExperiment object from assay_raw and row_data
-      exprdat <- SummarizedExperiment::SummarizedExperiment(data_list[["assay_raw"]],
-                                                            rowData = data_list[["row_data"]])
-      # Filtered out assay_curated and/or assay_reprocess
-      objlist <- data_list[-which(names(data_list) %in% c("column_data", "assay_raw",
-                                                          "row_data", "meta_data"))]
-      objlist <- lapply(objlist, function(x) as.matrix(x))
+      exprdat <- SummarizedExperiment::SummarizedExperiment(
+        base::list(assay_raw = data_list[["assay_raw"]]),
+        rowData = data_list[["row_data"]])
+      # Select assay_curated and/or assay_reprocess
+      objlist <- data_list[-base::which(names(data_list) %in%
+                                          c("column_data", "assay_raw",
+                                            "row_data", "meta_data"))]
+      objlist <- lapply(objlist, function(x) base::as.matrix(x))
       objlist$object_raw <- exprdat
     }
-    listMap <- lapply(objlist, function(x) {
-      data.frame(primary = colnames(x), colname = colnames(x), stringsAsFactors = FALSE)
+    listMap <- base::lapply(objlist, function(x) {
+      base::data.frame(primary = colnames(x), colname = colnames(x),
+                       stringsAsFactors = FALSE)
     })
     dfMap <- MultiAssayExperiment::listToMap(listMap)
     myMultiAssay <- MultiAssayExperiment::MultiAssayExperiment(objlist,
                                                                data_list[["column_data"]],
                                                                dfMap)
-    MultiAssayExperiment::metadata(myMultiAssay) <- list(data_list[["meta_data"]])
+    MultiAssayExperiment::metadata(myMultiAssay) <- base::list(data_list[["meta_data"]])
     myMultiAssay
   }, curated.only = curated.only)
   message("Finished!")
