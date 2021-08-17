@@ -7,11 +7,11 @@
 combineObjects(object_list, experiment_name = NULL)
 }
 \arguments{
-\item{object_list}{A list contains [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] objects.
+\item{object_list}{A `list` of [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] objects.
 The assays contains object's assay contain expression data with probes mapped to gene symbol.
 `names(object_list)` should NOT be `NULL`.}
 
-\item{experiment_name}{A string/vector of string to choose the name of the assay from
+\item{experiment_name}{A character/vector of character to choose the name of the assay from
 [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.}
 }
 \value{

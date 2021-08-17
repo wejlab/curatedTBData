@@ -2,7 +2,7 @@
 #' A function to access available curated Tuberculosis data from the Bioconductor's
 #' ExperimentHub services
 #'
-#' @param study_name A string or vector of strings that contain name of the datasets.
+#' @param study_name A character or vector of characters that contain name of the studies
 #' `""` will return all available studies.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
 #' ExperimentHub services. If `TRUE` (Default), return the names of the available resources

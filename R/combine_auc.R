@@ -16,24 +16,24 @@
                                       base::colnames(SummarizedExperiment::colData(SE_scored))))
   signatureColNames <-  base::colnames(SummarizedExperiment::colData(SE_scored))[index]
 
-  annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][,1] %>%
+  annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][, 1] %>%
     base::as.character() %>%
     base::as.factor()
 
   # get AUC value for each signature along with corresponding datasets
   if (base::is.null(num.boot)) {
-    sig_result <- base::lapply(signatureColNames, function(i, SE_scored, annotationData){
-      score <- SummarizedExperiment::colData(SE_scored)[i][,1] %>%
+    sig_result <- base::lapply(signatureColNames, function(i, SE_scored, annotationData) {
+      score <- SummarizedExperiment::colData(SE_scored)[i][, 1] %>%
         base::as.vector()
 
       # Deal with scores that have constant value (e.g. Sloot_HIV_2)
       if (base::length(base::unique(score)) == 1) {
-        dat <- base::data.frame(Signature = i,P.value = NA, AUC = NA)
+        dat <- base::data.frame(Signature = i, P.value = NA, AUC = NA)
         return(dat)
       }
       pvals <- stats::t.test(score ~ annotationData)$p.value
       pred <- ROCit::rocit(score, annotationData)
-      if(AUC.abs) {
+      if (AUC.abs) {
         aucs <- pred$AUC
       } else {
         aucs <- base::max(pred$AUC, 1 - pred$AUC)
@@ -51,16 +51,17 @@
                                function(i, SE_scored, annotationData, percent) {
                                  score <- SummarizedExperiment::colData(SE_scored)[i][, 1]
                                  # Deal with PLAGE that have constant score (e.g. Sloot_HIV_2)
-                                 if (base::length(base::unique(score)) == 1){
+                                 if (base::length(base::unique(score)) == 1) {
                                    dat <- base::data.frame(i, NA, NA, NA, NA)
-                                   base::colnames(dat) <- c("Signature","P.value","AUC",
-                                                            paste0("CI lower.", lower*100, "%"),
-                                                            paste0("CI upper.", upper*100, "%"))
+                                   base::colnames(dat) <- c("Signature", "P.value", "AUC",
+                                                            paste0("CI lower.", lower * 100, "%"),
+                                                            paste0("CI upper.", upper * 100, "%"))
                                    return(dat)
                                  }
                                  pvals <- stats::t.test(score ~ annotationData)$p.value
+                                 neg10log <- -1 * log(pvals)
                                  pred <- ROCit::rocit(score, annotationData)
-                                 if(AUC.abs) {
+                                 if (AUC.abs) {
                                    aucs <- pred$AUC
                                  } else {
                                    aucs <- base::max(pred$AUC, 1 - pred$AUC)
@@ -70,14 +71,14 @@
                                  upper <- 1 - lower
                                  # Calculate bootstrapped AUC confidence interval
                                  # Repeated sampling scores and annotationData, compute the AUC for the sampled pairs
-                                 bootCI <- base::lapply(base::seq_len(num.boot), function(j, score, annotationData){
+                                 bootCI <- base::lapply(base::seq_len(num.boot), function(j, score, annotationData) {
                                    index <- base::sample(base::seq_len(base::length(score)), replace = TRUE)
                                    tmp_score <- score[index]
                                    tmp_annotationData <- annotationData[index]
                                    # Consider when re-sampling only has 1 cases, remove it
-                                   if(base::length(base::unique(tmp_annotationData)) == 2) {
+                                   if (base::length(base::unique(tmp_annotationData)) == 2) {
                                      tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
-                                     if(AUC.abs) {
+                                     if (AUC.abs) {
                                        tmp_auc <- tmp_pred$AUC
                                      } else {
                                        tmp_auc <- base::max(tmp_pred$AUC, 1 - tmp_pred$AUC)
@@ -90,13 +91,19 @@
 
                                  bootCI <- base::unlist(bootCI) %>%
                                    stats::na.omit()
-                                 LowerAUC <- stats::quantile(bootCI, prob=lower, na.rm=TRUE)
-                                 UpperAUC <- stats::quantile(bootCI, prob=upper, na.rm=TRUE)
-                                 dat <- base::data.frame(i, base::round(pvals, 4), base::round(aucs, 4),
-                                                         base::round(LowerAUC, 4), base::round(UpperAUC, 4))
-                                 base::colnames(dat) <- c("Signature","P.value","AUC",
-                                                          base::paste0("CI lower.", lower*100, "%"),
-                                                          base::paste0("CI upper.", upper*100, "%"))
+                                 LowerAUC <- stats::quantile(bootCI, prob = lower,
+                                                             na.rm = TRUE)
+                                 UpperAUC <- stats::quantile(bootCI, prob = upper,
+                                                             na.rm = TRUE)
+                                 dat <- base::data.frame(i, base::round(pvals, 4),
+                                                         base::round(neg10log, 4),
+                                                         base::round(aucs, 4),
+                                                         base::round(LowerAUC, 4),
+                                                         base::round(UpperAUC, 4))
+                                 base::colnames(dat) <- c("Signature", "P.value",
+                                                          "neg10xP.value", "AUC",
+                                                          base::paste0("CI lower.", lower * 100, "%"),
+                                                          base::paste0("CI upper.", upper * 100, "%"))
                                  dat
                                }, SE_scored, annotationData, percent)
     result <- base::do.call(base::rbind, sig_result)
@@ -123,11 +130,18 @@
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value)
 #' and AUC for each signature across studies.
 #' @examples
-#' combine_auc()
+#' data(TB_indian, package = "TBSignatureProfiler")
+#' TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
+#' res <- TBSignatureProfiler::runTBsigProfiler(input = TB_indian, useAssay = assayNames(TB_indian)[1],
+#'                                              signatures = TBsignaturesSub, algorithm = "ssGSEA",
+#'                                              combineSigAndAlgorithm = TRUE)
+#' re <- combine_auc(list(TB_indian = res), annotationColName = "label",
+#'                   signatureColNames = names(TBsignaturesSub), num.boot = 100, percent = 0.95)
+#' re
 #' @export
 combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                         num.boot = NULL, percent = 0.95, AUC.abs = FALSE,
-                        BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)){
+                        BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
   param <- BPPARAM
   # Check if the input is a list
   if (base::class(SE_scored_list)[1] != "list") {
@@ -135,11 +149,17 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                              base::class(SE_scored_list)[1]))
   }
   SE_scored_list_class <- base::class(SE_scored_list[[1]])[1]
-  if(SE_scored_list_class != "SummarizedExperiment"){
+  if (SE_scored_list_class != "SummarizedExperiment") {
     base::stop(base::sprintf("Function only supports SummarizedExperiment within the list. The input class: %s. ",
                              SE_scored_list_class))
   }
-
+  list_name <- base::names(SE_scored_list)
+  if (base::is.null(list_name)) {
+    # Only 1 study with NULL names within the list, make the names as Study1
+    base::names(SE_scored_list) <- "Study1"
+  } else if (!base::is.na(base::match("", list_name))) {
+    base::stop(base::sprintf("Names of the input contains \"\". Replace \"\" with a non-empty string."))
+  }
   aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x) {
     .get_auc_stats(x, annotationColName, signatureColNames, num.boot, percent, AUC.abs)
   }, BPPARAM = param)
@@ -153,15 +173,12 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     dplyr::summarise_all(stats::median) %>%
     dplyr::arrange(dplyr::desc(.data$AUC))
 
-  # New addition: order signatures based on median AUC values
-
+  # Order signatures based on median AUC values
   Signature_order <- base::as.character(aucs_result_dat_median$Signature)
-
   # Re-order gene siganture, re-level
   # this step is to let ridge plot ordered based on median value
   aucs_result_dat$Signature <- base::factor(aucs_result_dat$Signature,
                                             levels = Signature_order)
-
   # label name of each dataset under column "Study"
   aucs_result_dat$Study <- base::gsub("\\..*", "", base::row.names(aucs_result_dat))
   base::row.names(aucs_result_dat) <- NULL
@@ -181,15 +198,14 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
 #' @export
 #'
 bootstrap_mean_CI <- function(data, colName, percent = 0.95,
-                              method = c("percentile", "empirical"), num.boot){
+                              method = c("percentile", "empirical"), num.boot) {
 
   if (base::missing(method)) {
     method <- "empirical"
-    base::message(sprintf("Missing method argument. The default method used for bootstrap confidence interval is %s",
+    base::message(base::sprintf("Missing method argument. The default method used for bootstrap confidence interval is %s",
                           method))
   }
   method <- base::match.arg(method)
-  # cat("The method used for bootstrap confidence interval is ",method)
   lower <- (1 - percent) / 2
   upper <- 1 - lower
 
@@ -200,9 +216,9 @@ bootstrap_mean_CI <- function(data, colName, percent = 0.95,
   n <- length(x)
   if (n == 1) {
     xbar <- x
-    ci <- base::data.frame(xbar, NA, NA)
-    base::colnames(ci) <- c("Mean AUC", base::paste0("CI lower.", lower*100, "%"),
-                            base::paste0("CI upper.", upper*100, "%"))
+    ci <- base::data.frame(base::round(xbar, 4), NA, NA)
+    base::colnames(ci) <- c("MeanAUC", base::paste0("CI lower.", lower * 100, "%"),
+                            base::paste0("CI upper.", upper * 100, "%"))
     base::row.names(ci) <- NULL
     return(ci)
   }
@@ -216,29 +232,23 @@ bootstrap_mean_CI <- function(data, colName, percent = 0.95,
   # Compute the means x∗
   bsmeans <-  base::colMeans(bootstrapsample)
 
-  if (method == "empirical"){
+  if (method == "empirical") {
     # Compute deltastar for each bootstrap sample
     deltastar <-  bsmeans - xbar
-
     # Find the 0.0.25 and 0.975 quantile for deltastar
-    d <-  stats::quantile(deltastar, c(lower, upper), na.rm=TRUE)
-
+    d <-  stats::quantile(deltastar, c(lower, upper), na.rm = TRUE)
     # Calculate the confidence interval for the mean.
     ci  <-  xbar - c(d[2], d[1])
-
-    ci <- base::data.frame(xbar, ci[1], ci[2])
-    base::colnames(ci) <- c("Mean AUC", base::paste0("CI lower.",lower*100," %"),
-                            base::paste0("CI upper.", upper*100, "%"))
-    base::row.names(ci) <- NULL
-    return(ci)
+    ci <- base::data.frame(base::round(xbar, 4), base::round(ci[1], 4),
+                           base::round(ci[2], 4))
+  } else if (method == "percentile") {
+    ci <- stats::quantile(bsmeans, c(lower, upper), na.rm = TRUE)
+    ci <- base::data.frame(xbar, ci_percent[1], ci_percent[2])
   }
-
-  if (method == "percentile"){
-    ci_percent <- stats::quantile(bsmeans, c(lower, upper), na.rm = TRUE)
-    ci_percent <- base::data.frame(xbar, ci_percent[1], ci_percent[2])
-    base::colnames(ci_percent) <- c("Mean", base::paste0("CI lower.", lower*100, "%"),
-                                    base::paste0("CI upper.", upper*100, "%"))
-    base::row.names(ci_percent) <- NULL
-    return(ci_percent)
-  }
+  ci <- base::data.frame(base::round(xbar, 4), base::round(ci[1], 4),
+                         base::round(ci[2], 4))
+  base::colnames(ci) <- c("MeanAUC", base::paste0("CI lower.", lower * 100, "%"),
+                          base::paste0("CI upper.", upper * 100, "%"))
+  base::row.names(ci) <- NULL
+  return(ci)
 }
