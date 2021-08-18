@@ -33,10 +33,12 @@ Suggests:
     gridExtra,
     GSVA,
     knitr,
+    reshape2,
     rmarkdown,
     roxygen2,
     sva,
     TBSignatureProfiler,
+    tidyr,
     testthat
 biocViews:
     ExperimentData,

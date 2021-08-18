@@ -209,10 +209,9 @@ bootstrap_mean_CI <- function(data, colName, percent = 0.95,
   lower <- (1 - percent) / 2
   upper <- 1 - lower
 
-  x <- base::unlist(data[, colName])
+  x <- base::unlist(data[, colName], use.names = FALSE)
   x <- stats::na.omit(x) # Remove NA's in PLAGE method
 
-  names(x) <- NULL
   n <- length(x)
   if (n == 1) {
     xbar <- x
@@ -223,7 +222,7 @@ bootstrap_mean_CI <- function(data, colName, percent = 0.95,
     return(ci)
   }
   # sample mean
-  xbar  <-  base::mean(x)
+  xbar <- base::mean(x)
   # random resamples from x
   bootstrapsample <- base::lapply(base::seq_len(num.boot), function(i)
     base::sample(x, n, replace = TRUE))
@@ -239,14 +238,15 @@ bootstrap_mean_CI <- function(data, colName, percent = 0.95,
     d <-  stats::quantile(deltastar, c(lower, upper), na.rm = TRUE)
     # Calculate the confidence interval for the mean.
     ci  <-  xbar - c(d[2], d[1])
-    ci <- base::data.frame(base::round(xbar, 4), base::round(ci[1], 4),
-                           base::round(ci[2], 4))
   } else if (method == "percentile") {
     ci <- stats::quantile(bsmeans, c(lower, upper), na.rm = TRUE)
-    ci <- base::data.frame(xbar, ci_percent[1], ci_percent[2])
   }
-  ci <- base::data.frame(base::round(xbar, 4), base::round(ci[1], 4),
-                         base::round(ci[2], 4))
+  # Set upper and lower bound for the confidence interval
+  lower_ci <- base::round(ci[1], 4)
+  lower_ci<- base::ifelse(lower_ci <= 0.5, 0.5, lower_ci)
+  upper_ci <- base::round(ci[2], 4)
+  upper_ci <- base::ifelse(upper_ci >= 1, 1, upper_ci)
+  ci <- base::data.frame(base::round(xbar, 4), lower_ci, upper_ci)
   base::colnames(ci) <- c("MeanAUC", base::paste0("CI lower.", lower * 100, "%"),
                           base::paste0("CI upper.", upper * 100, "%"))
   base::row.names(ci) <- NULL

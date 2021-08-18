@@ -45,7 +45,7 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
     base::message("Download curated version. Set curated.only = FALSE if want to download raw data.")
   }
   if (dryrun) {
-    resources <- c()
+    resources <- NULL
     for (geo in names_sub) {
       resources <- c(resources, tbData$title[base::grep(geo, tbData$title)])
     }

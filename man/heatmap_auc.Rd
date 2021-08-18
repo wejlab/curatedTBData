@@ -4,45 +4,38 @@
 \alias{heatmap_auc}
 \title{Obtain ridge plots for emprirical AUC distribution for signature scores.}
 \usage{
-heatmap_auc(
-  combine_dat,
-  GSE_sig = NULL,
-  signatureColNames,
-  facet = TRUE,
-  clustering = TRUE,
-  order_increase_avg = FALSE,
-  x_axis_name = NULL
-)
+heatmap_auc(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = TRUE)
 }
 \arguments{
-\item{combine_dat}{A dataframe contains signatures, datsets name, and AUC.
-Such dataset can be obtained from \code{\link[curatedTBData]{combine_auc}}.}
+\item{combine_dat}{A `data.frame` contains at least three columns with name `Signatures`,
+`Study`, and `AUC` respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}.}
 
-\item{GSE_sig}{A dataframe contains information about each signature and its traning dataset name.
-Defult is NULL.}
+\item{GSE_sig}{A `data.frame` contains information about each signature and
+its training/discovery dataset(s) name. Default is `NULL`.}
 
-\item{signatureColNames}{A character vector. Expect in the format "Name_SignatureType_Number". e.g. "Anderson_OD_51"}
+\item{facet}{Boolean. If `TRUE`, grouping signatures into clusters based on their type.
+If `FALSE`, output without grouping. Default is `TRUE`.}
 
-\item{facet}{Boolean. TRUE if the users want to group signatures into groups.
-Default is TRUE.}
+\item{clustering}{Boolean. If `TRUE`, perform clustering using hierarchical clustering method.
+If `FALSE`, output without clustering. Default is `TRUE`.}
 
-\item{clustering}{Boolena. TRUE if the users want to perform clustering of the heatmap using hierarchical clustering.
-Default is TRUE.}
+\item{signatureColNames}{A character vector.
+Expect format is: "Name_SignatureType_Number".
+See `names(TBSignatureProfiler::TBsignatures)` for examples.}
 }
 \value{
-Heatmap with AUC values. x axis is the expression data, y axis represents signatures.
+A heatmap shows the performance of signature's across multiple studies
+filled with AUC values
 }
 \description{
 Obtain ridge plots for emprirical AUC distribution for signature scores.
 }
 \examples{
-combine_dat_exp <- data.frame(Signature=rep(c("Anderson_42", "Anderson_OD_51",
-                              "Berry_393","Berry_OD_86","Blankley_5"),2),
-               AUC = stats::runif(10,0.5,1), GSE=rep(c("GSE39939","GSE19442"), each=5))
-GSE_sig_exp <- data.frame(Signature=c("Anderson","Anderson","Berry","Berry"),
-                   GSE=c("GSE39939","GSE39940","GSE19442","GSE19443"))
-TBsignatures_exp <- c("Anderson_42", "Anderson_OD_51", "Berry_393","Berry_OD_86",
-                      "Blankley_5")
-heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = FALSE)
-heatmap_auc(combine_dat_exp,GSE_sig_exp, TBsignatures_exp, facet = TRUE)
+combine_dat_exp <- data.frame(Signature = rep(c("Anderson_42", "Anderson_OD_51",
+                              "Berry_393","Berry_OD_86","Blankley_5"), 2),
+               AUC = stats::runif(10,0.5,1), Study = rep(c("GSE39939","GSE19442"), each=5))
+GSE_sig_exp <- data.frame(Signature = c("Anderson","Anderson","Berry","Berry"),
+                   Study = c("GSE39939","GSE39940","GSE19442","GSE19443"))
+heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = FALSE)
+heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = TRUE)
 }

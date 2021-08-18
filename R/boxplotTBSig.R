@@ -52,7 +52,7 @@ boxplotTBSig <- function(object_list, gset, annotationColName = "TBStatus") {
   rbindx <- function(dfs) {
     ns <- base::unique(base::unlist(base::sapply(dfs, base::colnames)))
     base::do.call(base::rbind, base::lapply(dfs, function(x) {
-      for (i in ns[!ns %in% base::colnames(x)]) {
+      for (n in ns[!ns %in% base::colnames(x)]) {
         x[[n]] <- NA
       }
       x

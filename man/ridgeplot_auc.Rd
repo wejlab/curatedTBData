@@ -19,5 +19,5 @@ Obtain ridge plots for empirical AUC distribution for signature scores.
 \examples{
 aucs_result <- data.frame(Signature = c("Anderson_42", "Anderson_OD_51", "Berry_393"),
                           AUC = stats::runif(3,0,0.5))
-p_ridge <- get_auc_distribution(aucs_result)
+p_ridge <- ridgeplot_auc(aucs_result)
 }

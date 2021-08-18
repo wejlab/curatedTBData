@@ -30,10 +30,12 @@ devtools::install_github("compbiomed/curatedTBData")
 
 # R packages
 ```{r libraries, message=FALSE, warning=FALSE, results='hide'}
+devtools::load_all()
 library(curatedTBData)
 library(dplyr)
+library(ggplto2)
+library(ggridges)
 library(SummarizedExperiment)
-devtools::load_all()
 library(curatedTBData)
 ```
 
@@ -184,21 +186,41 @@ DT::datatable(ssgsea_PTB_LTBI_mean)
 ```
 
 ### Boxplot of signature performance across studies
-The `signatureBoxplot()` function from `r Biocpkg("TBSignatureProfiler")` provide great visualization of
-multiple signature's performance on single study. Given a list of `SummarizedExperiment` object, the `BoxplotTBsig()` provides an alternative display such that it allows the comparison of signature's performance across different studies.
+The `signatureBoxplot()` function from `r Biocpkg("TBSignatureProfiler")` provide straightforward visualization of
+multiple signature's performance on single study. Based on the `signatureBoxplot()`, the `BoxplotTBsig()` in the `Rpackage("curatedTBData")` provides an alternative display such that it allows the comparison of signature's performance across different studies. The input of this function is a list of `SummarizedExperiment` objects, the `names` of the list should be unique, which usually is the study name. 
 ```{r ssgsea Boxplot for each signature PTB vs. LTBI, results = "asis", fig.width=3, fig.height=7}
 for (i in names(TBsignaturesSub)) {
   cat("####", i, "\n")
-  boxplotTBSig(ssgsea_PTB_LTBI, gset = i, annotationColName = "TBStatus")
+  boxplotTBSig(object_list = ssgsea_PTB_LTBI, gset = i, annotationColName = "TBStatus")
   cat("\n\n")
 }
 ```
 ### Ridge Plot
+The empirical AUC distribution for each signature can also be visualized in the form of Ridgeline plot. The function `ridgeplot_auc()` enables the users to generate the Ridegeline plot based on `CRANpkg("ggrdiges")` to generate the Ridgeline plot to show the changes in AUC distribution across multiple studies.
 ```{r}
-
+dat_lines <- data.frame(Signature = ssgsea_PTB_LTBI_combine$Signature, x0 = 0.5)
+p_ridge <- ggplot2::ggplot(ssgsea_PTB_LTBI_combine, aes(x = AUC, y = Signature)) +
+    ggridges::geom_density_ridges(jittered_points = TRUE, alpha = 0.7,
+                                  quantile_lines = TRUE, quantiles = 2) +
+    ggplot2::geom_segment(data = dat_lines, aes(x = x0, xend = x0,
+                                                y = as.numeric(Signature),
+                                                yend = as.numeric(Signature) + 0.9),
+                          color = "red")
+p_ridge
 ```
 
 ### Heatmap
+Heatmap is another graphical representation that provides clear visualization of signature's performance across different studies. In the heatmap, the x-axis represents the studies, and the y-axis is the signature's name. Each grid is filled in with AUC values. The grid with black border represents the dataset(s), which the signature was discovered from. The relationship between gene signature and its training dataset(s) was recorded in the `SignatureInfoTraining` data from the `Rpackage("curatedTBData")` package.
+```{r ssgsea PTB vs. Latent heatmap with facet, fig.width=5, fig.height=6}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = TRUE,
+            clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. LTBI")
+```
+```{r}
+heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = FALSE,
+            clustering = FALSE)
+```
 
 # Session Info
 ```{r session info}
