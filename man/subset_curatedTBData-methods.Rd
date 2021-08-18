@@ -4,7 +4,7 @@
 \alias{subset_curatedTBData}
 \alias{subset_curatedTBData,SummarizedExperiment-method}
 \alias{subset_curatedTBData,MultiAssayExperiment-method}
-\title{Subsetting curatedTBData based on single/multiple conditions}
+\title{Subset curatedTBData based on single/multiple conditions}
 \usage{
 subset_curatedTBData(theObject, ...)
 

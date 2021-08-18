@@ -1,4 +1,4 @@
-#' @title Subsetting curatedTBData based on single/multiple conditions
+#' @title Subset curatedTBData based on single/multiple conditions
 #' @description \code{subset_curatedTBData} selects desired samples from curatedTBData
 #' database based pre-specified conditions.
 #' @name subset_curatedTBData
@@ -227,7 +227,7 @@ combineObjects <- function(object_list, experiment_name = NULL) {
   rbindx <- function(dfs) {
     ns <- base::unique(base::unlist(base::sapply(dfs, base::colnames)))
     base::do.call(base::rbind, base::lapply(dfs, function(x) {
-      for (i in ns[!ns %in% base::colnames(x)]) {
+      for (n in ns[!ns %in% base::colnames(x)]) {
         x[[n]] <- NA
       }
       x

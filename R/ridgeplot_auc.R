@@ -6,9 +6,9 @@
 #' @examples
 #' aucs_result <- data.frame(Signature = c("Anderson_42", "Anderson_OD_51", "Berry_393"),
 #'                           AUC = stats::runif(3,0,0.5))
-#' p_ridge <- get_auc_distribution(aucs_result)
+#' p_ridge <- ridgeplot_auc(aucs_result)
 #' @export
-ridgeplot_auc <- function(aucs_result){
+ridgeplot_auc <- function(aucs_result) {
   # add 50% AUC line
   aucs_result_dat_lines <- data.frame(Signature = aucs_result$Signature,x0=0.5)
 
