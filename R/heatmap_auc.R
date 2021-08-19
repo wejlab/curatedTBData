@@ -21,7 +21,7 @@
 #'                    Study = c("GSE39939","GSE39940","GSE19442","GSE19443"))
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = FALSE)
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = TRUE)
-#'@export
+#' @export
 heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
                         clustering = TRUE) {
   # Subset input data.frame with the desired column names
@@ -30,14 +30,14 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
     dat$Study <- base::as.factor(dat$Study)
   }
   if (base::length(base::unique(dat$Study)) > 1 && clustering == TRUE) {
-    # transform form long to wide data: first column is the study names and column names is signatures
+    # Clustering AUC values if the number of studies is greater than 1
+    # Transform form long to wide data: first column is the study names and column names is signatures
     # This step is necessary for clustering
     data_wide <- tidyr::spread(dat, .data$Signature, .data$AUC)
     base::row.names(data_wide) <- data_wide$Study
     # remove study name column
     dat_input <- base::as.matrix(data_wide[, -1])
     dat_input[base::is.na(dat_input)] <- NA
-    # Clustering AUC values if the number of studies is greater than 1
     dd <- stats::dist(dat_input)
     hc <- stats::hclust(dd)
     dat_input <- dat_input[hc$order, ]
@@ -46,7 +46,8 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
                          Avg = base::rowMeans(dat_input, na.rm = TRUE)) %>%
       reshape2::melt() # Transform back into long format
   } else {
-    datta <- base::data.frame(Var1 = dat$Study, Var2 = dat$Signature, value = dat$AUC)
+    datta <- base::data.frame(Var1 = dat$Study, Var2 = dat$Signature,
+                              value = dat$AUC)
     mean_df <- dat %>%
       dplyr::group_by(.data$Study) %>%
       dplyr::summarise(value = mean(.data$AUC))

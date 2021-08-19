@@ -2,8 +2,8 @@
 #' A function to access available curated Tuberculosis data from the Bioconductor's
 #' ExperimentHub services
 #'
-#' @param study_name A character or vector of characters that contain name of the studies
-#' `""` will return all available studies.
+#' @param study_name A character or vector of characters that contain name of the studies.
+#' When `study_name == ""` or `any(study_name == "")`, the function will return all available studies.
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
 #' ExperimentHub services. If `TRUE` (Default), return the names of the available resources
 #' to be downloaded. If `FALSE`, start downloading data.
@@ -15,6 +15,8 @@
 #' @examples
 #' curatedTBData("GSE39939", dryrun = TRUE)
 #' curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
+#' @importFrom rlang .data
+#' @importFrom magrittr %>%
 curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
   # Access to experimenthub
   eh <- base::suppressWarnings(ExperimentHub::ExperimentHub())
@@ -22,7 +24,7 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
   # List available data
   names_all <- base::unique(gsub("_.*", "", tbData$title))
   # Let study_name equals to all the the studies when "".
-  if (study_name == "") {
+  if (base::any(study_name == "")) {
     study_name <- names_all
   }
   indexMatch <- base::match(study_name, names_all)

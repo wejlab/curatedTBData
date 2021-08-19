@@ -12,31 +12,25 @@ LazyData: true
 Depends: R (>= 3.6.0)
 Imports:
     AnnotationHub,
-    Biobase,
-    BiocParallel,
+    ExperimentHub,
     dplyr,
     knitr,
     magrittr,
-    MultiAssayExperiment,
-    RColorBrewer,
-    readr,
-    rlang,
-    stringr,
-    SummarizedExperiment,
-    S4Vectors
+    methods,
+    MultiAssayExperiment
 Suggests:
-    AnnotationDbi,
+    BiocParallel,
     BiocStyle,
     DT,
     ggplot2,
     ggridges,
     gridExtra,
-    GSVA,
     knitr,
+    RColorBrewer,
     reshape2,
     rmarkdown,
-    roxygen2,
-    sva,
+    ROCit,
+    SummarizedExperiment,
     TBSignatureProfiler,
     tidyr,
     testthat

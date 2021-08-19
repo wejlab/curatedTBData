@@ -62,7 +62,7 @@ There are two experiments for the microarray study. The first experiment is `ass
 GSE19439 <- curatedTBData("GSE19439", dryrun = FALSE, curated.only = FALSE)
 GSE19439
 ```
-A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw fastq files using `r Biocpkg("Rsubread")`.
+A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw .fastq files using `r Biocpkg("Rsubread")`.
 ```{r, warning=FALSE, results='hide'}
 GSE79362 <- curatedTBData("GSE79362", dryrun = FALSE, curated.only = FALSE)
 GSE79362
@@ -127,10 +127,11 @@ assays(GSE19491)[["Batch_corrected_assay"]] <- combat_edata1
 GSE19491
 ```
 
-# Example analysis - Active TB  vs. Latent infection
-## Select samples with outecome of interest
-The function `subset_curatedTBDatat()` allows the users to subset a list of `r Biocpkg("MultiAssayExperiment")` objects quickly. In the following example, we call this function to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) 
-for binary classification. 
+# Dataset subset
+The function `subset_curatedTBDatat()` allows the users to subset a list of `r Biocpkg("MultiAssayExperiment")` objects quickly. There are three 
+
+## Select patients with Active TB and LTBI
+In the following example, we call this function to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) for binary classification. The `annotationColName` is a character that indicates the column name in the clinical information table. The `annotationCondition` is a character of vector of characters that the users intend to select.
 ```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
 multi_set_PTB_LTBI <- lapply(objectList, function(x)
   subset_curatedTBData(x, annotationColName = "TBStatus", 
@@ -139,6 +140,20 @@ multi_set_PTB_LTBI <- lapply(objectList, function(x)
 # Remove NULL from the list
 multi_set_PTB_LTBI <- multi_set_PTB_LTBI[!sapply(multi_set_PTB_LTBI, is.null)]
 ```
+
+## Select other outcome of interests
+The HIV status (`HIVStatus`) and diabetes status (`DiabetesStatus`) for each subject were also recorded within the `Rpackage("curatedTBData")`. In the following example, we would like to select subjects with HIV positive given input from `Rpackage("curatedTBData")`. The column `HIVStatus` from `DataSummary` marks whether study contains HIV infected patients. Users can access studies that contain HIV infected patients by calling the `curatedTBData()` function and select desired subset either based on `MultiAssayExperiment` selection procedure or `subset_curatedTBData` if the `annotationCondition` is greater than one.
+```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
+multi_set_HIV <- lapply(objectList, function(x)
+  subset_curatedTBData(x, annotationColName = "HIV", 
+                       annotationCondition = "Negativeß", 
+                       assayName = "assay_curated"))
+# Remove NULL from the list
+multi_set_HIV <- multi_set_HIV[!sapply(multi_set_HIV, is.null)]
+```
+
+# Example analysis - Active TB  vs. LTBI infection using `TBSignatureProfiler`
+
 ## Profile multiple TB signatures across different studies
 In the following example, we profile the performance of ten TB gene signatures from the `TBsignatures` using he `r Biocpkg("TBSignatureprofiler")` package, which evaluates the performance 
 of a `list` of TB signatures using multiple gene set scoring methods. In the case, we selected ten candidates TB signatures from `TBSignatureProfiler::TBsignatures` and each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm based on `r Biocpkg("GSVA")`. See `r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.
@@ -153,6 +168,7 @@ ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
                                   combineSigAndAlgorithm = TRUE))
 ```
 ## Visualization{.tabset}
+
 ### Area under the curve (AUC) and p-value results
 The `combine_auc()` function allows the users to compute the area under the curve (AUC)
 metrics for the prediction scores along with the bootstrapped confidence interval.
@@ -217,10 +233,10 @@ heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = TRUE,
             clustering = FALSE) + 
   ggtitle("Heatmap of AUC for PTB vs. LTBI")
 ```
-```{r}
-heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = FALSE,
-            clustering = FALSE)
-```
+
+
+
+
 
 # Session Info
 ```{r session info}
