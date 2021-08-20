@@ -60,7 +60,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
   index <- NULL
   if (!base::is.null(GSE_sig)) {
     for (i in base::seq_len(base::nrow(GSE_sig))) {
-      kk <- datta[base::grep(GSE_sig$Signature[i], datta$Var2), ]
+      kk <- datta[base::grep(GSE_sig$TBSignature[i], datta$Var2), ]
       kk$indx <- base::row.names(kk)
       indx <- kk[base::which(base::as.character(kk$Var1) %in%
                                GSE_sig$Study[i]), "indx"]

@@ -14,10 +14,10 @@ Imports:
     AnnotationHub,
     ExperimentHub,
     dplyr,
-    knitr,
     magrittr,
     methods,
-    MultiAssayExperiment
+    MultiAssayExperiment,
+    rlang
 Suggests:
     BiocParallel,
     BiocStyle,
