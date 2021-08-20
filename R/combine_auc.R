@@ -132,7 +132,7 @@
 #' @examples
 #' data(TB_indian, package = "TBSignatureProfiler")
 #' TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
-#' res <- TBSignatureProfiler::runTBsigProfiler(input = TB_indian, useAssay = assayNames(TB_indian)[1],
+#' res <- TBSignatureProfiler::runTBsigProfiler(input = TB_indian, useAssay = "logcounts",
 #'                                              signatures = TBsignaturesSub, algorithm = "ssGSEA",
 #'                                              combineSigAndAlgorithm = TRUE)
 #' re <- combine_auc(list(TB_indian = res), annotationColName = "label",

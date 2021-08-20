@@ -31,6 +31,8 @@ setMethod("subset_curatedTBData",
           signature = "SummarizedExperiment",
           function(theObject, annotationColName, annotationCondition,
                    assayName = NULL, ...) {
+            # Run some diagnostics
+            # check assayName whether it is specified by the users
             if (base::is.null(assayName)) {
               if (base::length(SummarizedExperiment::assays(theObject)) >= 1) {
                 base::message("assayName not specified, select the first assay as default.")
@@ -53,8 +55,9 @@ setMethod("subset_curatedTBData",
             # Check whether annotationColName exists in the col data
             if (!base::any(base::colnames(col_info) == annotationColName)) {
               base::message(base::sprintf(
-                "annotationColName: %s is not found in the clicnial information. NULL is returned."))
-              return(NULL)
+                "annotationColName: %s is not found in the clicnial information. NULL is returned.",
+                annotationColName))
+              return()
             }
             theObject_filter <- theObject[, col_info[, annotationColName] %in% annotationCondition]
             # Set other assays to be NULL

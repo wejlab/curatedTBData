@@ -12,23 +12,24 @@
 #' data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
 #' sobject <- combineObjects(data_list, experiment_name = "assay_curated")
 #' @export
-combineObjects <- function(object_list, experiment_name = NULL) {
+combineObjects <- function(object_list, experiment_name) {
+  # check the experiment_name argument
+  if (base::missing(experiment_name)) {
+    base::stop("Argument \"experiment_name\" is missing, with no default.")
+  }
   # check length of the list, should be greater than 1
   if (base::length(object_list) <= 1) {
-    base::stop("The length of the input list is %s, expected be larger than 1 for combining objectss.",
-               base::length(object_list))
-  }
-  # check the experiment_name argument
-  if (base::is.null(experiment_name)) {
-    base::stop("Missing experiment name for the MultiAssayExperiment object")
+    base::stop(sprintf("The length of the input list is %i, expecting more than 1 elments within list for combining objects.",
+               base::length(object_list)))
   }
   # check names of the input object list
   obj_name <- base::names(object_list)
   if (base::is.null(obj_name)) {
-    base::stop("Names of the input list should not be NULL. Add unique names for each object within the list.")
+    base::stop("names of the input list should not be NULL. Add unique name for each object within the list.")
   } else if (!base::is.na(base::match("", obj_name))) {
-    base::stop("Names of the input contains \"\". Replace \"\" with a non-empty character.")
+    base::stop("names of the input contains \"\". Replace \"\" with unique character.")
   }
+  #### Actual code starts here
   if (base::length(experiment_name) > 1) {
     # experiment name for the list of object is different
     if (base::length(experiment_name) == base::length(object_list)) {

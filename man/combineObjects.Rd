@@ -4,7 +4,7 @@
 \alias{combineObjects}
 \title{Merge samples with common genes from selected studies}
 \usage{
-combineObjects(object_list, experiment_name = NULL)
+combineObjects(object_list, experiment_name)
 }
 \arguments{
 \item{object_list}{A `list` of [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] objects.
