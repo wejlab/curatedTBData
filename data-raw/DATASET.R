@@ -16,16 +16,14 @@ purrr::walk2(dataAllList, paste0(names(dataAllList)), function(obj, name) {
 # Save summary table
 DataSummary_raw <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
                                   sheet = "DataSummary")
-## Remove the last row: Total
-DataSummary <- DataSummary_raw[-nrow(DataSummary_raw),] %>%
+DataSummary <- DataSummary_raw[-base::nrow(DataSummary_raw),] %>% ## Remove the last row: Total
   base::as.data.frame()
-usethis::use_data(DataSummary,compress = "xz", overwrite = TRUE)
+usethis::use_data(DataSummary, compress = "xz", overwrite = TRUE)
 
 # Save training table
 SignatureInfoTraining_raw <- readxl::read_excel("data-raw/Data_summaryforpackage.xlsx",
                                             sheet = "SignatureInfoTraining")
-## Remove signatures with unidentified discovery datasets
 SignatureInfoTraining <- SignatureInfoTraining_raw %>%
-  dplyr::filter(Study != "Unable to find training data") %>%
+  dplyr::filter(.data$Study != "Unable to find training data") %>% ## Remove signatures with unidentified discovery datasets
   base::as.data.frame()
 usethis::use_data(SignatureInfoTraining, compress = "xz", overwrite = TRUE)

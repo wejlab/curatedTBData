@@ -59,6 +59,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
   datta$trian <- FALSE
   index <- NULL
   if (!base::is.null(GSE_sig)) {
+    GSE_sig <- .expand_study(GSE_sig)
     for (i in base::seq_len(base::nrow(GSE_sig))) {
       kk <- datta[base::grep(GSE_sig$TBSignature[i], datta$Var2), ]
       kk$indx <- base::row.names(kk)
@@ -159,6 +160,23 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
       dplyr::mutate(Var1 = num_Var1, Var2 = num_Var2)
   })
   re <- base::do.call(base::rbind, frame_facet1) %>%
+    base::as.data.frame()
+  return(re)
+}
+#' Expand study section for SignatureInfoTraining
+#' @param GSE_sig A `data.frame` contains information about each signature and
+#' its training/discovery dataset(s) name. Default is `NULL`.
+#' @return A expand `data.frame` for gene signatures and dataset.
+.expand_study <- function(GSE_sig) {
+  n <- base::nrow(GSE_sig)
+  col_name <- base::colnames(GSE_sig)
+  data_list <- base::lapply(base::seq_len(n), function(i) {
+    study_vector <- base::strsplit(GSE_sig[, col_name[2]][i], split = "&")
+    df <- base::data.frame(GSE_sig[, col_name[1]][i], study_vector)
+    colnames(df) <- col_name
+    df
+  })
+  re <- base::do.call(rbind, data_list) %>%
     base::as.data.frame()
   return(re)
 }

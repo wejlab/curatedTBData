@@ -5,41 +5,72 @@
 #'
 #' @format A data frame with 49 rows and 14 variables
 #' \describe{
-#'   \item{GEOAccession}
-#'   \item{Platform}
-#'   \item{GeographicalRegion}
-#'   \item{Tissue}
-#'   \item{Age}
-#'   \item{HIVStatus}
-#'   \item{DiagnosisMethod}
-#'   \item{Control}
-#'   \item{LTBI}
-#'   \item{PTB}
-#'   \item{OD}
-#'   \item{Total}
-#'   \item{Notes}
-#'   \item{GeneralType}
+#'   \item{Study}{Name of the dataset included in the curatedTBData}
+#'   \item{Platform}{Sequencing platform information}
+#'   \item{GeographicalRegion}{Geographical region to which study was conducted}
+#'   \item{Tissue}{Tissue type of which samples were collected}
+#'   \item{Age}{Age range of the study}
+#'   \item{HIVStatus}{Whether dataset contains HIV-infected subjects}
+#'   \item{DiagnosisMethod}{The diagnostic methods used in the stusy to identify tuberculosis subtypes}
+#'   \item{Control}{The number of subjects who were identified as healthy control in the study}
+#'   \item{LTBI}{The number of subjects with latent tuberculosis infection in the study}
+#'   \item{PTB}{The number of subjects with active tuberculosis in the study}
+#'   \item{OD}{The number of subjects with other disease(s) in the study}
+#'   \item{Total}{Total number of subjects included in the study}
+#'   \item{Notes}{Additional notes about the study}
+#'   \item{GeneralType}{Sequencing type of the study (Affymertirx Microarray, Agilent Microarray, Agilent Microarray - Two Color, Illumina Microarray, Illumina RNA-seq, MPIIB Microarray - Two Color, Phalanx Microarray, Phalanx RT-PCR)}
 #' }
 #' @source
 #' \itemize{
-#'  \item{\strong{GSE31348}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE31348}}
-#'  \item{\strong{GSE36238}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE36238}}
-#'  \item{\strong{GSE41055}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41055}}
-#'  \item{\strong{GSE54992}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE54992}}
-#'  \item{\strong{GSE73408}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE73408}}
-#'  \item{\strong{GSE107731}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107731}}
-#'  \item{\strong{GSE79362}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE79362}}
-#'  \item{\strong{GSE84076}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE84076}}
-#'  \item{\strong{GSE89403}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE89403}}
-#'  \item{\strong{GSE94438}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE94438}}
-#'  \item{\strong{GSE107991}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107991}}
-#'  \item{\strong{GSE107992}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107992}}
-#'  \item{\strong{GSE107993}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107993}}
-#'  \item{\strong{GSE107994}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107994}}
-#'  \item{\strong{GSE101705}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE101705}}
-#'  \item{\strong{GSE107104}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107104}}
-#'  \item{\strong{GSE112104}}{ \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE112104}}
-#'  \item{\strong{GSETornheim}}{ \url{https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRP229386&o=acc_s%3Aa}}
+#'  \item{\strong{GSE31348}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE31348}}
+#'  \item{\strong{GSE36238}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE36238}}
+#'  \item{\strong{GSE41055}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE41055}}
+#'  \item{\strong{GSE54992}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE54992}}
+#'  \item{\strong{GSE73408}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE73408}}
+#'  \item{\strong{GSE107731}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107731}}
+#'  \item{\strong{GSE79362}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE79362}}
+#'  \item{\strong{GSE84076}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE84076}}
+#'  \item{\strong{GSE89403}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE89403}}
+#'  \item{\strong{GSE94438}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE94438}}
+#'  \item{\strong{GSE107991}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107991}}
+#'  \item{\strong{GSE107992}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107992}}
+#'  \item{\strong{GSE107993}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107993}}
+#'  \item{\strong{GSE107994}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107994}}
+#'  \item{\strong{GSE101705}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE101705}}
+#'  \item{\strong{GSE107104}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE107104}}
+#'  \item{\strong{GSE112104}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE112104}}
+#'  \item{\strong{GSE19435}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19435}}
+#'  \item{\strong{GSE19439}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19439}}
+#'  \item{\strong{GSE19442}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19442}}
+#'  \item{\strong{GSE19443}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19443}}
+#'  \item{\strong{GSE19444}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19444}}
+#'  \item{\strong{GSE22098}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE22098}}
+#'  \item{\strong{GSE29536}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE29536}}
+#'  \item{\strong{GSE37250}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE37250}}
+#'  \item{\strong{GSE39939}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE39939}}
+#'  \item{\strong{GSE39940}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE39940}}
+#'  \item{\strong{GSE40553}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE40553}}
+#'  \item{\strong{GSE42825}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42825}}
+#'  \item{\strong{GSE42826}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42826}}
+#'  \item{\strong{GSE42827}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42827}}
+#'  \item{\strong{GSE42830}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42830}}
+#'  \item{\strong{GSE42831}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42831}}
+#'  \item{\strong{GSE42832}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42832}}
+#'  \item{\strong{GSE50834}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50834}}
+#'  \item{\strong{GSE56153}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE56153}}
+#'  \item{\strong{GSE69581}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE69581}}
+#'  \item{\strong{GSE83456}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE83456}}
+#'  \item{\strong{GSE83892}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE83892}}
+#'  \item{\strong{GSE25534}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE25534}}
+#'  \item{\strong{GSE28623}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE28623}}
+#'  \item{\strong{GSE34608}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE34608}}
+#'  \item{\strong{GSE62147}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62147}}
+#'  \item{\strong{GSE81746}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE81746}}
+#'  \item{\strong{GSE62525}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62525}}
+#'  \item{\strong{GSE74092}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE74092}}
+#'  \item{\strong{GSE6112}}{: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE6112}}
+#'  \item{\strong{GSEBruno}}{: \url{https://pubmed.ncbi.nlm.nih.gov/28515464/}}
+#'  \item{\strong{GSETornheim}}{: \url{https://www.ncbi.nlm.nih.gov/Traces/study/?acc=SRP229386}}
 #' }
 "DataSummary"
 
@@ -50,8 +81,8 @@
 #'
 #' @format A data frame with 25 rows and 2 variables:
 #' \describe{
-#'   \item{TBSignature}
-#'   \item{Study}
+#'   \item{TBSignature}{Name of the tuberculosis gene signatures}
+#'   \item{Study}{Name of the dataset}
 #' }
 #' @source
 #' \itemize{
