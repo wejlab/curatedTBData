@@ -7,8 +7,8 @@
 \format{
 A data frame with 25 rows and 2 variables:
 \describe{
-  \item{TBSignature}
-  \item{Study}
+  \item{TBSignature}{Name of the tuberculosis gene signatures}
+  \item{Study}{Name of the dataset}
 }
 }
 \source{
