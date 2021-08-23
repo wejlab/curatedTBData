@@ -18,7 +18,7 @@ devtools::install_github("compbiomed/curatedTBData")
 View summarized table for all the available data
 ``` r
 data("DataSummary", package = "curatedTBData")
-View(DataSummary$`GEO accession`)
+View(DataSummary$Study)
 ```
 
 Load studies:
@@ -27,7 +27,7 @@ Load studies:
 library(curatedTBData)
 
 # List of all available resources with dryrun = TRUE
-curatedTBData(DataSummary$`GEO accession`, dryrun = TRUE)
+curatedTBData("", dryrun = TRUE)
 
 # Load full version of single study
 curatedTBData("GSE39939", dryrun = FALSE, curated.only = FALSE)

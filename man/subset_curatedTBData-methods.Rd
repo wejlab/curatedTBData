@@ -4,7 +4,7 @@
 \alias{subset_curatedTBData}
 \alias{subset_curatedTBData,SummarizedExperiment-method}
 \alias{subset_curatedTBData,MultiAssayExperiment-method}
-\title{Subsetting curatedTBData based on single/multiple conditions}
+\title{Subset curatedTBData based on single/multiple conditions}
 \usage{
 subset_curatedTBData(theObject, ...)
 
@@ -31,15 +31,15 @@ subset_curatedTBData(theObject, ...)
 
 \item{...}{Extra named arguments passed to function.}
 
-\item{annotationColName}{A string indicates feature of interest in the object's annotation data.}
+\item{annotationColName}{A character indicates feature of interest in the object's annotation data.}
 
-\item{annotationCondition}{A vector of string indicates conditions want to be selected.}
+\item{annotationCondition}{A vector of character indicates conditions want to be selected.}
 
-\item{assayName}{A string indicates the name of the assay from the input object.
+\item{assayName}{A character indicates the name of the assay from the input object.
 The default is `NULL`. When assayName is `NULL`, the function selects the first
 assay along the assay list.}
 
-\item{useAssay}{A string indicates the name of the assay when the
+\item{useAssay}{A character indicates the name of the assay when the
 [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] is
 selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
 The default is `NULL`. When assayName is `NULL`, the function selects the first
