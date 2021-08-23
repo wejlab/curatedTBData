@@ -9,8 +9,8 @@ ExperimentHub services}
 curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
-\item{study_name}{A string or vector of strings that contain name of the datasets.
-`""` will return all available studies.}
+\item{study_name}{A character or vector of characters that contain name of the studies.
+When `study_name == ""` or `any(study_name == "")`, the function will return all available studies.}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
 ExperimentHub services. If `TRUE` (Default), return the names of the available resources

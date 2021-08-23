@@ -30,10 +30,12 @@ devtools::install_github("compbiomed/curatedTBData")
 
 # R packages
 ```{r libraries, message=FALSE, warning=FALSE, results='hide'}
+devtools::load_all()
 library(curatedTBData)
 library(dplyr)
+library(ggplto2)
+library(ggridges)
 library(SummarizedExperiment)
-devtools::load_all()
 library(curatedTBData)
 ```
 
@@ -49,7 +51,7 @@ DataSummary %>%
 ```
 
 # Access curated tuberculosis gene expression profile
-Users can use `curatedTBData()` function to access data. There are three arguments in the function. The first argument `study_name` represents the names of the data that are used to determine the resources of interests. Users can find all available resource names from `DataSummary$GEOAccession`. The second argument `dryrun` enables users to determine the resources available before actually downloading them. When `dryrun` is set to `TRUE`, the returned values are titles of the resources. The third argument `curated.only` allows the users to access the curated ready-to-use data. If `curated.only` is `TRUE`, the function only download the curated gene expression profile and the clinical annotation of the corresponding data. When `curated.only` is `FALSE`, the function will download all the available resources of the corresponding data.
+Users can use `curatedTBData()` function to access data. There are three arguments in the function. The first argument `study_name` represents the names of the data that are used to determine the resources of interests. Users can find all available resource names from `DataSummary$Study`. The second argument `dryrun` enables users to determine the resources available before actually downloading them. When `dryrun` is set to `TRUE`, the returned values are titles of the resources. The third argument `curated.only` allows the users to access the curated ready-to-use data. If `curated.only` is `TRUE`, the function only download the curated gene expression profile and the clinical annotation of the corresponding data. When `curated.only` is `FALSE`, the function will download all the available resources of the corresponding data.
 ```{r access data with dryrun}
 curatedTBData("GSE19439", dryrun = TRUE, curated.only = FALSE)
 ```
@@ -60,7 +62,7 @@ There are two experiments for the microarray study. The first experiment is `ass
 GSE19439 <- curatedTBData("GSE19439", dryrun = FALSE, curated.only = FALSE)
 GSE19439
 ```
-A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw fastq files using `r Biocpkg("Rsubread")`.
+A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw .fastq files using `r Biocpkg("Rsubread")`.
 ```{r, warning=FALSE, results='hide'}
 GSE79362 <- curatedTBData("GSE79362", dryrun = FALSE, curated.only = FALSE)
 GSE79362
@@ -102,7 +104,7 @@ GSE19439[, GSE19439$TBStatus %in% c("PTB","LTBI")]@ExperimentList # 30 samples
 The `combineObjects()` function provides an easy implementation for merging different 
 studies based on common gene symbols, it returned a `r Biocpkg("SummarizedExperiment")` object that contains 
 the merged assay and associated clinical annotation. Noticed that [GSE74092](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi) is usually 
-removed from merging, because this study used quantitative PCR so they did not have enough coverage to capture all genes. There two arguments in the `combineObjects()` function. The first one is `object_list`, which contains a list of `r Biocpkg("MultiAssayExperiment")` objects obtained from `curatedTBData()`. Notices that the `names(object_list)` should not be `NULL` and must be unique for each object. The second argument is `experiment_name`, which can be a string of vector of strings representing the name of the assay from the object. When the objects are merged, the original individual data tag can be found in the `Study` column by calling the  `colData()` on the output object.
+removed from merging, because this study used quantitative PCR so they did not have enough coverage to capture all genes. There two arguments in the `combineObjects()` function. The first one is `object_list`, which contains a list of `r Biocpkg("MultiAssayExperiment")` objects obtained from `curatedTBData()`. Notice that the `names(object_list)` should not be `NULL` and must be unique for each object within the list so that we can keep track the original study after merging. The second argument is `experiment_name`, which can be a string of vector of strings representing the name of the assay from the object. When the objects are merged, the original individual data tag can be found in the `Study` column by calling the  `colData()` on the output object.
 ```{r combine objects single experiment name}
 GSE19491 <- combineObjects(objectList, experiment_name = "assay_curated")
 GSE19491
@@ -125,25 +127,39 @@ assays(GSE19491)[["Batch_corrected_assay"]] <- combat_edata1
 GSE19491
 ```
 
-# Example analysis
-##  Active TB  vs. Latent infection using `TBSignatureprofiler`
-`r Biocpkg("TBSignatureprofiler")` is a package to evaluate the the performance 
-of signatures across curated TB data. The function `subset_curatedTBDatat()` was 
-used to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) 
-for binary classification. 
+# Dataset subset
+The function `subset_curatedTBDatat()` allows the users to subset a list of `r Biocpkg("MultiAssayExperiment")` objects quickly. There are three 
+
+## Select patients with Active TB and LTBI
+In the following example, we call this function to subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) for binary classification. The `annotationColName` is a character that indicates the column name in the clinical information table. The `annotationCondition` is a character of vector of characters that the users intend to select.
 ```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
-multi_set_PTB_Latent <- lapply(objectList, function(x)
+multi_set_PTB_LTBI <- lapply(objectList, function(x)
   subset_curatedTBData(x, annotationColName = "TBStatus", 
                        annotationCondition = c("LTBI","PTB"), 
                        assayName = "assay_curated"))
 # Remove NULL from the list
-multi_set_PTB_Latent <- multi_set_PTB_Latent[!sapply(multi_set_PTB_Latent, is.null)]
+multi_set_PTB_LTBI <- multi_set_PTB_LTBI[!sapply(multi_set_PTB_LTBI, is.null)]
 ```
-In the following example, we profile the performance of ten TB gene signatures from the `TBsignatures`. Each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm from `r Biocpkg("GSVA")`. Please see
-`r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.
+
+## Select other outcome of interests
+The HIV status (`HIVStatus`) and diabetes status (`DiabetesStatus`) for each subject were also recorded within the `Rpackage("curatedTBData")`. In the following example, we would like to select subjects with HIV positive given input from `Rpackage("curatedTBData")`. The column `HIVStatus` from `DataSummary` marks whether study contains HIV infected patients. Users can access studies that contain HIV infected patients by calling the `curatedTBData()` function and select desired subset either based on `MultiAssayExperiment` selection procedure or `subset_curatedTBData` if the `annotationCondition` is greater than one.
+```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
+multi_set_HIV <- lapply(objectList, function(x)
+  subset_curatedTBData(x, annotationColName = "HIV", 
+                       annotationCondition = "Negativeß", 
+                       assayName = "assay_curated"))
+# Remove NULL from the list
+multi_set_HIV <- multi_set_HIV[!sapply(multi_set_HIV, is.null)]
+```
+
+# Example analysis - Active TB  vs. LTBI infection using `TBSignatureProfiler`
+
+## Profile multiple TB signatures across different studies
+In the following example, we profile the performance of ten TB gene signatures from the `TBsignatures` using he `r Biocpkg("TBSignatureprofiler")` package, which evaluates the performance 
+of a `list` of TB signatures using multiple gene set scoring methods. In the case, we selected ten candidates TB signatures from `TBSignatureProfiler::TBsignatures` and each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm based on `r Biocpkg("GSVA")`. See `r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.
 ```{r, results = "hide", message=FALSE, warning=FALSE}
 TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:10]
-ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
+ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
                     function(x) TBSignatureProfiler::runTBsigProfiler(
                                   input = x,
                                   useAssay = assayNames(x)[1],
@@ -151,17 +167,74 @@ ssgsea_PTB_Latent <- lapply(multi_set_PTB_Latent,
                                   algorithm = "ssGSEA",
                                   combineSigAndAlgorithm = TRUE))
 ```
+## Visualization{.tabset}
 
+### Area under the curve (AUC) and p-value results
 The `combine_auc()` function allows the users to compute the area under the curve (AUC)
 metrics for the prediction scores along with the bootstrapped confidence interval.
+Notice that the `names()` of the input list should not be `NULL` and must be unique for each object within the list so that we can keep track the original study.
 ```{r, results='hide'}
 # Obtain p.value, AUC, and Bootstrapped Confidence Interval
-ssgsea_PTB_Latent_combine <- combine_auc(ssgsea_PTB_Latent, 
+ssgsea_PTB_LTBI_combine <- combine_auc(ssgsea_PTB_LTBI, 
                                 annotationColName = "TBStatus", 
                                 signatureColNames = names(TBsignaturesSub), 
                                 num.boot = 100, percent = 0.95)
-DT::datatable(ssgsea_PTB_Latent_combine)
+DT::datatable(ssgsea_PTB_LTBI_combine)
 ```
+### Mean AUC and bootstrapped confidence interval
+The `bootstrap_mean_CI()` function also helps users compute the mean AUC value for each signature across studies and get the confidence interval at desired level.
+```{r ssgsea summary table PTB vs. Latent}
+# Select signatures and associated AUC, split them into list based on signature
+ssgsea_PTB_LTBI_list <- ssgsea_PTB_LTBI_combine %>% 
+  dplyr::select(.data$Signature, AUC) %>%
+  dplyr::group_split(.data$Signature)
+
+# Get summarized table and bootstrap 95% Confidence Interval for the mean AUC
+sigInfo <- data.frame(Signature = sapply(ssgsea_PTB_LTBI_list, 
+                                                     function(x) x$Signature[1]))
+meanAUC <- do.call(rbind, lapply(ssgsea_PTB_LTBI_list, 
+                                 function(x) bootstrap_mean_CI(x, colName = "AUC",
+                                                               percent = 0.95, 
+                                                               method = "empirical",
+                                                               num.boot = 1000)))
+ssgsea_PTB_LTBI_mean <- cbind(sigInfo, meanAUC)
+DT::datatable(ssgsea_PTB_LTBI_mean)
+```
+
+### Boxplot of signature performance across studies
+The `signatureBoxplot()` function from `r Biocpkg("TBSignatureProfiler")` provide straightforward visualization of
+multiple signature's performance on single study. Based on the `signatureBoxplot()`, the `BoxplotTBsig()` in the `Rpackage("curatedTBData")` provides an alternative display such that it allows the comparison of signature's performance across different studies. The input of this function is a list of `SummarizedExperiment` objects, the `names` of the list should be unique, which usually is the study name. 
+```{r ssgsea Boxplot for each signature PTB vs. LTBI, results = "asis", fig.width=3, fig.height=7}
+for (i in names(TBsignaturesSub)) {
+  cat("####", i, "\n")
+  boxplotTBSig(object_list = ssgsea_PTB_LTBI, gset = i, annotationColName = "TBStatus")
+  cat("\n\n")
+}
+```
+### Ridge Plot
+The empirical AUC distribution for each signature can also be visualized in the form of Ridgeline plot. The function `ridgeplot_auc()` enables the users to generate the Ridegeline plot based on `CRANpkg("ggrdiges")` to generate the Ridgeline plot to show the changes in AUC distribution across multiple studies.
+```{r}
+dat_lines <- data.frame(Signature = ssgsea_PTB_LTBI_combine$Signature, x0 = 0.5)
+p_ridge <- ggplot2::ggplot(ssgsea_PTB_LTBI_combine, aes(x = AUC, y = Signature)) +
+    ggridges::geom_density_ridges(jittered_points = TRUE, alpha = 0.7,
+                                  quantile_lines = TRUE, quantiles = 2) +
+    ggplot2::geom_segment(data = dat_lines, aes(x = x0, xend = x0,
+                                                y = as.numeric(Signature),
+                                                yend = as.numeric(Signature) + 0.9),
+                          color = "red")
+p_ridge
+```
+
+### Heatmap
+Heatmap is another graphical representation that provides clear visualization of signature's performance across different studies. In the heatmap, the x-axis represents the studies, and the y-axis is the signature's name. Each grid is filled in with AUC values. The grid with black border represents the dataset(s), which the signature was discovered from. The relationship between gene signature and its training dataset(s) was recorded in the `SignatureInfoTraining` data from the `Rpackage("curatedTBData")` package.
+```{r ssgsea PTB vs. Latent heatmap with facet, fig.width=5, fig.height=6}
+# Import signature and data information
+heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = TRUE,
+            clustering = FALSE) + 
+  ggtitle("Heatmap of AUC for PTB vs. LTBI")
+```
+
+
 
 
 
