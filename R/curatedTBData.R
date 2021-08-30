@@ -10,7 +10,7 @@
 #' @param curated.only Boolean. Indicate whether downloading resources for the curated version.
 #' If `TRUE` (Default), only download only download the curated gene expression profile and the clinical annotation information.
 #' If `FALSE`, download all the available resources.
-#' @return a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
+#' @return A `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 #' @export
 #' @examples
 #' curatedTBData("GSE39939", dryrun = TRUE)
@@ -25,7 +25,7 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
   eh <- base::suppressWarnings(ExperimentHub::ExperimentHub())
   tbData <- AnnotationHub::query(eh, "curatedTBData")
   # List available data
-  names_all <- base::unique(gsub("_.*", "", tbData$title))
+  names_all <- base::unique(base::gsub("_.*", "", tbData$title))
   # Let study_name equals to all the the studies when "".
   if (base::any(study_name == "")) {
     study_name <- names_all
@@ -46,10 +46,9 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
     }
     names_sub <- names_sub[!base::is.na(names_sub)]
   }
-  if (curated.only) {
-    base::message("Download curated version. Set curated.only = FALSE if want to download raw data.")
-  }
+  # Check dryrun status
   if (dryrun) {
+    base::message("dryrun = TRUE, this will list the stduies to be downloaded. \n Set dryrun = FALSE to download datasets from the list.")
     resources <- NULL
     for (geo in names_sub) {
       resources <- c(resources, tbData$title[base::grep(geo, tbData$title)])
@@ -63,7 +62,11 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
     base::cat(base::sprintf("Attempt to download following resources for %s from the ExperimentHub service:\n%s",
                             base::paste0(names_sub, collapse = ", "),
                             base::paste0(resources, collapse = "\n")))
-    return(resources)
+    return(base::invisible(resources)) # invisible: The results will not be printed if not assigned
+  }
+  # check whether downloading the curated version
+  if (curated.only) {
+    base::message("curated.only = TRUE. Download curated version.\nSet curated.only = FALSE if want to download both raw and curated data.")
   }
   df <- base::data.frame(ah_id = tbData$ah_id, title = tbData$title)
   object_list <- base::lapply(names_sub, function(x, curated.only) {

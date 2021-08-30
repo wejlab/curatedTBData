@@ -22,7 +22,7 @@ test_that("All resources from metadata exist in the ExperimentHub service", {
     base::sort()
   metadata <- utils::read.csv(metadata_file_path)
   expect_equal(base::sort(metadata$Title), returned_resources_names)
-  # retrun type is character when dryrun is `TRUE`
+  # return type is character when dryrun is `TRUE`
   expect_type(returned_resources_names, "character")
 })
 
@@ -34,4 +34,3 @@ test_that("retrun type is list when dryrun is `FALSE`,
   expect_type(returned_resource, "list")
   expect_s4_class(returned_resource[[1]], "MultiAssayExperiment")
 })
-

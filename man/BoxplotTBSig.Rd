@@ -18,9 +18,25 @@ See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.}
 \item{annotationColName}{A character indicates the name of interest in the object's column data.}
 }
 \value{
-A `gtable` contains single signature's performance across multiple studies.
+A `gtable` object that contains multiple boxplots in the form of `ggplot` objects.
+Results show single signature's performance across multiple studies.
 }
 \description{
 Boxplot functions for list of signature scores across studies
 Also applies to consistent signature column names.
+}
+\examples{
+returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
+                                    dryrun = FALSE, curated.only = TRUE)
+mysignatures <- list(Sweeney_OD_3 = c("DUSP3", "GBP5", "KLF2"))
+re1 <- lapply(returned_resources, function(x)
+                   subset_curatedTBData(x, annotationColName = "TBStatus",
+                                        annotationCondition = c("Control","PTB")))
+re2 <- lapply(re1, function(x)
+               TBSignatureProfiler::runTBsigProfiler(input = x,
+                                                     useAssay = 1,
+                                                     signatures = mysignatures,
+                                                     algorithm = "ssGSEA",
+                                                     update_genes = FALSE))
+boxplotTBSig(object_list = re2, gset = "Sweeney_OD_3", annotationColName = "TBStatus")
 }
