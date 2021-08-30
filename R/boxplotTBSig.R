@@ -1,34 +1,3 @@
-#' Subset signatures scores and disease status from column data of SummarizedExperiment objects.
-#' @name .signature_filter
-#' @param object_list A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
-#' Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
-#' @param gset A character indicates the name of the signatures.
-#' @param annotationColName A character indicates the name of interest in the object's column data.
-#' @return A `list` of `data.frame` contains the `annotationColName`, prediction score and study name of single object.
-.signature_filter <- function(object_list, gset, annotationColName) {
-  obj_name <- base::names(object_list)
-  sig_list1 <- lapply(base::seq_len(base::length(object_list)), function(i, gset) {
-    x <- object_list[[i]]
-    GSE <- base::rep(base::names(object_list[i]),
-                     base::nrow(SummarizedExperiment::colData(x)))
-    index <- stats::na.omit(base::match(gset,
-                                        base::colnames(SummarizedExperiment::colData(x))))
-    if (base::length(index) == 0) {
-      message(sprintf("Gene signature: %s not found in study: %s, NA is returned.",
-                      gset, obj_name[i]))
-      result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
-                                  NA, GSE = GSE)
-    } else {
-      result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
-                                 SummarizedExperiment::colData(x)[, index], GSE = GSE)
-    }
-    base::colnames(result) <- c(annotationColName, gset, "Study")
-    result
-  }, gset)
-  base::names(sig_list1) <- obj_name
-  return(sig_list1)
-}
-
 #' Boxplot functions for list of signature scores across studies
 #' Also applies to consistent signature column names.
 #' @name BoxplotTBSig
@@ -37,8 +6,23 @@
 #' @param gset A character of vector of characters represent name(s) of the signatures.
 #' See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.
 #' @param annotationColName A character indicates the name of interest in the object's column data.
-#' @return A `gtable` contains single signature's performance across multiple studies.
+#' @return A `gtable` object that contains multiple boxplots in the form of `ggplot` objects.
+#' Results show single signature's performance across multiple studies.
 #' @export
+#' @examples
+#' returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
+#'                                     dryrun = FALSE, curated.only = TRUE)
+#' mysignatures <- list(Sweeney_OD_3 = c("DUSP3", "GBP5", "KLF2"))
+#' re1 <- lapply(returned_resources, function(x)
+#'                    subset_curatedTBData(x, annotationColName = "TBStatus",
+#'                                         annotationCondition = c("Control","PTB")))
+#' re2 <- lapply(re1, function(x)
+#'                TBSignatureProfiler::runTBsigProfiler(input = x,
+#'                                                      useAssay = 1,
+#'                                                      signatures = mysignatures,
+#'                                                      algorithm = "ssGSEA",
+#'                                                      update_genes = FALSE))
+#' boxplotTBSig(object_list = re2, gset = "Sweeney_OD_3", annotationColName = "TBStatus")
 boxplotTBSig <- function(object_list, gset, annotationColName = "TBStatus") {
   # check names of the input object list
   obj_name <- base::names(object_list)
@@ -68,7 +52,6 @@ boxplotTBSig <- function(object_list, gset, annotationColName = "TBStatus") {
       dplyr::select(gset) %>%
       base::is.na() %>%
       base::all()
-
     if (is_gset_na) {
       message(sprintf("Gene signature: %s not found from the input list. NULL is returned",
                       gset))
@@ -103,7 +86,38 @@ boxplotTBSig <- function(object_list, gset, annotationColName = "TBStatus") {
   # Remove empty element from list
   p_boxplot <- p_boxplot[!base::sapply(p_boxplot, base::is.null)]
   n_sqrt <- base::sqrt(base::length(p_boxplot))
-  p_combine <- base::do.call("grid.arrange",
+  p_combine <- base::do.call(gridExtra::"grid.arrange",
                              c(p_boxplot, ncol = base::floor(n_sqrt)))
   return(p_combine)
+}
+
+#' Subset signatures scores and disease status from column data of SummarizedExperiment objects.
+#' @name .signature_filter
+#' @param object_list A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
+#' Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
+#' @param gset A character indicates the name of the signatures.
+#' @param annotationColName A character indicates the name of interest in the object's column data.
+#' @return A `list` of `data.frame` contains the `annotationColName`, prediction score and study name of single object.
+.signature_filter <- function(object_list, gset, annotationColName) {
+  obj_name <- base::names(object_list)
+  sig_list1 <- lapply(base::seq_len(base::length(object_list)), function(i, gset) {
+    x <- object_list[[i]]
+    GSE <- base::rep(base::names(object_list[i]),
+                     base::nrow(SummarizedExperiment::colData(x)))
+    index <- stats::na.omit(base::match(gset,
+                                        base::colnames(SummarizedExperiment::colData(x))))
+    if (base::length(index) == 0) {
+      message(sprintf("Gene signature: %s not found in study: %s, NA is returned.",
+                      gset, obj_name[i]))
+      result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
+                                 NA, GSE = GSE)
+    } else {
+      result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
+                                 SummarizedExperiment::colData(x)[, index], GSE = GSE)
+    }
+    base::colnames(result) <- c(annotationColName, gset, "Study")
+    result
+  }, gset)
+  base::names(sig_list1) <- obj_name
+  return(sig_list1)
 }

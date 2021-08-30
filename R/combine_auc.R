@@ -125,7 +125,7 @@
 #' confidence interval. Default is `0.95`.
 #' @param AUC.abs Boolean. If AUC.abs = `TRUE`, return the AUC values from function \code{\link[ROCit]{rocit}}.
 #' If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.
-#' @param An instance inherited from \code{bplappy}.
+#' @param BPPARAM An instance inherited from \code{bplappy}.
 #' See \code{\link[BiocParallel]{bplapply}} for details.
 #' @return A data frame with features including Signatures, P.value, neg10xLog(P.value)
 #' and AUC for each signature across studies.

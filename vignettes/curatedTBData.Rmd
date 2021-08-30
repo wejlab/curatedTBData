@@ -143,10 +143,10 @@ multi_set_PTB_LTBI <- multi_set_PTB_LTBI[!sapply(multi_set_PTB_LTBI, is.null)]
 
 ## Select other outcome of interests
 The HIV status (`HIVStatus`) and diabetes status (`DiabetesStatus`) for each subject were also recorded within the `Rpackage("curatedTBData")`. In the following example, we would like to select subjects with HIV positive given input from `Rpackage("curatedTBData")`. The column `HIVStatus` from `DataSummary` marks whether study contains HIV infected patients. Users can access studies that contain HIV infected patients by calling the `curatedTBData()` function and select desired subset either based on `MultiAssayExperiment` selection procedure or `subset_curatedTBData` if the `annotationCondition` is greater than one.
-```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
+```{r subset patients with HIV, results = "hide", message=FALSE, warning=FALSE}
 multi_set_HIV <- lapply(objectList, function(x)
   subset_curatedTBData(x, annotationColName = "HIV", 
-                       annotationCondition = "Negativeß", 
+                       annotationCondition = "Negative", 
                        assayName = "assay_curated"))
 # Remove NULL from the list
 multi_set_HIV <- multi_set_HIV[!sapply(multi_set_HIV, is.null)]
@@ -165,7 +165,7 @@ ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
                                   useAssay = assayNames(x)[1],
                                   signatures = TBsignaturesSub, 
                                   algorithm = "ssGSEA",
-                                  combineSigAndAlgorithm = TRUE))
+                                  update_genes = FALSE))
 ```
 ## Visualization{.tabset}
 
