@@ -2,30 +2,38 @@
 #' @name heatmap_auc
 #' @param combine_dat A `data.frame` contains at least three columns with name `Signatures`,
 #' `Study`, and `AUC` respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}.
+#' The format of the signature name is expected as: Name_SignatureType_Number (i.e. Anderson_OD_42).
+#' See `names(TBSignatureProfiler::TBsignatures)` for examples.
 #' @param GSE_sig A `data.frame` contains information about each signature and
 #' its training/discovery dataset(s) name. Default is `NULL`.
-#' @param signatureColNames A character vector.
-#' Expect format is: "Name_SignatureType_Number".
-#' See `names(TBSignatureProfiler::TBsignatures)` for examples.
 #' @param facet Boolean. If `TRUE`, grouping signatures into clusters based on their type.
 #' If `FALSE`, output without grouping. Default is `TRUE`.
 #' @param clustering Boolean. If `TRUE`, perform clustering using hierarchical clustering method.
 #' If `FALSE`, output without clustering. Default is `TRUE`.
 #' @return A heatmap shows the performance of signature's across multiple studies
 #' filled with AUC values
+#' @export
+#'
 #' @examples
 #' combine_dat_exp <- data.frame(Signature = rep(c("Anderson_42", "Anderson_OD_51",
-#'                               "Berry_393","Berry_OD_86","Blankley_5"), 2),
-#'                AUC = stats::runif(10,0.5,1), Study = rep(c("GSE39939","GSE19442"), each=5))
-#' GSE_sig_exp <- data.frame(Signature = c("Anderson","Anderson","Berry","Berry"),
-#'                    Study = c("GSE39939","GSE39940","GSE19442","GSE19443"))
+#'                               "Berry_393", "Berry_OD_86", "Blankley_5"), 2),
+#'                               AUC = stats::runif(10, 0.5, 1),
+#'                               Study = rep(c("GSE39939", "GSE19442"), each = 5))
+#' GSE_sig_exp <- data.frame(TBSignature = c("Anderson","Anderson", "Berry", "Berry"),
+#'                           Study = c("GSE39939", "GSE39940", "GSE19442", "GSE19443"))
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = FALSE)
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = TRUE)
-#' @export
 heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE,
                         clustering = TRUE) {
   # Subset input data.frame with the desired column names
-  dat <- combine_dat[, c("Signature", "Study", "AUC")]
+  # check whether column contains "Signature", "Study", "AUC"
+  expect_name <- c("Signature", "Study", "AUC")
+  index_name <- base::match(expect_name, base::colnames(combine_dat))
+  if (base::any(base::is.na(index_name))) {
+    base::stop(base::sprintf("Column with name(s): %s is/are missing.",
+                             paste0(expect_name[is.na(index_name)], collapse = ", ")))
+  }
+  dat <- combine_dat[, index_name]
   if (!base::is.factor(dat$Study)) {
     dat$Study <- base::as.factor(dat$Study)
   }
