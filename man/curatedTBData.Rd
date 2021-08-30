@@ -21,7 +21,7 @@ If `TRUE` (Default), only download only download the curated gene expression pro
 If `FALSE`, download all the available resources.}
 }
 \value{
-a `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
+A `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 }
 \description{
 Import curated Tuberculosis Data
