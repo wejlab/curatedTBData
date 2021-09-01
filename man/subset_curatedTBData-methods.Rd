@@ -45,6 +45,10 @@ selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperim
 The default is `NULL`. When assayName is `NULL`, the function selects the first
 assay along the assay list.}
 }
+\value{
+A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
+object containing subjects with desired annotation conditions.
+}
 \description{
 \code{subset_curatedTBData} selects desired samples from curatedTBData
 database based pre-specified conditions.

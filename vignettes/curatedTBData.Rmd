@@ -6,7 +6,18 @@ author:
   - Section of Computational Biomedicine, Boston University School of Medicine,
     Boston, MA, U.S.A.
   email: xutaow@bu.edu
+- name: W. Evan Johnson
+  affiliation: 
+  - Section of Computational Biomedicine, Boston University School of Medicine,
+    Boston, MA, U.S.A.
+  email: wej@bu.edu
 package: curatedTBData
+abstract: >
+    The curatedTBData is an R package that provides standardized, curated 
+    tuberculosis(TB) transcriptomic studies. The initial release of the package 
+    contains 49 studies. The curatedTBData package allows users to access 
+    tuberculosis trancriptomic efficiently and to make easy comparison for 
+    different TB gene signatures across multiple datasets.
 date: "`r Sys.Date()`"
 output:
   BiocStyle::html_document
@@ -20,7 +31,7 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Installtion
+# Installation
 ```{r install curatedTBData, eval = FALSE}
 # if (!requireNamespace("BiocManager", quietly = TRUE))
 #   install.packages("BiocManager")
@@ -28,12 +39,15 @@ knitr::opts_chunk$set(echo = TRUE)
 devtools::install_github("compbiomed/curatedTBData")
 ```
 
+```{r, meassge = FALSE, results = 'hide', include=FALSE}
+devtools::load_all()
+```
+
 # R packages
 ```{r libraries, message=FALSE, warning=FALSE, results='hide'}
-devtools::load_all()
 library(curatedTBData)
 library(dplyr)
-library(ggplto2)
+library(ggplot2)
 library(ggridges)
 library(SummarizedExperiment)
 library(curatedTBData)
@@ -44,6 +58,7 @@ The `DataSummary` table summarized the list of available studies and their metad
 in an easy and quick way.
 ```{r accessimg datasummary}
 # Remove GeographicalRegion, Age, DiagnosisMethod, Notes, Tissue, HIVStatus for concise display
+data("DataSummary", package = "curatedTBData")
 DataSummary %>%
   dplyr::select(-c(GeographicalRegion, Age, DiagnosisMethod, Notes,
                    Tissue, HIVStatus)) %>%
@@ -57,13 +72,13 @@ curatedTBData("GSE19439", dryrun = TRUE, curated.only = FALSE)
 ```
 To download complete data for a Microarry study (e.g. [GSE19439](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19439)), 
 we set `dryrun = FALSE` and `curated.only = FALSE`.
-There are two experiments for the microarray study. The first experiment is `assay_curated`, which is a `matrix` that represents the normalized, curated version of the gene expression profile. The second experiment is `assay_raw`, which is a `r Biocpkg("SummarziedExperiment")` object that contains the raw gene expression profile and  information about probe features.
-```{r download full data for GSE19439, warning=FALSE, results='hide'}
+There are two experiments assay being included in the output Microarray studies. The first experiment is `assay_curated`, which is a `matrix` that represents the normalized, curated version of the gene expression profile. The second experiment is `assay_raw`, which is a `r Biocpkg("SummarziedExperiment")` object that contains the raw gene expression profile and  information about probe features.
+```{r download full data for GSE19439, warning=FALSE}
 GSE19439 <- curatedTBData("GSE19439", dryrun = FALSE, curated.only = FALSE)
 GSE19439
 ```
-A third `experiment` called `assay_reprocess` is included, when accessing data for the RNA sequencing studies. This `matrix` represents the reprocessed version of gene expression profile from the raw .fastq files using `r Biocpkg("Rsubread")`.
-```{r, warning=FALSE, results='hide'}
+When accessing data for RNA sequencing studies, a third `experiment` called `assay_reprocess` is included. This `matrix` represents the reprocessed version of gene expression profile from the raw .fastq files using `r Biocpkg("Rsubread")`.
+```{r, warning=FALSE}
 GSE79362 <- curatedTBData("GSE79362", dryrun = FALSE, curated.only = FALSE)
 GSE79362
 ```
@@ -90,12 +105,12 @@ GSE79362
 The major advantage of using `r Biocpkg("MultiAssayExperiment")` is the coordination of the meta-data and assays when sub-setting.The MultiAssayExperiment object has built-in function for subsetting samples based on column condition. For example, the following code shows how to select samples with only active TB.
 ```{r}
 GSE19439 <- objectList$GSE19439
-GSE19439[, GSE19439$TBStatus == "PTB"]@ExperimentList # 13 samples
+GSE19439[, GSE19439$TBStatus == "PTB"]["assay_curated"] # 13 samples
 ```
 
 The following code shows how to subset patients with active TB and LTBI
 ```{r}
-GSE19439[, GSE19439$TBStatus %in% c("PTB","LTBI")]@ExperimentList # 30 samples
+GSE19439[, GSE19439$TBStatus %in% c("PTB","LTBI")]["assay_curated"] # 30 samples
 ```
 
 # Dataset integeration
@@ -149,7 +164,8 @@ multi_set_HIV <- lapply(objectList, function(x)
                        annotationCondition = "Negative", 
                        assayName = "assay_curated"))
 # Remove NULL from the list
-multi_set_HIV <- multi_set_HIV[!sapply(multi_set_HIV, is.null)]
+multi_set_HIV <- multi_set_HIV[!vapply(multi_set_HIV, is.null, TRUE)]
+head(multi_set_HIV)
 ```
 
 # Example analysis - Active TB  vs. LTBI infection using `TBSignatureProfiler`
@@ -162,7 +178,7 @@ TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:10]
 ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
                     function(x) TBSignatureProfiler::runTBsigProfiler(
                                   input = x,
-                                  useAssay = assayNames(x)[1],
+                                  useAssay = 1,
                                   signatures = TBsignaturesSub, 
                                   algorithm = "ssGSEA",
                                   update_genes = FALSE))
@@ -176,29 +192,18 @@ Notice that the `names()` of the input list should not be `NULL` and must be uni
 ```{r, results='hide'}
 # Obtain p.value, AUC, and Bootstrapped Confidence Interval
 ssgsea_PTB_LTBI_combine <- combine_auc(ssgsea_PTB_LTBI, 
-                                annotationColName = "TBStatus", 
-                                signatureColNames = names(TBsignaturesSub), 
-                                num.boot = 100, percent = 0.95)
+                                       annotationColName = "TBStatus", 
+                                       signatureColNames = names(TBsignaturesSub), 
+                                       num.boot = 100, percent = 0.95)
 DT::datatable(ssgsea_PTB_LTBI_combine)
 ```
 ### Mean AUC and bootstrapped confidence interval
 The `bootstrap_mean_CI()` function also helps users compute the mean AUC value for each signature across studies and get the confidence interval at desired level.
 ```{r ssgsea summary table PTB vs. Latent}
-# Select signatures and associated AUC, split them into list based on signature
-ssgsea_PTB_LTBI_list <- ssgsea_PTB_LTBI_combine %>% 
-  dplyr::select(.data$Signature, AUC) %>%
-  dplyr::group_split(.data$Signature)
-
-# Get summarized table and bootstrap 95% Confidence Interval for the mean AUC
-sigInfo <- data.frame(Signature = sapply(ssgsea_PTB_LTBI_list, 
-                                                     function(x) x$Signature[1]))
-meanAUC <- do.call(rbind, lapply(ssgsea_PTB_LTBI_list, 
-                                 function(x) bootstrap_mean_CI(x, colName = "AUC",
-                                                               percent = 0.95, 
-                                                               method = "empirical",
-                                                               num.boot = 1000)))
-ssgsea_PTB_LTBI_mean <- cbind(sigInfo, meanAUC)
-DT::datatable(ssgsea_PTB_LTBI_mean)
+ssgsea_PTB_LTBI_mean <- get_mean_AUC(ssgsea_PTB_LTBI_list, colName = "AUC", 
+                                     percent = 0.95, method = "percentile",
+                                     num.boot = 1000)
+DT::datatable(ssgsea_PTB_LTBI_mean) 
 ```
 
 ### Boxplot of signature performance across studies
@@ -229,6 +234,7 @@ p_ridge
 Heatmap is another graphical representation that provides clear visualization of signature's performance across different studies. In the heatmap, the x-axis represents the studies, and the y-axis is the signature's name. Each grid is filled in with AUC values. The grid with black border represents the dataset(s), which the signature was discovered from. The relationship between gene signature and its training dataset(s) was recorded in the `SignatureInfoTraining` data from the `Rpackage("curatedTBData")` package.
 ```{r ssgsea PTB vs. Latent heatmap with facet, fig.width=5, fig.height=6}
 # Import signature and data information
+data(SignatureInfoTraining, package = "curatedTBData")
 heatmap_auc(ssgsea_PTB_LTBI_combine, SignatureInfoTraining, facet = TRUE,
             clustering = FALSE) + 
   ggtitle("Heatmap of AUC for PTB vs. LTBI")

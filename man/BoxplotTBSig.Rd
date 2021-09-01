@@ -6,7 +6,7 @@
 \title{Boxplot functions for list of signature scores across studies
 Also applies to consistent signature column names.}
 \usage{
-boxplotTBSig(object_list, gset, annotationColName = "TBStatus")
+boxplotTBSig(object_list, gset, annotationColName)
 }
 \arguments{
 \item{object_list}{A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
@@ -38,5 +38,6 @@ re2 <- lapply(re1, function(x)
                                                      signatures = mysignatures,
                                                      algorithm = "ssGSEA",
                                                      update_genes = FALSE))
-boxplotTBSig(object_list = re2, gset = "Sweeney_OD_3", annotationColName = "TBStatus")
+boxplotTBSig(object_list = re2, gset = "Sweeney_OD_3",
+             annotationColName = "TBStatus")
 }

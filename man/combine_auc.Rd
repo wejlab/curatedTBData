@@ -2,7 +2,7 @@
 % Please edit documentation in R/combine_auc.R
 \name{combine_auc}
 \alias{combine_auc}
-\title{Combine results from the `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] object.}
+\title{Combine results from the `list` of [SummarizedExperiment::SummarizedExperiment-class] object.}
 \usage{
 combine_auc(
   SE_scored_list,
@@ -27,26 +27,28 @@ objects from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 \item{percent}{Numeric. A number between 0 and 1, indicating the percentage of
 confidence interval. Default is `0.95`.}
 
-\item{AUC.abs}{Boolean. If AUC.abs = `TRUE`, return the AUC values from function \code{\link[ROCit]{rocit}}.
-If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.}
+\item{AUC.abs}{Boolean. If AUC.abs = `TRUE`, return the AUC values from function
+\code{\link[ROCit]{rocit}}. If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.}
 
 \item{BPPARAM}{An instance inherited from \code{bplappy}.
 See \code{\link[BiocParallel]{bplapply}} for details.}
 }
 \value{
-A data frame with features including Signatures, P.value, neg10xLog(P.value)
+A data frame with features including Signatures, P.value,
+neg10xLog(P.value)
 and AUC for each signature across studies.
 }
 \description{
 Calculate p-value, AUC values, and bootstrapped confidence interval for the AUC.
 }
 \examples{
+library(TBSignatureProfiler)
 data(TB_indian, package = "TBSignatureProfiler")
-TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
-res <- TBSignatureProfiler::runTBsigProfiler(input = TB_indian, useAssay = "logcounts",
-                                             signatures = TBsignaturesSub, algorithm = "ssGSEA",
-                                             combineSigAndAlgorithm = TRUE)
+TBsignaturesSub <- TBsignatures[1:5]
+res <- runTBsigProfiler(input = TB_indian, seAssay = "logcounts",
+                        signatures = TBsignaturesSub, algorithm = "ssGSEA",
+                        update_genes = FALSE)
 re <- combine_auc(list(TB_indian = res), annotationColName = "label",
-                  signatureColNames = names(TBsignaturesSub), num.boot = 100, percent = 0.95)
-re
+                  signatureColNames = names(TBsignaturesSub), num.boot = 100,
+                  percent = 0.95)
 }

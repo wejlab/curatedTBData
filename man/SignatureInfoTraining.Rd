@@ -48,7 +48,7 @@ A data frame with 25 rows and 2 variables:
  }
 }
 \usage{
-SignatureInfoTraining
+data(SignatureInfoTraining)
 }
 \description{
 A table containing tuberculosis gene signatures with dataset(s) from which they were derived.
