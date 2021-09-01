@@ -2,29 +2,28 @@
 % Please edit documentation in R/curatedTBData.R
 \name{curatedTBData}
 \alias{curatedTBData}
-\title{Import curated Tuberculosis Data
-A function to access available curated Tuberculosis data from the Bioconductor's
-ExperimentHub services}
+\title{Import curated Tuberculosis Data}
 \usage{
 curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
 \item{study_name}{A character or vector of characters that contain name of the studies.
-When `study_name == ""` or `any(study_name == "")`, the function will return all available studies.}
+When `study_name == ""` or `any(study_name == "")`, the function will return
+all available studies.}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
 ExperimentHub services. If `TRUE` (Default), return the names of the available resources
 to be downloaded. If `FALSE`, start downloading data.}
 
 \item{curated.only}{Boolean. Indicate whether downloading resources for the curated version.
-If `TRUE` (Default), only download only download the curated gene expression profile and the clinical annotation information.
+If `TRUE` (Default), only download only download the curated gene expression
+profile and the clinical annotation information.
 If `FALSE`, download all the available resources.}
 }
 \value{
 A `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
 }
 \description{
-Import curated Tuberculosis Data
 A function to access available curated Tuberculosis data from the Bioconductor's
 ExperimentHub services
 }

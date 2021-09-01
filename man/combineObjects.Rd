@@ -22,7 +22,7 @@ object contains combined data from the input.
 Merge samples with common genes from selected studies
 }
 \examples{
-geo <-  c("GSE19435", "GSE19439")
+geo <-  c('GSE19435', 'GSE19439')
 data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
-sobject <- combineObjects(data_list, experiment_name = "assay_curated")
+sobject <- combineObjects(data_list, experiment_name = 'assay_curated')
 }
