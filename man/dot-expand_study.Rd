@@ -2,17 +2,17 @@
 % Please edit documentation in R/heatmap_auc.R
 \name{.expand_study}
 \alias{.expand_study}
-\title{Expand study section for SignatureInfoTraining}
+\title{Expand study section for \code{SignatureInfoTraining}}
 \usage{
 .expand_study(GSE_sig)
 }
 \arguments{
-\item{GSE_sig}{A `data.frame` contains information about each signature and
-its training/discovery dataset(s) name. Default is `NULL`.}
+\item{GSE_sig}{A \code{data.frame} contains information about each signature and
+its training/discovery dataset(s) name. Default is \code{NULL}}
 }
 \value{
-A expand `data.frame` for gene signatures and dataset.
+A expand \code{data.frame} for gene signatures and dataset
 }
 \description{
-Expand study section for SignatureInfoTraining
+Expand study section for \code{SignatureInfoTraining}
 }

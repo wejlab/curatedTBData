@@ -14,22 +14,22 @@ get_mean_AUC(
 }
 \arguments{
 \item{df}{A data frame/matrix contains the interested numeric vector obtained
-from \code{combine_auc}. See \code{\link[curatedTBData]{combine_auc}} for details.}
+from \code{\link[curatedTBData]{combine_auc}}}
 
 \item{colName}{A character string specifying the column name of the data frame
-for bootstrapping.}
+for bootstrapping}
 
-\item{method}{A character string specifying the method used for computing bootstrap confidence interval.
-The choices are c("percentile","empirical"). The default is "empirical".}
+\item{method}{A character string specifying the method used for computing bootstrap confidence interval
+The choices are \code{c("percentile","empirical")}. The default is \code{"empirical"}.}
 
-\item{num.boot}{Numeric. Number of bootstrap times. Default is `100`.}
+\item{num.boot}{Numeric. Number of bootstrap times. Default value is \code{100}}
 
-\item{percent}{A number indicates the percentage of confidence interval.
-Default is `0.95`.}
+\item{percent}{A number indicates the percentage of confidence interval
+Default is value \code{0.95}}
 }
 \value{
-A `data frame` contains mean AUC, lower and upper bootstrap confidence interval
-for each gene signature across multiple studies.
+A \code{data.frame} contains mean AUC, lower and upper bootstrap confidence interval
+for each gene signature across multiple studies
 }
 \description{
 Compute mean AUC value and bootstrapped confidence interval for multiple signature's mean AUC across studies

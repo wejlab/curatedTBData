@@ -38,7 +38,6 @@ Suggests:
     ROCit,
     SummarizedExperiment,
     TBSignatureProfiler,
-    tidyr,
     testthat
 biocViews:
     ExperimentData,

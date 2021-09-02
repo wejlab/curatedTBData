@@ -2,12 +2,12 @@
 % Please edit documentation in R/boxplotTBSig.R
 \name{.signature_filter}
 \alias{.signature_filter}
-\title{Subset signatures scores and disease status from column data of SummarizedExperiment objects.}
+\title{Subset signatures scores and disease status from \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects}
 \usage{
 .signature_filter(object_list, gset, annotationColName)
 }
 \arguments{
-\item{object_list}{A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
+\item{object_list}{A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects.
 Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
 \item{gset}{A character indicates the name of the signatures.}
@@ -15,8 +15,8 @@ Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 \item{annotationColName}{A character indicates the name of interest in the object's column data.}
 }
 \value{
-A `list` of `data.frame` contains the `annotationColName`, prediction score and study name of single object.
+A \code{list} of \code{data.frame} contains the \code{annotationColName}, prediction score, and study name of single object.
 }
 \description{
-Subset signatures scores and disease status from column data of SummarizedExperiment objects.
+Subset signatures scores and disease status from \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
 }

@@ -4,16 +4,16 @@
 #' ExperimentHub services
 #'
 #' @param study_name A character or vector of characters that contain name of the studies.
-#' When `study_name == ""` or `any(study_name == "")`, the function will return
-#' all available studies.
+#' When \code{study_name == ""} or \code{any(study_name == "")}, the function will return
+#' all available studies
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
-#' ExperimentHub services. If `TRUE` (Default), return the names of the available resources
-#' to be downloaded. If `FALSE`, start downloading data.
-#' @param curated.only Boolean. Indicate whether downloading resources for the curated version.
-#' If `TRUE` (Default), only download only download the curated gene expression
-#' profile and the clinical annotation information.
-#' If `FALSE`, download all the available resources.
-#' @return A `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
+#' ExperimentHub services. If \code{TRUE} (Default), return the names of the available resources
+#' to be downloaded. If \code{FALSE}, start downloading data
+#' @param curated.only Boolean. Indicate whether downloading resources for the curated version
+#' If \code{TRUE} (Default), only download the curated gene expression
+#' profile and the clinical annotation information
+#' If \code{FALSE}, download all the available resources
+#' @return A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
 #' @export
 #' @examples
 #' curatedTBData("GSE39939", dryrun = TRUE)
@@ -86,7 +86,7 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
             dfSub <- dfSub[-indexRemove, ]
         }
         # Data download step
-        data_list <- base::lapply(dfSub$ah_id, function(y) tbData[[y]])
+        data_list <- base::lapply(dfSub$ah_id, function(y) base::suppressMessages(tbData[[y]]))
         names(data_list) <- base::sub("^[^_]*_", "", dfSub$title)
 
         if (curated.only) {

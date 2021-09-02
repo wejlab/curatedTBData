@@ -8,20 +8,20 @@ curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
 }
 \arguments{
 \item{study_name}{A character or vector of characters that contain name of the studies.
-When `study_name == ""` or `any(study_name == "")`, the function will return
-all available studies.}
+When \code{study_name == ""} or \code{any(study_name == "")}, the function will return
+all available studies}
 
 \item{dryrun}{Boolean. Indicate the whether downloading resources from the
-ExperimentHub services. If `TRUE` (Default), return the names of the available resources
-to be downloaded. If `FALSE`, start downloading data.}
+ExperimentHub services. If \code{TRUE} (Default), return the names of the available resources
+to be downloaded. If \code{FALSE}, start downloading data}
 
-\item{curated.only}{Boolean. Indicate whether downloading resources for the curated version.
-If `TRUE` (Default), only download only download the curated gene expression
-profile and the clinical annotation information.
-If `FALSE`, download all the available resources.}
+\item{curated.only}{Boolean. Indicate whether downloading resources for the curated version
+If \code{TRUE} (Default), only download the curated gene expression
+profile and the clinical annotation information
+If \code{FALSE}, download all the available resources}
 }
 \value{
-A `list` containing [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class].
+A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
 }
 \description{
 A function to access available curated Tuberculosis data from the Bioconductor's
