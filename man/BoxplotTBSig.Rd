@@ -3,27 +3,25 @@
 \name{BoxplotTBSig}
 \alias{BoxplotTBSig}
 \alias{boxplotTBSig}
-\title{Boxplot functions for list of signature scores across studies
-Also applies to consistent signature column names.}
+\title{Generate boxplot for single gene signature scores across multiple studies}
 \usage{
 boxplotTBSig(object_list, gset, annotationColName)
 }
 \arguments{
-\item{object_list}{A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
+\item{object_list}{A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
 Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}}
 
-\item{gset}{A character of vector of characters represent name(s) of the signatures.
-See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.}
+\item{gset}{A character of vector of characters represent name(s) of the signatures
+See \code{\link[TBSignatureProfiler]{TBsignatures}} for details}
 
-\item{annotationColName}{A character indicates the name of interest in the object's column data.}
+\item{annotationColName}{A character indicates the name of interest in the object's column data}
 }
 \value{
-A `gtable` object that contains multiple boxplots in the form of `ggplot` objects.
-Results show single signature's performance across multiple studies.
+A \code{gtable} object that contains multiple boxplots in the form of \code{ggplot} objects
+Results show single signature's performance across multiple studies
 }
 \description{
-Boxplot functions for list of signature scores across studies
-Also applies to consistent signature column names.
+Generate boxplot for single gene signature scores across multiple studies
 }
 \examples{
 returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),

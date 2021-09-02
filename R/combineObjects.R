@@ -1,16 +1,15 @@
 #' Merge samples with common genes from selected studies
 #' @name combineObjects
-#' @param object_list A `list` of [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] objects.
-#' The assays contains object's assay contain expression data with probes mapped to gene symbol.
-#' `names(object_list)` should NOT be `NULL`.
+#' @param object_list A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} objects.
+#' The assays contains object's assay contain expression data with probes mapped to gene symbol
+#' \code{names(object_list)} should not be \code{NULL}
 #' @param experiment_name A character/vector of character to choose the name of the assay from
-#' [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
-#' @return A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
-#' object contains combined data from the input.
+#' \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} object
+#' @return A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object contains combined data from the input
 #' @examples
-#' geo <-  c('GSE19435', 'GSE19439')
+#' geo <-  c("GSE19435", "GSE19439")
 #' data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
-#' sobject <- combineObjects(data_list, experiment_name = 'assay_curated')
+#' sobject <- combineObjects(data_list, experiment_name = "assay_curated")
 #' @export
 combineObjects <- function(object_list, experiment_name) {
     ## check the experiment_name argument
@@ -46,7 +45,7 @@ combineObjects <- function(object_list, experiment_name) {
                                         function(x) MultiAssayExperiment::experiments(x)[[experiment_name]] %>%
                                             base::as.data.frame())
     }
-    # Combine sample with common genes from a list of objects.  Input data type should be data.frame
+    ## Combine sample with common genes from a list of objects. Input data type should be data.frame
     dat_exprs_combine <- base::Reduce(function(x, y)
         base::merge(x, y, by = "id", all = FALSE),
         base::lapply(dat_exprs_match, function(x) {
@@ -83,7 +82,7 @@ combineObjects <- function(object_list, experiment_name) {
     index <- stats::na.omit(base::match(base::colnames(dat_exprs_count), Sample))
     col_info <- col_info[index, ]
     ## Create output in the format of SummarizedExperiment
-    result <- SummarizedExperiment::SummarizedExperiment(assays = base::list(assay1 = as.matrix(dat_exprs_count)),
+    result <- SummarizedExperiment::SummarizedExperiment(assays = base::list(assay1 = base::as.matrix(dat_exprs_count)),
                                                          colData = col_info)
     return(result)
 }

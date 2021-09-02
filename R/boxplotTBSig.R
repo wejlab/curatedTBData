@@ -1,13 +1,13 @@
-#' Boxplot functions for list of signature scores across studies
-#' Also applies to consistent signature column names.
+#' Generate boxplot for single gene signature scores across multiple studies
+#'
 #' @name BoxplotTBSig
-#' @param object_list A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
+#' @param object_list A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
 #' Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}
-#' @param gset A character of vector of characters represent name(s) of the signatures.
-#' See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.
-#' @param annotationColName A character indicates the name of interest in the object's column data.
-#' @return A `gtable` object that contains multiple boxplots in the form of `ggplot` objects.
-#' Results show single signature's performance across multiple studies.
+#' @param gset A character of vector of characters represent name(s) of the signatures
+#' See \code{\link[TBSignatureProfiler]{TBsignatures}} for details
+#' @param annotationColName A character indicates the name of interest in the object's column data
+#' @return A \code{gtable} object that contains multiple boxplots in the form of \code{ggplot} objects
+#' Results show single signature's performance across multiple studies
 #' @export
 #' @examples
 #' returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
@@ -53,17 +53,19 @@ boxplotTBSig <- function(object_list, gset, annotationColName) {
             base::is.na() %>%
             base::all()
         if (is_gset_na) {
-            message(sprintf("Gene signature: %s not found from the input list. NULL is returned", gset))
+            message(sprintf("Gene signature: %s not found from the input list. NULL is returned",
+                            gset))
             return(NULL)
         }
         sig_data1 <- SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
-
         ## Create a custom color scale to deal with different factors
         n <- base::length(base::levels(sig_data_gse$annotationNameLevels))
         if (n > 9) {
             base::message(base::sprintf("The number of levels under %s is greater than 9. Only first 9 levels will be included inthe boxplot",
                                         annotationColName))
             n <- 9
+        } else if (n <= 3) {
+            n <- 3
         }
         myColors <- RColorBrewer::brewer.pal(n, "Set1")
         base::names(myColors) <- base::levels(sig_data_gse$annotationNameLevels)
@@ -73,8 +75,8 @@ boxplotTBSig <- function(object_list, gset, annotationColName) {
                                                    annotationColName = "annotationNameLevels",
                                                    rotateLabels = FALSE,
                                                    fill_colors = myColors)
-
-        p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size = 12, face = "bold"),
+        p1 <- p + ggplot2::theme(plot.title = ggplot2::element_text(size = 12,
+                                                                    face = "bold"),
                                  legend.position = "none",
                                  axis.title.x = ggplot2::element_blank(),
                                  axis.title.y = ggplot2::element_blank(),
@@ -94,22 +96,25 @@ boxplotTBSig <- function(object_list, gset, annotationColName) {
     return(p_combine)
 }
 
-#' Subset signatures scores and disease status from column data of SummarizedExperiment objects.
+#' Subset signatures scores and disease status from \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
 #' @name .signature_filter
-#' @param object_list A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] objects.
+#' @param object_list A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects.
 #' Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.
 #' @param gset A character indicates the name of the signatures.
 #' @param annotationColName A character indicates the name of interest in the object's column data.
-#' @return A `list` of `data.frame` contains the `annotationColName`, prediction score and study name of single object.
+#' @return A \code{list} of \code{data.frame} contains the \code{annotationColName}, prediction score, and study name of single object.
 .signature_filter <- function(object_list, gset, annotationColName) {
     obj_name <- base::names(object_list)
     sig_list1 <- lapply(base::seq_len(base::length(object_list)), function(i, gset) {
         x <- object_list[[i]]
-        GSE <- base::rep(base::names(object_list[i]), base::nrow(SummarizedExperiment::colData(x)))
-        index <- stats::na.omit(base::match(gset, base::colnames(SummarizedExperiment::colData(x))))
+        GSE <- base::rep(base::names(object_list[i]),
+                         base::nrow(SummarizedExperiment::colData(x)))
+        index <- stats::na.omit(base::match(gset,
+                                            base::colnames(SummarizedExperiment::colData(x))))
         if (base::length(index) == 0) {
             message(sprintf("Gene signature: %s not found in study: %s, NA is returned.", gset, obj_name[i]))
-            result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName], NA, GSE = GSE)
+            result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
+                                       NA, GSE = GSE)
         } else {
             result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
                                        SummarizedExperiment::colData(x)[, index],

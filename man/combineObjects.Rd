@@ -7,22 +7,21 @@
 combineObjects(object_list, experiment_name)
 }
 \arguments{
-\item{object_list}{A `list` of [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] objects.
-The assays contains object's assay contain expression data with probes mapped to gene symbol.
-`names(object_list)` should NOT be `NULL`.}
+\item{object_list}{A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} objects.
+The assays contains object's assay contain expression data with probes mapped to gene symbol
+\code{names(object_list)} should not be \code{NULL}}
 
 \item{experiment_name}{A character/vector of character to choose the name of the assay from
-[MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.}
+\link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} object}
 }
 \value{
-A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
-object contains combined data from the input.
+A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object contains combined data from the input
 }
 \description{
 Merge samples with common genes from selected studies
 }
 \examples{
-geo <-  c('GSE19435', 'GSE19439')
+geo <-  c("GSE19435", "GSE19439")
 data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
-sobject <- combineObjects(data_list, experiment_name = 'assay_curated')
+sobject <- combineObjects(data_list, experiment_name = "assay_curated")
 }

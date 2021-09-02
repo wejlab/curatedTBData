@@ -1,27 +1,27 @@
-#' Plot heatmap for
+#' Plot heatmap for multiple signatures across datasets
 #'
-#' Obtain heatmap plots for empirical AUC distribution of gene signatures across multiple studies.
+#' Obtain heatmap plots for empirical AUC distribution of gene signatures across multiple studies
 #' @name heatmap_auc
-#' @param combine_dat A `data.frame` contains at least three columns with name `Signatures`,
-#' `Study`, and `AUC` respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}.
+#' @param combine_dat A \code{data.frame} contains at least three columns with name \code{Signatures},
+#' \code{Study}, and \code{AUC} respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}
 #' The format of the signature name is expected as: Name_SignatureType_Number (i.e. Anderson_OD_42).
-#' See \code{names(TBSignatureProfiler::TBsignatures)} for examples.
-#' @param GSE_sig A `data.frame` contains information about each signature and
-#' its training/discovery dataset(s) name. Default is `NULL`.
-#' @param facet Boolean. If `TRUE`, grouping signatures into clusters based on their type.
-#' If `FALSE`, output without grouping. Default is `TRUE`.
-#' @param clustering Boolean. If `TRUE`, perform clustering using hierarchical clustering method.
-#' If `FALSE`, output without clustering. Default is `TRUE`.
+#' See \code{names(TBSignatureProfiler::TBsignatures)} for examples
+#' @param GSE_sig A \code{data.frame} contains information about each signature and
+#' its training/discovery dataset(s) name. Default is \code{NULL}
+#' @param facet Boolean. If \code{TRUE}, grouping signatures into clusters based on their type.
+#' If \code{FALSE}, output without grouping. Default is \code{TRUE}
+#' @param clustering Boolean. If \code{TRUE}, perform clustering using hierarchical clustering method.
+#' If \code{FALSE}, output without clustering. Default is \code{TRUE}
 #' @return A heatmap shows the performance of signature's across multiple studies
 #' filled with AUC values
 #' @export
 #' @examples
-#' combine_dat_exp <- data.frame(Signature = rep(c('Anderson_42', 'Anderson_OD_51',
-#'                               'Berry_393', 'Berry_OD_86', 'Blankley_5'), 2),
-#'                               AUC = stats::runif(10, 0.5, 1),
-#'                               Study = rep(c('GSE39939', 'GSE19442'), each = 5))
-#' GSE_sig_exp <- data.frame(TBSignature = c('Anderson','Anderson', 'Berry', 'Berry'),
-#'                           Study = c('GSE39939', 'GSE39940', 'GSE19442', 'GSE19443'))
+#' combine_dat_exp <- data.frame(Signature = rep(c("Anderson_42", "Anderson_OD_51",
+#'                               "Berry_393", "Berry_OD_86", "Blankley_5"), 2),
+#'                               AUC = runif(10, 0.5, 1),
+#'                               Study = rep(c("GSE39939", "GSE19442"), each = 5))
+#' GSE_sig_exp <- data.frame(TBSignature = c("Anderson", "Anderson", "Berry", "Berry"),
+#'                           Study = c("GSE39939", "GSE39940", "GSE19442", "GSE19443"))
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = FALSE)
 #' heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = TRUE)
 heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = TRUE) {
@@ -30,7 +30,8 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     index_name <- base::match(expect_name, base::colnames(combine_dat))
     if (base::any(base::is.na(index_name))) {
         base::stop(base::sprintf("Column with name(s): %s is/are missing.",
-                                 paste0(expect_name[is.na(index_name)], collapse = ", ")))
+                                 paste0(expect_name[base::is.na(index_name)],
+                                        collapse = ", ")))
     }
     dat <- combine_dat[, index_name]
     if (!base::is.factor(dat$Study)) {
@@ -39,7 +40,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     if (base::length(base::unique(dat$Study)) > 1 && clustering == TRUE) {
         ## Clustering AUC values if the number of studies is greater than 1 Transform form long to wide data: first column is
         ## the study names and column names is signatures This step is necessary for clustering
-        data_wide <- tidyr::spread(dat, .data$Signature, .data$AUC)
+        data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"))
         base::row.names(data_wide) <- data_wide$Study
         # remove study name column
         dat_input <- base::as.matrix(data_wide[, -1])
@@ -49,8 +50,8 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
         dat_input <- dat_input[hc$order, ]
         ## Get mean AUC for each study across multiple gene signatures
         datta <- base::cbind(dat_input,
-                             Avg = base::rowMeans(dat_input, na.rm = TRUE)) %>%
-            reshape2::melt()  # Transform back into long format
+                             Avg = base::rowMeans(dat_input, na.rm = TRUE)) %>% ## Transform back into long format
+            reshape2::melt()
     } else {
         datta <- base::data.frame(Var1 = dat$Study, Var2 = dat$Signature,
                                   value = dat$AUC)
@@ -61,7 +62,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
                                     value = mean_df$value)
         datta <- base::rbind(datta, mean_df)
     }
-    # Get training data position index
+    ## Get training data position index
     datta$trian <- FALSE
     index <- NULL
     if (!base::is.null(GSE_sig)) {
@@ -97,7 +98,8 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     ## Subset datta with training study and its associated signature(s)
     frames <- datta[datta$trian, c("Var1", "Var2", "sig_typek")]
     p <- ggplot2::ggplot(data = datta,
-                         ggplot2::aes(x = .data$Var1, y = .data$Var2, fill = .data$value)) +
+                         ggplot2::aes(x = .data$Var1, y = .data$Var2,
+                                      fill = .data$value)) +
         ggplot2::geom_tile() +
         ggplot2::scale_fill_distiller(palette = "RdPu", trans = "reverse") +
         ggplot2::geom_text(ggplot2::aes(label = base::round(.data$value, 2)), cex = 3.5)
@@ -134,12 +136,12 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
 }
 
 #' Obtain training index in facet grid
-#' @param datta A `data.frame` with column names indicating signatures, study,
-#' value, and signature type.
-#' @param frames A `data.frame` with column names indicating signatures, study,
-#' value, and signature type for training/discovery studies.
-#' @return A `data.frame` with position index on the x-axis and y-axis, and signature type.
-#' The result is mainly used as input for \code{\link[ggplot2]{geom_rect}}.
+#' @param datta A \code{data.frame} with column names indicating signatures, study,
+#' value, and signature type
+#' @param frames A \code{data.frame} with column names indicating signatures, study,
+#' value, and signature type for training/discovery studies
+#' @return A \code{data.frame} with position index on the x-axis and y-axis, and signature type.
+#' The result is mainly used as input for \code{\link[ggplot2]{geom_rect}}
 .facet_rect_position <- function(datta, frames) {
     # Split data frame into list based on different signature type
     frames_list <- frames %>%
@@ -165,10 +167,10 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     return(re)
 }
 
-#' Expand study section for SignatureInfoTraining
-#' @param GSE_sig A `data.frame` contains information about each signature and
-#' its training/discovery dataset(s) name. Default is `NULL`.
-#' @return A expand `data.frame` for gene signatures and dataset.
+#' Expand study section for \code{SignatureInfoTraining}
+#' @param GSE_sig A \code{data.frame} contains information about each signature and
+#' its training/discovery dataset(s) name. Default is \code{NULL}
+#' @return A expand \code{data.frame} for gene signatures and dataset
 .expand_study <- function(GSE_sig) {
     n <- base::nrow(GSE_sig)
     col_name <- base::colnames(GSE_sig)

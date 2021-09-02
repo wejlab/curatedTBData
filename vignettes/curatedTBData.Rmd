@@ -86,7 +86,7 @@ GSE79362
 A list of `r Biocpkg("MultiAssayExperiment")` objects is returned when `dryrun` is `FALSE`.
 To save time, in the following example, we set the `curated.only = TRUE` and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) from the Gene Expression Omnibus. 
 For RNA sequencing data, both curated assay and reprocessed assay plus the metadata information were returned.
-```{r access selected curated datasets microarray, warning=FALSE, results='hide'}
+```{r access selected curated datasets microarray, warning=FALSE, message=FALSE}
 myGEO <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
 objectList <- curatedTBData(myGEO, dryrun = FALSE, curated.only = TRUE)
 objectList[1:2]
@@ -128,7 +128,8 @@ GSE19491
 It is also possible to combine the given list of objects with different experiment names. In this case, the `experiment_name` is vector of string that corresponds to the object within the input list.
 ```{r commbine objects multiple experiment name}
 exp <- combineObjects(c(GSE79362[1], objectList[1]),
-                      experiment_name = c("assay_reprocess_hg19", "assay_curated"))
+                      experiment_name = c("assay_reprocess_hg19", 
+                                          "assay_curated"))
 exp
 ```
 ## Batch correction
@@ -200,22 +201,24 @@ DT::datatable(ssgsea_PTB_LTBI_combine)
 ### Mean AUC and bootstrapped confidence interval
 The `bootstrap_mean_CI()` function also helps users compute the mean AUC value for each signature across studies and get the confidence interval at desired level.
 ```{r ssgsea summary table PTB vs. Latent}
-ssgsea_PTB_LTBI_mean <- get_mean_AUC(ssgsea_PTB_LTBI_list, colName = "AUC", 
-                                     percent = 0.95, method = "percentile",
-                                     num.boot = 1000)
+ssgsea_PTB_LTBI_mean <- get_mean_AUC(ssgsea_PTB_LTBI_combine, colName = "AUC", 
+                                    method = "percentile", num.boot = 1000,
+                                    percent = 0.95)
 DT::datatable(ssgsea_PTB_LTBI_mean) 
 ```
 
-### Boxplot of signature performance across studies
+### Boxplot of signature performance across studies{.tabset}
 The `signatureBoxplot()` function from `r Biocpkg("TBSignatureProfiler")` provide straightforward visualization of
-multiple signature's performance on single study. Based on the `signatureBoxplot()`, the `BoxplotTBsig()` in the `Rpackage("curatedTBData")` provides an alternative display such that it allows the comparison of signature's performance across different studies. The input of this function is a list of `SummarizedExperiment` objects, the `names` of the list should be unique, which usually is the study name. 
-```{r ssgsea Boxplot for each signature PTB vs. LTBI, results = "asis", fig.width=3, fig.height=7}
+multiple signature's performance on single study. Based on the `signatureBoxplot()`, the `BoxplotTBsig()` in the `r Biocpkg("curatedTBData")` provides an alternative display such that it allows the comparison of signature's performance across different studies. The input of this function is a list of `SummarizedExperiment` objects, the `names` of the list should be unique, which usually is the study name. 
+```{r ssgsea Boxplot for each signature PTB vs. LTBI, results = "asis", fig.width=3, fig.height=5}
 for (i in names(TBsignaturesSub)) {
   cat("####", i, "\n")
-  boxplotTBSig(object_list = ssgsea_PTB_LTBI, gset = i, annotationColName = "TBStatus")
+  boxplotTBSig(object_list = ssgsea_PTB_LTBI, gset = i, 
+               annotationColName = "TBStatus")
   cat("\n\n")
 }
 ```
+
 ### Ridge Plot
 The empirical AUC distribution for each signature can also be visualized in the form of Ridgeline plot. The function `ridgeplot_auc()` enables the users to generate the Ridegeline plot based on `CRANpkg("ggrdiges")` to generate the Ridgeline plot to show the changes in AUC distribution across multiple studies.
 ```{r}
