@@ -96,7 +96,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             score <- SummarizedExperiment::colData(SE_scored)[i][, 1] %>%
                 base::as.vector()
             ## Deal with scores that have constant value (e.g. Sloot_HIV_2)
-            if (base::length(base::unique(score)) == 1) {
+            if (base::length(base::unique(score)) == 1L) {
                 dat <- base::data.frame(Signature = i, P.value = NA, AUC = NA)
                 return(dat)
             }

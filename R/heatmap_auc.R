@@ -37,7 +37,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     if (!base::is.factor(dat$Study)) {
         dat$Study <- base::as.factor(dat$Study)
     }
-    if (base::length(base::unique(dat$Study)) > 1 && clustering == TRUE) {
+    if (base::length(base::unique(dat$Study)) > 1L && clustering == TRUE) {
         ## Clustering AUC values if the number of studies is greater than 1 Transform form long to wide data: first column is
         ## the study names and column names is signatures This step is necessary for clustering
         data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"))
@@ -106,7 +106,7 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = 
     if (facet) {
         p <- p + ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y", scales = "free", space = "free")
         frame_facet <- .facet_rect_position(datta, frames)
-        if (!base::nrow(frame_facet) == 0) {
+        if (!base::nrow(frame_facet) == 0L) {
             p <- p + ggplot2::geom_rect(data = frame_facet,
                                         ggplot2::aes(xmin = .data$Var1 - 0.5,
                                                      xmax = .data$Var1 + 0.5,
