@@ -60,11 +60,11 @@ boxplotTBSig <- function(object_list, gset, annotationColName) {
         sig_data1 <- SummarizedExperiment::SummarizedExperiment(colData = sig_data_gse)
         ## Create a custom color scale to deal with different factors
         n <- base::length(base::levels(sig_data_gse$annotationNameLevels))
-        if (n > 9) {
-            base::message(base::sprintf("The number of levels under %s is greater than 9. Only first 9 levels will be included inthe boxplot",
+        if (n > 9L) {
+            base::message(base::sprintf("The number of levels under %s is greater than 9. Only first 9 levels will be included in the boxplot",
                                         annotationColName))
             n <- 9
-        } else if (n <= 3) {
+        } else if (n <= 3L) {
             n <- 3
         }
         myColors <- RColorBrewer::brewer.pal(n, "Set1")
@@ -111,7 +111,7 @@ boxplotTBSig <- function(object_list, gset, annotationColName) {
                          base::nrow(SummarizedExperiment::colData(x)))
         index <- stats::na.omit(base::match(gset,
                                             base::colnames(SummarizedExperiment::colData(x))))
-        if (base::length(index) == 0) {
+        if (base::length(index) == 0L) {
             message(sprintf("Gene signature: %s not found in study: %s, NA is returned.", gset, obj_name[i]))
             result <- base::data.frame(SummarizedExperiment::colData(x)[, annotationColName],
                                        NA, GSE = GSE)

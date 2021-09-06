@@ -17,7 +17,7 @@ combineObjects <- function(object_list, experiment_name) {
         base::stop("Argument \"experiment_name\" is missing, with no default.")
     }
     ## check length of the list, should be greater than 1
-    if (base::length(object_list) <= 1) {
+    if (base::length(object_list) <= 1L) {
         base::stop(sprintf("The length of the input list is %i, expecting more than 1 elments within list for combining objects.",
                            base::length(object_list)))
     }
@@ -29,7 +29,7 @@ combineObjects <- function(object_list, experiment_name) {
         base::stop("names of the input contains \"\". Replace \"\" with unique character.")
     }
     ## Merge code starts here
-    if (base::length(experiment_name) > 1) {
+    if (base::length(experiment_name) > 1L) {
         # experiment name for the list of object is different
         if (base::length(experiment_name) == base::length(object_list)) {
             dat_exprs_match <- base::mapply(function(x, y) {

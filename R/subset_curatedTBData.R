@@ -33,7 +33,7 @@ setMethod("subset_curatedTBData", signature = "SummarizedExperiment",
                    assayName = NULL, ...) {
     # Run some diagnostics check assayName whether it is specified by the users
     if (base::is.null(assayName)) {
-        if (base::length(SummarizedExperiment::assays(theObject)) >= 1) {
+        if (base::length(SummarizedExperiment::assays(theObject)) >= 1L) {
             base::message("assayName not specified, select the first assay as default.")
             assay_name_exclude <- -1
         } else {
@@ -43,7 +43,7 @@ setMethod("subset_curatedTBData", signature = "SummarizedExperiment",
         # Check whether assay exists in the object
         assay_names <- SummarizedExperiment::assayNames(theObject)
         assay_name_index <- base::which(assay_names %in% assayName)
-        if (base::length(assay_name_index) == 0) {
+        if (base::length(assay_name_index) == 0L) {
             base::stop(base::sprintf("Assay with name: %s is not found from the input. The available assay(s) are %s.",
                                      assayName,
                                      base::paste0(names(theObject), collapse = ", ")))
@@ -77,7 +77,7 @@ setMethod("subset_curatedTBData", signature = "MultiAssayExperiment",
                    assayName = NULL, useAssay = NULL, ...) {
     ## Check whether assay exists in the object
     if (base::is.null(assayName)) {
-        if (base::length(base::names(theObject)) >= 1) {
+        if (base::length(base::names(theObject)) >= 1L) {
             base::message("assayName not specified, select the first assay as default.")
             assayName <- 1
         } else {
