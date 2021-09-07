@@ -4,8 +4,8 @@
 #' ExperimentHub services
 #'
 #' @param study_name A character or vector of characters that contain name of the studies.
-#' When \code{study_name == ""} or \code{any(study_name == "")}, the function will return
-#' all available studies
+#' When \code{any(study_name == "") == TRUE},
+#' the function will return all available studies
 #' @param dryrun Boolean. Indicate the whether downloading resources from the
 #' ExperimentHub services. If \code{TRUE} (Default), return the names of the available resources
 #' to be downloaded. If \code{FALSE}, start downloading data
