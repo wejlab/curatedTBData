@@ -91,42 +91,37 @@ combineObjects <- function(object_list, experiment_name) {
 #'
 .select_assay <- function(object_list, experiment_name, Sobject) {
     ## Merge code starts here
+    object_list_seq <- base::seq_len(base::length(object_list))
+    object_list_names <- base::names(object_list)
     if (base::length(experiment_name) > 1L) {
         message("Found more than one \"experiment_name\".")
         ## experiment name for the list of object is different
         if (base::length(experiment_name) == base::length(object_list)) {
             dat_exprs_match <- base::mapply(function(i, y) {
                 x <- object_list[[i]]
-                if (Sobject) {
-                    dat_assay <- SummarizedExperiment::assays(x)[[y]]
-                } else {
-                    dat_assay <- MultiAssayExperiment::experiments(x)[[y]]
-                }
+                dat_assay <- base::ifelse(Sobject, SummarizedExperiment::assays(x)[[y]],
+                                          MultiAssayExperiment::experiments(x)[[y]])
                 if (base::is.null(dat_assay)) {
                     base::stop(base::sprintf("Object: %s with experiment name: %s has assay NULL.",
-                                             base::names(object_list)[i], experiment_name))
+                                             object_list_names[i], experiment_name))
                 }
                 base::as.data.frame(dat_assay)
-            }, base::seq_len(base::length(object_list)), experiment_name)
-            names(dat_exprs_match) <- names(object_list)
+            }, object_list_seq, experiment_name)
         } else {
             base::stop("The length of input list is not the same as the length of the \"experiment_name\" vector.")
         }
     } else {
-        dat_exprs_match <- base::lapply(base::seq_len(base::length(object_list)), function(i) {
+        dat_exprs_match <- base::lapply(object_list_seq, function(i) {
             x <- object_list[[i]]
-            if (Sobject) {
-                dat_assay <- SummarizedExperiment::assays(x)[[experiment_name]]
-            } else {
-                dat_assay <- MultiAssayExperiment::experiments(x)[[experiment_name]]
-            }
+            dat_assay <- base::ifelse(Sobject, SummarizedExperiment::assays(x)[[experiment_name]],
+                                      MultiAssayExperiment::experiments(x)[[experiment_name]])
             if (base::is.null(dat_assay)) {
                 base::stop(base::sprintf("Object: %s with experiment name: %s has assay NULL.",
-                                         base::names(object_list)[i], experiment_name))
+                                         object_list_names[i], experiment_name))
             }
             base::as.data.frame(dat_assay)
         })
-        base::names(dat_exprs_match) <- base::names(object_list)
     }
+    base::names(dat_exprs_match) <- object_list_names
     return(dat_exprs_match)
 }

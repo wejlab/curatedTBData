@@ -90,6 +90,12 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     annotationData <- SummarizedExperiment::colData(SE_scored)[annotationColName][, 1] %>%
         base::as.character() %>%
         base::as.factor()
+    ## Check levels of annotationData
+    anno_level_len <- base::length(base::unique(annotationData))
+    if (anno_level_len != 2L) {
+        base:: stop("Annotation data should have exactly two levels. Your level: %i",
+                    anno_level_len)
+    }
     ## Get AUC value for each signature along with corresponding datasets
     if (base::is.null(num.boot)) {
         sig_result <- base::lapply(signatureColNames, function(i, SE_scored, annotationData) {
@@ -160,7 +166,8 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                 stats::na.omit()
             LowerAUC <- stats::quantile(bootCI, prob = lower, na.rm = TRUE)
             UpperAUC <- stats::quantile(bootCI, prob = upper, na.rm = TRUE)
-            dat <- base::data.frame(i, base::round(pvals, 4), base::round(neg10log, 4),
+            dat <- base::data.frame(i,
+                                    base::round(pvals, 4), base::round(neg10log, 4),
                                     base::round(aucs, 4), base::round(LowerAUC, 4),
                                     base::round(UpperAUC, 4))
             base::colnames(dat) <- c("Signature", "P.value", "neg10xP.value", "AUC",
