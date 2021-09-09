@@ -39,10 +39,10 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
         base::stop(base::sprintf("Function only supports class: SummarizedExperiment within the list. Element(s) %s in the list is/are not SummarizedExperiment object.",
                                  paste0(which(!check_element_class), collapse = ", ")))
     }
+    ## Check valid list names
     list_name <- base::names(SE_scored_list)
     if (base::is.null(list_name)) {
-        ## Only 1 study with NULL names within the list, make the names as Study1
-        base::names(SE_scored_list) <- "Study1"
+        base::stop("names of the input list should not be NULL. Add unique name for each object within the list.")
     } else if (!base::is.na(base::match("", list_name))) {
         base::stop(base::sprintf("Names of the input contains \"\". Replace \"\" with a non-empty string."))
     }
@@ -57,7 +57,6 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
         dplyr::group_by(.data$Signature) %>%
         dplyr::summarise_all(stats::median) %>%
         dplyr::arrange(dplyr::desc(.data$AUC))
-
     ## Order signatures based on median AUC values
     Signature_order <- base::as.character(aucs_result_dat_median$Signature)
     ## Re-order gene signature, re-level this step is to let ridge plot ordered based on median value
