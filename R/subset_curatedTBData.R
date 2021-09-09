@@ -45,8 +45,8 @@ setMethod("subset_curatedTBData", signature = "SummarizedExperiment",
         assay_name_index <- base::which(assay_names %in% assayName)
         if (base::length(assay_name_index) == 0L) {
             base::stop(base::sprintf("Assay with name: %s is not found from the input. The available assay(s) are %s.",
-                                     assayName,
-                                     base::paste0(names(theObject), collapse = ", ")))
+                                     assayName, base::paste0(assay_names, collapse = ", ")),
+                       call. = FALSE)
         }
         assay_name_exclude <- base::which(assay_names != assayName)
     }
