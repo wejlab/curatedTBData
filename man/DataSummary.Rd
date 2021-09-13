@@ -77,7 +77,7 @@ A data frame with 49 rows and 14 variables
 }
 }
 \usage{
-DataSummary
+data(DataSummary)
 }
 \description{
 A dataset containing metadata information of 49 tuberculosis studies.

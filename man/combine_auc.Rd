@@ -2,7 +2,7 @@
 % Please edit documentation in R/combine_auc.R
 \name{combine_auc}
 \alias{combine_auc}
-\title{Combine results from the `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] object.}
+\title{Combine results from a \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects}
 \usage{
 combine_auc(
   SE_scored_list,
@@ -15,38 +15,37 @@ combine_auc(
 )
 }
 \arguments{
-\item{SE_scored_list}{A `list` of [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
-objects from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
+\item{SE_scored_list}{A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+objects obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}}
 
 \item{annotationColName}{A string specifying the feature of interest in the object's column data}
 
-\item{signatureColNames}{A character/vector string contains name of gene signature.}
+\item{signatureColNames}{A character/vector string contains name of gene signature}
 
-\item{num.boot}{Integer. Number of bootstrapping. If `NULL` (default), no confidence interval is computed.}
+\item{num.boot}{Integer. Number of bootstrapping. If \code{NULL} (default), no confidence interval is computed}
 
 \item{percent}{Numeric. A number between 0 and 1, indicating the percentage of
-confidence interval. Default is `0.95`.}
+confidence interval. Default is \code{0.95}}
 
-\item{AUC.abs}{Boolean. If AUC.abs = `TRUE`, return the AUC values from function \code{\link[ROCit]{rocit}}.
-If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.}
+\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE}, compute the AUC values based on
+\code{\link[ROCit]{rocit}}. If \code{AUC.abs = FALSE}, compute the AUC values for \code{max(AUC, 1-AUC)}}
 
-\item{BPPARAM}{An instance inherited from \code{bplappy}.
-See \code{\link[BiocParallel]{bplapply}} for details.}
+\item{BPPARAM}{An instance inherited from \code{\link[BiocParallel]{bplapply}}}
 }
 \value{
-A data frame with features including Signatures, P.value, neg10xLog(P.value)
-and AUC for each signature across studies.
+A \code{data.frame} with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across studies
 }
 \description{
-Calculate p-value, AUC values, and bootstrapped confidence interval for the AUC.
+Calculate p-value, AUC values, and bootstrapped confidence interval for TB gene signatures across multiple studies
 }
 \examples{
+library(TBSignatureProfiler)
 data(TB_indian, package = "TBSignatureProfiler")
-TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
-res <- TBSignatureProfiler::runTBsigProfiler(input = TB_indian, useAssay = "logcounts",
-                                             signatures = TBsignaturesSub, algorithm = "ssGSEA",
-                                             combineSigAndAlgorithm = TRUE)
+TBsignaturesSub <- TBsignatures[1:5]
+res <- runTBsigProfiler(input = TB_indian, useAssay = "logcounts",
+                        signatures = TBsignaturesSub, algorithm = "ssGSEA",
+                        update_genes = FALSE)
 re <- combine_auc(list(TB_indian = res), annotationColName = "label",
-                  signatureColNames = names(TBsignaturesSub), num.boot = 100, percent = 0.95)
-re
+                  signatureColNames = names(TBsignaturesSub), num.boot = 100,
+                  percent = 0.95)
 }

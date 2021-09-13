@@ -2,38 +2,38 @@
 % Please edit documentation in R/heatmap_auc.R
 \name{heatmap_auc}
 \alias{heatmap_auc}
-\title{Obtain ridge plots for emprirical AUC distribution for signature scores.}
+\title{Plot heatmap for multiple signatures across datasets}
 \usage{
 heatmap_auc(combine_dat, GSE_sig = NULL, facet = TRUE, clustering = TRUE)
 }
 \arguments{
-\item{combine_dat}{A `data.frame` contains at least three columns with name `Signatures`,
-`Study`, and `AUC` respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}.
+\item{combine_dat}{A \code{data.frame} contains at least three columns with name \code{Signatures},
+\code{Study}, and \code{AUC} respectively. Usually the output from \code{\link[curatedTBData]{combine_auc}}
 The format of the signature name is expected as: Name_SignatureType_Number (i.e. Anderson_OD_42).
-See `names(TBSignatureProfiler::TBsignatures)` for examples.}
+See \code{names(TBSignatureProfiler::TBsignatures)} for examples}
 
-\item{GSE_sig}{A `data.frame` contains information about each signature and
-its training/discovery dataset(s) name. Default is `NULL`.}
+\item{GSE_sig}{A \code{data.frame} contains information about each signature and
+its training/discovery dataset(s) name. Default is \code{NULL}}
 
-\item{facet}{Boolean. If `TRUE`, grouping signatures into clusters based on their type.
-If `FALSE`, output without grouping. Default is `TRUE`.}
+\item{facet}{Boolean. If \code{TRUE}, grouping signatures into clusters based on their type.
+If \code{FALSE}, output without grouping. Default is \code{TRUE}}
 
-\item{clustering}{Boolean. If `TRUE`, perform clustering using hierarchical clustering method.
-If `FALSE`, output without clustering. Default is `TRUE`.}
+\item{clustering}{Boolean. If \code{TRUE}, perform clustering using hierarchical clustering method.
+If \code{FALSE}, output without clustering. Default is \code{TRUE}}
 }
 \value{
 A heatmap shows the performance of signature's across multiple studies
 filled with AUC values
 }
 \description{
-Obtain ridge plots for emprirical AUC distribution for signature scores.
+Obtain heatmap plots for empirical AUC distribution of gene signatures across multiple studies
 }
 \examples{
 combine_dat_exp <- data.frame(Signature = rep(c("Anderson_42", "Anderson_OD_51",
                               "Berry_393", "Berry_OD_86", "Blankley_5"), 2),
-                              AUC = stats::runif(10, 0.5, 1),
+                              AUC = runif(10, 0.5, 1),
                               Study = rep(c("GSE39939", "GSE19442"), each = 5))
-GSE_sig_exp <- data.frame(TBSignature = c("Anderson","Anderson", "Berry", "Berry"),
+GSE_sig_exp <- data.frame(TBSignature = c("Anderson", "Anderson", "Berry", "Berry"),
                           Study = c("GSE39939", "GSE39940", "GSE19442", "GSE19443"))
 heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = FALSE)
 heatmap_auc(combine_dat_exp, GSE_sig_exp, facet = TRUE)
