@@ -31,7 +31,14 @@ setGeneric(name = "subset_curatedTBData", function(theObject, ...) {
 setMethod("subset_curatedTBData", signature = "SummarizedExperiment",
           function(theObject, annotationColName, annotationCondition,
                    assayName = NULL, ...) {
-    # Run some diagnostics check assayName whether it is specified by the users
+    ## Check whether annotationColName exists in the column data
+    col_info <- SummarizedExperiment::colData(theObject)
+    if (!base::any(base::colnames(col_info) == annotationColName)) {
+        base::message(base::sprintf("annotationColName: %s is not found in the clinical information.\nNULL is returned",
+                                 annotationColName))
+      return()
+    }
+    ## Run some diagnostics check assayName whether it is specified by the users
     if (base::is.null(assayName)) {
         if (base::length(SummarizedExperiment::assays(theObject)) >= 1L) {
             base::message("assayName not specified, select the first assay as default.")
@@ -44,18 +51,13 @@ setMethod("subset_curatedTBData", signature = "SummarizedExperiment",
         assay_names <- SummarizedExperiment::assayNames(theObject)
         assay_name_index <- base::which(assay_names %in% assayName)
         if (base::length(assay_name_index) == 0L) {
-            base::stop(base::sprintf("Assay with name: %s is not found from the input. The available assay(s) are %s.",
+            base::stop(base::sprintf("Assay with name: %s not found from the input.\nThe available assay(s) are: %s.",
                                      assayName, base::paste0(assay_names, collapse = ", ")),
                        call. = FALSE)
         }
         assay_name_exclude <- base::which(assay_names != assayName)
     }
     col_info <- SummarizedExperiment::colData(theObject)
-    # Check whether annotationColName exists in the col data
-    if (!base::any(base::colnames(col_info) == annotationColName)) {
-        base::message(base::sprintf("annotationColName: %s is not found in the clicnial information. NULL is returned.", annotationColName))
-        return()
-    }
     theObject_filter <- theObject[, col_info[, annotationColName] %in% annotationCondition]
     # Set other assays to be NULL
     SummarizedExperiment::assays(theObject_filter)[assay_name_exclude] <- NULL
@@ -86,9 +88,10 @@ setMethod("subset_curatedTBData", signature = "MultiAssayExperiment",
     } else {
         experiment_name_index <- base::which(base::names(theObject) %in% assayName)
         if (base::length(experiment_name_index) == 0) {
-            base::stop(base::sprintf("Assay with name: %s is not found from the input.
-                                   The available assay(s) are %s.",
-                                     assayName, base::paste0(base::names(theObject), collapse = ", ")))
+            ## Use names(theObject) when theObject is a MultiAssayExperiment object
+            base::stop(base::sprintf("Assay with name: %s is not found from the input.\nThe available assay(s) are: %s.",
+                                     assayName, base::paste0(base::names(theObject), collapse = ", ")),
+                       call. = FALSE)
         }
     }
     theObject_sub <- theObject[[assayName]]
@@ -96,7 +99,7 @@ setMethod("subset_curatedTBData", signature = "MultiAssayExperiment",
     if (base::ncol(theObject_sub) != base::nrow(col_data)) {
         index <- stats::na.omit(base::match(base::colnames(theObject_sub),
                                             base::row.names(col_data)))
-        col_data <- col_data[index, ]
+        col_data <- col_data[index, , drop = FALSE]
     }
     if (methods::is(theObject_sub, "SummarizedExperiment")) {
         ## assay_raw is selected in the full version For those datasets that do not include all samples from the study
@@ -112,8 +115,8 @@ setMethod("subset_curatedTBData", signature = "MultiAssayExperiment",
                                                                     colData = col_data)
         return(subset_curatedTBData(sobject_TBSig, annotationColName, annotationCondition, "assay1"))
     } else {
-        base::stop(base::sprintf("The class of the selected assay class is not recognized.
-                           Selected assay has class: %s"),
-                   paste0(base::class(theObject_sub), collapse = ", "))
+        base::stop(base::sprintf("The class of the selected assay class is not recognized.\nSelected assay has class: %s"),
+                   paste0(base::class(theObject_sub), collapse = ", "),
+                   call. = FALSE)
     }
 })

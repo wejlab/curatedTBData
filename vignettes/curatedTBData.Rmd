@@ -120,7 +120,7 @@ The `combineObjects()` function provides an easy implementation for merging diff
 studies based on common gene symbols, it returned a `r Biocpkg("SummarizedExperiment")` object that contains 
 the merged assay and associated clinical annotation. Noticed that [GSE74092](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi) is usually 
 removed from merging, because this study used quantitative PCR so they did not have enough coverage to capture all genes. There two arguments in the `combineObjects()` function. The first one is `object_list`, which contains a list of `r Biocpkg("MultiAssayExperiment")` objects obtained from `curatedTBData()`. Notice that the `names(object_list)` should not be `NULL` and must be unique for each object within the list so that we can keep track the original study after merging. The second argument is `experiment_name`, which can be a string of vector of strings representing the name of the assay from the object. When the objects are merged, the original individual data tag can be found in the `Study` column by calling the  `colData()` on the output object.
-```{r combine objects single experiment name}
+```{r}
 GSE19491 <- combineObjects(objectList, experiment_name = "assay_curated")
 GSE19491
 # colData(GSE19491)$Study
