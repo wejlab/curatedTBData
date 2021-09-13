@@ -26,11 +26,14 @@ test_that("All resources from metadata exist in the ExperimentHub service", {
   expect_type(returned_resources_names, "character")
 })
 
-test_that("retrun type is list when dryrun is `FALSE`,
-          first element in the returned list is MultiAssayExperiment", {
+test_that("Retrun type is a list when dryrun is `FALSE`,
+          all elements in the returned list is MultiAssayExperiment", {
   returned_resource <- curatedTBData("GSE74092", dryrun = FALSE,
                                       curated.only = TRUE) %>%
     base::suppressWarnings()
   expect_type(returned_resource, "list")
-  expect_s4_class(returned_resource[[1]], "MultiAssayExperiment")
+  length_list <- base::length(returned_resource)
+  for (i in base::seq_len(length_list)) {
+    expect_s4_class(returned_resource[[i]], "MultiAssayExperiment")
+  }
 })

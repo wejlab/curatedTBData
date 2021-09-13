@@ -2,35 +2,35 @@
 % Please edit documentation in R/combine_auc.R
 \name{.get_auc_stats}
 \alias{.get_auc_stats}
-\title{Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.}
+\title{Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature}
 \usage{
 .get_auc_stats(
   SE_scored,
-  annotationColName = "TBStatus",
+  annotationColName,
   signatureColNames,
-  num.boot = NULL,
-  percent = 0.95,
-  AUC.abs = FALSE
+  num.boot,
+  percent,
+  AUC.abs
 )
 }
 \arguments{
-\item{SE_scored}{A \code{SummarizedExperiment} object from TB signature profiling.}
+\item{SE_scored}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object from TB signature profiling}
 
 \item{annotationColName}{A string specifying the feature of interest in the object's column data}
 
-\item{signatureColNames}{A character/vector string contains name of gene signature.}
+\item{signatureColNames}{A character/vector string contains name of gene signature}
 
-\item{num.boot}{Integer. Number of bootstrapping. If `NULL` (default), no confidence interval is computed.}
+\item{num.boot}{Integer. Number of bootstrapping}
 
 \item{percent}{Numeric. A number between 0 and 1, indicating the percentage of
-confidence interval. Default is `0.95`.}
+confidence interval}
 
-\item{AUC.abs}{Boolean. If AUC.abs = `TRUE`, return the AUC values from function \code{\link[ROCit]{rocit}}.
-If AUC.abs = `FALSE`, return the AUC values for `max(AUC, 1-AUC)`.}
+\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE}, compute the AUC values from function \code{\link[ROCit]{rocit}}
+If \code{AUC.abs = FALSE}, compute the AUC values for \code{max(AUC, 1-AUC)}}
 }
 \value{
-A data frame/datatable contains p-value from two-sample t-test and AUC value for each signature.
+A \code{data.frame} contains p-value from two-sample t-test and AUC value for each signature
 }
 \description{
-Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature.
+Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature
 }

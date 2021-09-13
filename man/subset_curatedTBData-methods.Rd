@@ -26,28 +26,31 @@ subset_curatedTBData(theObject, ...)
 )
 }
 \arguments{
-\item{theObject}{A [SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class]
-/[MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.}
+\item{theObject}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} or
+\link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} object}
 
-\item{...}{Extra named arguments passed to function.}
+\item{...}{Extra named arguments passed to function}
 
-\item{annotationColName}{A character indicates feature of interest in the object's annotation data.}
+\item{annotationColName}{A character indicates feature of interest in the object's annotation data}
 
-\item{annotationCondition}{A vector of character indicates conditions want to be selected.}
+\item{annotationCondition}{A vector of character indicates conditions want to be selected}
 
 \item{assayName}{A character indicates the name of the assay from the input object.
-The default is `NULL`. When assayName is `NULL`, the function selects the first
-assay along the assay list.}
+The default is \code{NULL}. When \code{assayName} is \code{NULL}, the function selects the first
+assay along list of assays}
 
-\item{useAssay}{A character indicates the name of the assay when the
-[SummarizedExperiment][SummarizedExperiment::SummarizedExperiment-class] is
-selected from the [MultiAssayExperiment][MultiAssayExperiment::MultiAssayExperiment-class] object.
-The default is `NULL`. When assayName is `NULL`, the function selects the first
-assay along the assay list.}
+\item{useAssay}{A character indicates the name of the assay when a
+\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} is selected from the \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} object.
+The default is \code{NULL}. When \code{assayName} is \code{NULL}, the function selects the first
+assay along list of assays}
+}
+\value{
+A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+object containing subjects with desired annotation conditions
 }
 \description{
-\code{subset_curatedTBData} selects desired samples from curatedTBData
-database based pre-specified conditions.
+The function selects desired samples from curatedTBData
+database based pre-specified conditions
 }
 \examples{
 obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)

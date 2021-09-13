@@ -2,37 +2,42 @@ Package: curatedTBData
 Type: Package
 Title: Curation of exsiting 49 tuberculosis transcriptomic studies
 Version: 0.99.0
-Authors@R: person("Xutao", "Wang", email = "xutaow@bu.com",
-  role = c("aut", "cre"))
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Authors@R: c(person(given = "Xutao", family = "Wang", email = "xutaow@bu.com",
+                    role = c("aut", "cre")),
+             person(given = c("W.", "Evan"), family = "Johnson", email="wej@bu.edu",
+                    role=c("aut")))
+Description: 
+    The curatedTBData is an R package that provides standardized, curated 
+    tuberculosis(TB) transcriptomic studies. The initial release of the package 
+    contains 49 studies. The curatedTBData package allows users to access 
+    tuberculosis trancriptomic efficiently and to make easy comparison for 
+    different TB gene signatures across multiple datasets.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
+LazyData: false
 Depends: R (>= 4.1)
 Imports:
     AnnotationHub,
     ExperimentHub,
-    dplyr,
     magrittr,
-    methods,
     MultiAssayExperiment,
     rlang
 Suggests:
     BiocParallel,
     BiocStyle,
     DT,
+    dplyr,
     ggplot2,
     ggridges,
     gridExtra,
     knitr,
+    methods,
     RColorBrewer,
     reshape2,
     rmarkdown,
     ROCit,
     SummarizedExperiment,
     TBSignatureProfiler,
-    tidyr,
     testthat
 biocViews:
     ExperimentData,
