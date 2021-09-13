@@ -70,16 +70,18 @@ combineObjects <- function(object_list, experiment_name) {
         }))
     }
     col_info <- rbindx(col_data)
-    Sample <- base::vapply(object_list, function(x)
+    Sample <- base::lapply(object_list, function(x)
         SummarizedExperiment::colData(x) %>%
-            base::row.names(), base::character(1))
+            base::row.names()) %>%
+        base::unlist(use.names = FALSE)
     base::row.names(col_info) <- Sample
     ## Remove samples that does not exist in the count
     index <- stats::na.omit(base::match(base::colnames(dat_exprs_count), Sample))
     col_info <- col_info[index, ]
     ## Create output in the format of SummarizedExperiment
-    result <- SummarizedExperiment::SummarizedExperiment(assays = base::list(assay1 = base::as.matrix(dat_exprs_count)),
-                                                         colData = col_info)
+    result <- SummarizedExperiment::SummarizedExperiment(
+        assays = base::list(assay1 = base::as.matrix(dat_exprs_count)),
+        colData = col_info)
     return(result)
 }
 
@@ -99,8 +101,12 @@ combineObjects <- function(object_list, experiment_name) {
         if (base::length(experiment_name) == base::length(object_list)) {
             dat_exprs_match <- base::mapply(function(i, y) {
                 x <- object_list[[i]]
-                dat_assay <- base::ifelse(Sobject, SummarizedExperiment::assays(x)[[y]],
-                                          MultiAssayExperiment::experiments(x)[[y]])
+                ## Avoid using ifelse, it deals with vectorized arguments, returns same shape with the test
+                if (Sobject) {
+                    dat_assay <- SummarizedExperiment::assays(x)[[y]]
+                } else {
+                    dat_assay <- MultiAssayExperiment::experiments(x)[[y]]
+                }
                 if (base::is.null(dat_assay)) {
                     base::stop(base::sprintf("Object: %s with experiment name: %s has assay NULL.",
                                              object_list_names[i], experiment_name))
@@ -113,8 +119,12 @@ combineObjects <- function(object_list, experiment_name) {
     } else {
         dat_exprs_match <- base::lapply(object_list_seq, function(i) {
             x <- object_list[[i]]
-            dat_assay <- base::ifelse(Sobject, SummarizedExperiment::assays(x)[[experiment_name]],
-                                      MultiAssayExperiment::experiments(x)[[experiment_name]])
+            ## Avoid using ifelse, it deals with vectorized arguments, returns same shape with the test
+            if (Sobject) {
+                dat_assay <- SummarizedExperiment::assays(x)[[experiment_name]]
+            } else {
+                dat_assay <- MultiAssayExperiment::experiments(x)[[experiment_name]]
+            }
             if (base::is.null(dat_assay)) {
                 base::stop(base::sprintf("Object: %s with experiment name: %s has assay NULL.",
                                          object_list_names[i], experiment_name))
