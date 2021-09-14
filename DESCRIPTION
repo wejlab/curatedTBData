@@ -4,7 +4,11 @@ Title: Curation of exsiting 49 tuberculosis transcriptomic studies
 Version: 0.99.0
 Authors@R: c(person(given = "Xutao", family = "Wang", email = "xutaow@bu.com",
                     role = c("aut", "cre")),
-             person(given = c("W.", "Evan"), family = "Johnson", email="wej@bu.edu",
+             person(given = c("W.", "Evan"), family = "Johnson", email = "wej@bu.edu",
+                    role=c("aut")),
+             person(given = "Prasad", family = "Patil", email = "patil@bu.edu",
+                    role=c("aut")),
+             person(given = "Lucas", family = "schiffer", email = "schifferl@bu.edu",
                     role=c("aut")))
 Description: 
     The curatedTBData is an R package that provides standardized, curated 
