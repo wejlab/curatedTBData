@@ -3,12 +3,17 @@ title: "curatedTBData"
 author: 
 - name: Xutao Wang
   affiliation: 
-  - Section of Computational Biomedicine, Boston University School of Medicine,
+  - Department of Biostatistics, Boston University School of Public Health,
     Boston, MA, U.S.A.
   email: xutaow@bu.edu
+- name: Prasad Patil
+  affiliation: 
+  - Department of Biostatistics, Boston University School of Public Health,
+    Boston, MA, U.S.A.
+  email: patil@bu.edu
 - name: W. Evan Johnson
   affiliation: 
-  - Section of Computational Biomedicine, Boston University School of Medicine,
+  - Section of Computational Biomedicine, Boston University School of Medicine, 
     Boston, MA, U.S.A.
   email: wej@bu.edu
 package: curatedTBData
@@ -173,7 +178,7 @@ head(multi_set_HIV)
 
 ## Profile multiple TB signatures across different studies
 In the following example, we profile the performance of ten TB gene signatures from the `TBsignatures` using he `r Biocpkg("TBSignatureprofiler")` package, which evaluates the performance 
-of a `list` of TB signatures using multiple gene set scoring methods. In the case, we selected ten candidates TB signatures from `TBSignatureProfiler::TBsignatures` and each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm based on `r Biocpkg("GSVA")`. See `r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.
+of a `list` of TB signatures using multiple gene set scoring methods. In the case, we selected ten candidates TB signatures from `TBSignatureProfiler::TBsignatures` and each subject's prediction score was computed using the single-sample Gene Set Enrichment Analysis scoring algorithm based on `r Biocpkg("GSVA")`. See `r Biocpkg("TBSignatureprofiler")` for more details about the `runTBsigProfiler()` function.\
 ```{r, results = "hide", message=FALSE, warning=FALSE}
 TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:10]
 ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
@@ -185,12 +190,13 @@ ssgsea_PTB_LTBI <- lapply(multi_set_PTB_LTBI,
                                   update_genes = FALSE))
 ```
 ## Visualization{.tabset}
+Five different tables/plots will be displayed based on the results from `runTBsigProfiler()` that applies to the `list` of candidate studies. The `combine_auc` function allows the users to compute the area under the curve (AUC) value, p-value, bootstrap confidence interval for multiple signatures across different studies.  The mean AUC for each gene signature can be calculated using `get_mean_AUC()`. The relationship between study and signature performance will also be displayed using boxplot, ridge plot, and heatmap.
 
 ### Area under the curve (AUC) and p-value results
 The `combine_auc()` function allows the users to compute the area under the curve (AUC)
 metrics for the prediction scores along with the bootstrapped confidence interval.
 Notice that the `names()` of the input list should not be `NULL` and must be unique for each object within the list so that we can keep track the original study.
-```{r, results='hide'}
+```{r}
 # Obtain p.value, AUC, and Bootstrapped Confidence Interval
 ssgsea_PTB_LTBI_combine <- combine_auc(ssgsea_PTB_LTBI, 
                                        annotationColName = "TBStatus", 
@@ -199,7 +205,7 @@ ssgsea_PTB_LTBI_combine <- combine_auc(ssgsea_PTB_LTBI,
 DT::datatable(ssgsea_PTB_LTBI_combine)
 ```
 ### Mean AUC and bootstrapped confidence interval
-The `bootstrap_mean_CI()` function also helps users compute the mean AUC value for each signature across studies and get the confidence interval at desired level.
+The `get_mean_AUC()` function also helps users compute the mean AUC value for each signature across studies and get the confidence interval at desired level.
 ```{r ssgsea summary table PTB vs. Latent}
 ssgsea_PTB_LTBI_mean <- get_mean_AUC(ssgsea_PTB_LTBI_combine, colName = "AUC", 
                                     method = "percentile", num.boot = 1000,
