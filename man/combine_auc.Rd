@@ -15,28 +15,37 @@ combine_auc(
 )
 }
 \arguments{
-\item{SE_scored_list}{A \code{list} of \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
-objects obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}}
+\item{SE_scored_list}{A \code{list} of
+\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+objects obtained from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
-\item{annotationColName}{A string specifying the feature of interest in the object's column data}
+\item{annotationColName}{A string specifying the feature of interest in the
+object's column data.}
 
-\item{signatureColNames}{A character/vector string contains name of gene signature}
+\item{signatureColNames}{A character/vector string
+contains name of gene signature.}
 
-\item{num.boot}{Integer. Number of bootstrapping. If \code{NULL} (default), no confidence interval is computed}
+\item{num.boot}{Integer. Number of bootstrapping.
+If \code{NULL} (default), confidence interval will not be computed.}
 
-\item{percent}{Numeric. A number between 0 and 1, indicating the percentage of
-confidence interval. Default is \code{0.95}}
+\item{percent}{Numeric. A number between 0 and 1,
+indicating the percentage of confidence interval. Default is \code{0.95}.}
 
-\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE}, compute the AUC values based on
-\code{\link[ROCit]{rocit}}. If \code{AUC.abs = FALSE}, compute the AUC values for \code{max(AUC, 1-AUC)}}
+\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE},
+compute the AUC values based on \code{\link[ROCit]{rocit}}.
+If \code{AUC.abs = FALSE},
+compute the AUC values for \code{max(AUC, 1-AUC)}.}
 
-\item{BPPARAM}{An instance inherited from \code{\link[BiocParallel]{bplapply}}}
+\item{BPPARAM}{An instance inherited from \code{\link[BiocParallel]{bplapply}}.}
 }
 \value{
-A \code{data.frame} with features including Signatures, P.value, neg10xLog(P.value) and AUC for each signature across studies
+A \code{data.frame} with features including
+  Signatures, P.value, neg10xLog(P.value) and AUC
+  for each signature across studies.
 }
 \description{
-Calculate p-value, AUC values, and bootstrapped confidence interval for TB gene signatures across multiple studies
+Calculate p-value, AUC values, and bootstrapped confidence interval
+  for TB gene signatures across multiple studies.
 }
 \examples{
 library(TBSignatureProfiler)

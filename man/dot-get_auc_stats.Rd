@@ -14,22 +14,26 @@
 )
 }
 \arguments{
-\item{SE_scored}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object from TB signature profiling}
+\item{SE_scored}{A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+object from TB signature profiling.}
 
-\item{annotationColName}{A string specifying the feature of interest in the object's column data}
+\item{annotationColName}{A string specifying the feature of interest in
+the object's column data.}
 
-\item{signatureColNames}{A character/vector string contains name of gene signature}
+\item{signatureColNames}{A character/vector string contains name of gene signature.}
 
-\item{num.boot}{Integer. Number of bootstrapping}
+\item{num.boot}{Integer. Number of bootstrapping.}
 
-\item{percent}{Numeric. A number between 0 and 1, indicating the percentage of
-confidence interval}
+\item{percent}{Numeric. A number between 0 and 1,
+indicating the percentage of confidence interval.}
 
-\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE}, compute the AUC values from function \code{\link[ROCit]{rocit}}
-If \code{AUC.abs = FALSE}, compute the AUC values for \code{max(AUC, 1-AUC)}}
+\item{AUC.abs}{Boolean. If \code{AUC.abs = TRUE},
+compute the AUC values from function \code{\link[ROCit]{rocit}}.
+If \code{AUC.abs = FALSE}, compute the AUC values for \code{max(AUC, 1-AUC)}.}
 }
 \value{
-A \code{data.frame} contains p-value from two-sample t-test and AUC value for each signature
+A \code{data.frame} contains
+  p-value from two-sample t-test and AUC value for each signature.
 }
 \description{
 Obtain pvalue, emprirical AUC, and Bootstrap Confidence Interval for each signature

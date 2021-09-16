@@ -2,7 +2,8 @@
 % Please edit documentation in R/get_mean_AUC.R
 \name{.bootstrap_mean_CI}
 \alias{.bootstrap_mean_CI}
-\title{Compute bootstrapped confidence interval for signature's mean AUC across studies}
+\title{Compute bootstrapped confidence interval for single signature's mean AUC
+  across multiple studies}
 \usage{
 .bootstrap_mean_CI(
   df,
@@ -14,23 +15,28 @@
 }
 \arguments{
 \item{df}{A data frame/matrix contains the interested numeric vector obtained
-from \code{\link[curatedTBData]{combine_auc}}}
+from \code{\link[curatedTBData]{combine_auc}}.}
 
-\item{colName}{A character string specifying the column name of the data frame
-for bootstrapping}
+\item{colName}{A character string specifying the column name of the
+\code{data frame} for bootstrapping.}
 
-\item{method}{A character string specifying the method used for computing bootstrap confidence interval
-The choices are \code{c("percentile","empirical")}. The default is \code{"empirical"}.}
+\item{method}{A character string specifying the method used for
+computing bootstrap confidence interval.
+The choices are \code{c("percentile","empirical")}.
+The default is \code{"empirical"}.}
 
-\item{num.boot}{Numeric. Number of bootstrap times. Default value is \code{100}}
+\item{num.boot}{Numeric. Number of bootstrap times.
+Default value is \code{100}.}
 
 \item{percent}{A number indicates the percentage of confidence interval
-Default is value \code{0.95}}
+Default is value \code{0.95}.}
 }
 \value{
-A \code{data.frame} contains mean AUC, lower and upper bootstrap confidence interval
-for single gene signature across multiple studies
+A \code{data.frame} contains mean AUC,
+  lower and upper bootstrap confidence interval
+  for single gene signature across multiple studies.
 }
 \description{
-Compute bootstrapped confidence interval for signature's mean AUC across studies
+Compute bootstrapped confidence interval for single signature's mean AUC
+  across multiple studies
 }
