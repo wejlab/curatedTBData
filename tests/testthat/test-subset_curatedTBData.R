@@ -7,11 +7,11 @@ col_info <- SummarizedExperiment::colData(mobject)
 sobject <- SummarizedExperiment::SummarizedExperiment(list(counts = assay_curated),
                                                       colData = col_info)
 
-test_that("stop when \"annotationColName\" is not found in the metadata", {
-  expect_error(subset_curatedTBData(mobject,
-                                    annotationColName = "FakeColumnNames",
-                                    annotationCondition = c("Control", "PTB"),
-                                    assayName = "assay_curated"))
+test_that("message when \"annotationColName\" is not found in the metadata", {
+  expect_message(subset_curatedTBData(mobject,
+                                      annotationColName = "FakeColumnNames",
+                                      annotationCondition = c("Control", "PTB"),
+                                      assayName = "assay_curated"))
 })
 
 test_that("return type is NULL if at least one of the conditions is not found from the column data", {

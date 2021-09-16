@@ -1,39 +1,40 @@
 Package: curatedTBData
 Type: Package
-Title: Curation of exsiting 49 tuberculosis transcriptomic studies
+Title: Curation of existing 49 tuberculosis transcriptomic studies
 Version: 0.99.0
-Authors@R: c(person(given = "Xutao", family = "Wang", email = "xutaow@bu.com",
-                    role = c("aut", "cre")),
-             person(given = c("W.", "Evan"), family = "Johnson", email = "wej@bu.edu",
-                    role=c("aut")),
-             person(given = "Prasad", family = "Patil", email = "patil@bu.edu",
-                    role=c("aut")),
-             person(given = "Lucas", family = "schiffer", email = "schifferl@bu.edu",
-                    role=c("aut")))
+Authors@R:c(
+    person(given = "Xutao", family = "Wang", role = c("aut", "cre"), email = "xutaow@bu.edu"),
+    person(given = c("W.", "Evan"), family = "Johnson", role = c("aut"), email = "wej@bu.edu"),
+    person(given = "Prasad", family = "Patil", role = c("aut"), email = "patil@bu.edu"),
+    person(given = "Lucas", family = "Schiffer", role = c("aut"), email = "schifferl@bu.edu"))
 Description: 
     The curatedTBData is an R package that provides standardized, curated 
     tuberculosis(TB) transcriptomic studies. The initial release of the package 
     contains 49 studies. The curatedTBData package allows users to access 
-    tuberculosis trancriptomic efficiently and to make easy comparison for 
+    tuberculosis trancriptomic efficiently and to make efficient comparison for 
     different TB gene signatures across multiple datasets.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
-Depends: R (>= 4.1)
+RoxygenNote: 7.1.1
+Depends: R (>= 4.1.0)
 Imports:
     AnnotationHub,
     ExperimentHub,
     magrittr,
     MultiAssayExperiment,
-    rlang
+    rlang,
+    stats
 Suggests:
     BiocParallel,
     BiocStyle,
+    devtools,
     DT,
     dplyr,
     ggplot2,
     ggridges,
     gridExtra,
+    HGNChelper,
     knitr,
     methods,
     RColorBrewer,
@@ -41,10 +42,13 @@ Suggests:
     rmarkdown,
     ROCit,
     SummarizedExperiment,
+    sva,
     TBSignatureProfiler,
     testthat
 biocViews:
     ExperimentData,
     ExperimentHub
+URL: https://github.com/compbiomed/curatedTBData
+BugReports: https://github.com/compbiomed/curatedTBData/issues
+Language: en-US
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
