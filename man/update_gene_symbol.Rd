@@ -7,10 +7,10 @@
 update_gene_symbol(dat_exprs)
 }
 \arguments{
-\item{dat_exprs}{A \code{data.frame} with row names being gene symbol to be updated}
+\item{dat_exprs}{A \code{data.frame} with row names as gene symbols to be updated.}
 }
 \value{
-A \code{data.frame} with updated gene symbol as row names
+A \code{data.frame} with updated gene symbol as row names.
 }
 \description{
 Update gene names from input data

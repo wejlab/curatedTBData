@@ -7,11 +7,11 @@
 .expand_study(GSE_sig)
 }
 \arguments{
-\item{GSE_sig}{A \code{data.frame} contains information about each signature and
-its training/discovery dataset(s) name. Default is \code{NULL}}
+\item{GSE_sig}{A \code{data.frame} contains information about each signature
+and its training/discovery dataset(s) name. Default is \code{NULL}.}
 }
 \value{
-A expand \code{data.frame} for gene signatures and dataset
+A expand \code{data.frame} for gene signatures and dataset.
 }
 \description{
 Expand study section for \code{SignatureInfoTraining}
