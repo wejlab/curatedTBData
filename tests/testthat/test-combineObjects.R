@@ -7,8 +7,11 @@ test_that("Argument \"experment_name\" cannot be missing", {
 })
 
 test_that("return type is SummarizedExperiment", {
-  expect_s4_class(combineObjects(returned_resources, experiment_name = "assay_curated"),
-                  "SummarizedExperiment")
+  re1 <- combineObjects(returned_resources, experiment_name = "assay_curated")
+  re2 <- combineObjects(returned_resources, experiment_name = "assay_curated",
+                        update_genes = FALSE)
+  expect_s4_class(re1, "SummarizedExperiment")
+  expect_s4_class(re2, "SummarizedExperiment")
 })
 
 test_that("Input list does not have unique name for each element.

@@ -7,19 +7,22 @@
 .select_assay(object_list, experiment_name, Sobject)
 }
 \arguments{
-\item{object_list}{A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
-or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
-The assays contains object's assay contain expression data with probes mapped to gene symbol
-\code{names(object_list)} should not be \code{NULL}}
+\item{object_list}{A \code{list} of
+\link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
+or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+objects. The object's assay contain expression data
+with probes mapped to gene symbol.
+\code{names(object_list)} should not be \code{NULL}.}
 
-\item{experiment_name}{A character/vector of character to choose the name of the assay from the input
-\code{list} of object}
+\item{experiment_name}{A character/vector of character to choose
+the name of the assay from the input \code{list} of object.}
 
 \item{Sobject}{Boolean. Indicate whether the input is a \code{list} of
-\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects.}
+\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+objects.}
 }
 \value{
-A \code{list} of selected assays
+A \code{list} of selected assays.
 }
 \description{
 Select assay based on input list type

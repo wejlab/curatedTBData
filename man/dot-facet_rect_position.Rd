@@ -7,15 +7,16 @@
 .facet_rect_position(datta, frames)
 }
 \arguments{
-\item{datta}{A \code{data.frame} with column names indicating signatures, study,
-value, and signature type}
+\item{datta}{A \code{data.frame} with column names indicating signatures,
+study, value, and signature type.}
 
-\item{frames}{A \code{data.frame} with column names indicating signatures, study,
-value, and signature type for training/discovery studies}
+\item{frames}{A \code{data.frame} with column names indicating signatures,
+study, value, and signature type for training/discovery studies.}
 }
 \value{
-A \code{data.frame} with position index on the x-axis and y-axis, and signature type.
-The result is mainly used as input for \code{\link[ggplot2]{geom_rect}}
+A \code{data.frame} with position index on the x-axis and y-axis,
+  and signature type.
+  The output is used as input for \code{\link[ggplot2]{geom_rect}}
 }
 \description{
 Obtain training index in facet grid
