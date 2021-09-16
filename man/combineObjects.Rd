@@ -7,19 +7,22 @@
 combineObjects(object_list, experiment_name, update_genes = TRUE)
 }
 \arguments{
-\item{object_list}{A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
-or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
-The assays contains object's assay contain expression data with probes mapped to gene symbol
-\code{names(object_list)} should not be \code{NULL}}
+\item{object_list}{A \code{list} of
+\link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
+or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+objects. The object's assay contain expression data
+with probes mapped to gene symbol.
+\code{names(object_list)} should not be \code{NULL}.}
 
-\item{experiment_name}{A character/vector of character to choose the name of the assay from the input
-\code{list} of object}
+\item{experiment_name}{A character/vector of character to choose
+the name of the assay from the input \code{list} of object.}
 
-\item{update_genes}{Boolean. Indicate whether updating gene symbols using \code{\link[HGNChelper]{checkGeneSymbols}}
-Default is \code{TRUE}.}
+\item{update_genes}{Boolean. Indicate whether update the gene symbols using
+\code{\link[HGNChelper]{checkGeneSymbols}}. Default is \code{TRUE}.}
 }
 \value{
-A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object contains combined data from the input
+A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
+  object that contains combined data from the input.
 }
 \description{
 Merge samples with common gene names from selected studies
