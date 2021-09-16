@@ -46,8 +46,7 @@ Suggests:
     TBSignatureProfiler,
     testthat
 biocViews:
-    ExperimentData,
-    ExperimentHub
+    ExperimentData
 URL: https://github.com/compbiomed/curatedTBData
 BugReports: https://github.com/compbiomed/curatedTBData/issues
 Language: en-US
