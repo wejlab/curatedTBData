@@ -2,9 +2,9 @@
 % Please edit documentation in R/combineObjects.R
 \name{combineObjects}
 \alias{combineObjects}
-\title{Merge samples with common genes from selected studies}
+\title{Merge samples with common gene names from selected studies}
 \usage{
-combineObjects(object_list, experiment_name)
+combineObjects(object_list, experiment_name, update_genes = TRUE)
 }
 \arguments{
 \item{object_list}{A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
@@ -14,12 +14,15 @@ The assays contains object's assay contain expression data with probes mapped to
 
 \item{experiment_name}{A character/vector of character to choose the name of the assay from the input
 \code{list} of object}
+
+\item{update_genes}{Boolean. Indicate whether updating gene symbols using \code{\link[HGNChelper]{checkGeneSymbols}}
+Default is \code{TRUE}.}
 }
 \value{
 A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object contains combined data from the input
 }
 \description{
-Merge samples with common genes from selected studies
+Merge samples with common gene names from selected studies
 }
 \examples{
 geo <-  c("GSE19435", "GSE19439")
