@@ -18,6 +18,9 @@ The assays contains object's assay contain expression data with probes mapped to
 \item{Sobject}{Boolean. Indicate whether the input is a \code{list} of
 \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects.}
 }
+\value{
+A \code{list} of selected assays
+}
 \description{
 Select assay based on input list type
 }

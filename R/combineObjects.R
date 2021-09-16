@@ -1,4 +1,4 @@
-#' Merge samples with common genes from selected studies
+#' Merge samples with common gene names from selected studies
 #' @name combineObjects
 #' @param object_list A \code{list} of \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
 #' or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects
@@ -6,13 +6,15 @@
 #' \code{names(object_list)} should not be \code{NULL}
 #' @param experiment_name A character/vector of character to choose the name of the assay from the input
 #' \code{list} of object
+#' @param update_genes Boolean. Indicate whether updating gene symbols using \code{\link[HGNChelper]{checkGeneSymbols}}
+#' Default is \code{TRUE}.
 #' @return A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} object contains combined data from the input
 #' @examples
 #' geo <-  c("GSE19435", "GSE19439")
 #' data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
 #' combineObjects(data_list, experiment_name = "assay_curated")
 #' @export
-combineObjects <- function(object_list, experiment_name) {
+combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
     ## check the experiment_name argument
     if (base::missing(experiment_name)) {
         base::stop("Argument \"experiment_name\" is missing, with no default.")
@@ -40,6 +42,10 @@ combineObjects <- function(object_list, experiment_name) {
         dat_exprs_match <- .select_assay(object_list, experiment_name, Sobject = FALSE)
     } else {
         base::stop("Input is not a list of MultiAssayExperiment or SummarizedExperiment objetcs.")
+    }
+    if (update_genes) {
+        base::message("'update_genes' is TRUE, updating gene symbols")
+        dat_exprs_match <- base::lapply(dat_exprs_match, update_gene_symbol)
     }
     ## Combine sample with common genes from a list of objects. Input data type should be data.frame
     dat_exprs_combine <- base::Reduce(function(x, y)
@@ -90,6 +96,7 @@ combineObjects <- function(object_list, experiment_name) {
 #' @inheritParams combineObjects
 #' @param Sobject Boolean. Indicate whether the input is a \code{list} of
 #' \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects.
+#' @return A \code{list} of selected assays
 #'
 .select_assay <- function(object_list, experiment_name, Sobject) {
     ## Merge code starts here
@@ -134,4 +141,48 @@ combineObjects <- function(object_list, experiment_name) {
     }
     base::names(dat_exprs_match) <- object_list_names
     return(dat_exprs_match)
+}
+
+#' Update gene names from input data
+#' @name update_gene_symbol
+#' @param dat_exprs A \code{data.frame} with row names being gene symbol to be updated
+#' @return A \code{data.frame} with updated gene symbol as row names
+#' @importFrom stats median na.pass
+update_gene_symbol <- function(dat_exprs) {
+    ## Function for updating gene names from HGNChelper::checkGeneSymbols
+    update_genenames <- function(siglist) {
+        newgenes <- base::suppressMessages(base::suppressWarnings(
+            HGNChelper::checkGeneSymbols(siglist,
+                                         unmapped.as.na = FALSE)))$Suggested.Symbol
+        ind <- base::grep("//", newgenes)
+        if (base::length(ind) != 0) {
+            newgenes[ind] <- base::strsplit(newgenes[ind], " /// ")[[1]][1]
+        }
+        return(newgenes)
+    }
+    new_gene_names <- base::row.names(dat_exprs) %>%
+        update_genenames()
+    new_gene_names_tab <- base::table(new_gene_names)
+    ## Get genes with duplicates
+    gene_names_dup <- base::names(new_gene_names_tab)[new_gene_names_tab > 1]
+    if (!base::is.null(gene_names_dup)) {
+        ## when we find duplicated gene names, we collapse gene symbol
+        index <- base::which(new_gene_names %in% gene_names_dup)
+        dat_exprs_no_duplicates <- dat_exprs[-index, ]
+        base::row.names(dat_exprs_no_duplicates) <- new_gene_names[-index]
+        dat_exprs_with_duplicates <- dat_exprs[index, ] %>%
+            base::as.data.frame() %>%
+            dplyr::mutate(SYMBOL = new_gene_names[index])
+        exprs2 <- stats::aggregate(stats::as.formula(". ~ SYMBOL"),
+                                   data = dat_exprs_with_duplicates,
+                                   FUN = median, na.action = na.pass)
+        base::row.names(exprs2) <- exprs2$SYMBOL
+        dat_exprs_with_duplicates <- exprs2 %>%
+            dplyr::select(-.data$SYMBOL)
+        dat_exprs <- base::rbind(dat_exprs_with_duplicates,
+                                 dat_exprs_no_duplicates)
+    } else {
+        base::row.names(dat_exprs) <- new_gene_names
+    }
+    return(dat_exprs)
 }
