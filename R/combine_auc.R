@@ -107,28 +107,28 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                            num.boot, percent, AUC.abs) {
     ## Check signatureColNames
     col_info <- SummarizedExperiment::colData(SE_scored)
-    index <- base::match(signatureColNames, base::colnames(col_info)) %>%
+    index <- match(signatureColNames, colnames(col_info)) %>%
         stats::na.omit()
-    signatureColNames <- base::colnames(col_info)[index]
+    signatureColNames <- colnames(col_info)[index]
     annotationData <- col_info[annotationColName][, 1] %>%
-        base::as.character() %>%
-        base::as.factor()
+        as.character() %>%
+        as.factor()
     ## Check levels of annotationData
-    anno_level_len <- base::length(base::unique(annotationData))
+    anno_level_len <- length(unique(annotationData))
     if (anno_level_len != 2L) {
-        base::paste("Annotation data should have exactly two levels.",
-                    "The number of input levels is:",
-                    anno_level_len) %>%
-            base::stop(call. = FALSE)
+        paste("Annotation data should have exactly two levels.",
+              "The number of input levels is:",
+              anno_level_len) %>%
+            stop(call. = FALSE)
     }
     ## Get AUC value for each signature along with corresponding datasets
-    if (base::is.null(num.boot)) {
-        sig_result <- base::lapply(signatureColNames, function(i, SE_scored, annotationData) {
+    if (is.null(num.boot)) {
+        sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData) {
             score <- col_info[i][, 1] %>%
-                base::as.vector()
+                as.vector()
             ## Deal with scores that have constant value (e.g. Sloot_HIV_2)
-            if (base::length(base::unique(score)) == 1L) {
-                dat <- base::data.frame(Signature = i, P.value = NA, AUC = NA)
+            if (length(unique(score)) == 1L) {
+                dat <- data.frame(Signature = i, P.value = NA, AUC = NA)
                 return(dat)
             }
             pvals <- stats::t.test(score ~ annotationData)$p.value
@@ -142,13 +142,13 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             base::data.frame(Signature = i, P.value = round(pvals, 4),
                              AUC = round(aucs, 4))
         }, SE_scored, annotationData)
-        result <- base::do.call(base::rbind, sig_result) %>%
-            base::as.data.frame()
-        base::row.names(result) <- NULL
+        result <- do.call(rbind, sig_result) %>%
+            as.data.frame()
+        row.names(result) <- NULL
         return(result)
     } else {
-        sig_result <- base::lapply(signatureColNames,
-                                   function(i, SE_scored, annotationData, percent) {
+        sig_result <- lapply(signatureColNames,
+                             function(i, SE_scored, annotationData, percent) {
             score <- col_info[i][, 1]
             ## Deal with PLAGE that have constant score (e.g. Sloot_HIV_2)
             if (base::length(base::unique(score)) == 1) {
@@ -164,7 +164,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             if (AUC.abs) {
                 aucs <- pred$AUC
             } else {
-                aucs <- base::max(pred$AUC, 1 - pred$AUC)
+                aucs <- max(pred$AUC, 1 - pred$AUC)
             }
             ## Get lower and upper quantile
             lower <- (1 - percent) / 2
@@ -172,43 +172,38 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             ## Calculate bootstrapped AUC confidence interval.
             ## Repeated sampling scores and annotationData
             ## compute the AUC for the sampled pairs
-            bootCI <- base::lapply(base::seq_len(num.boot),
-                                   function(j, score, annotationData) {
-                index <- base::sample(base::seq_len(base::length(score)),
-                                      replace = TRUE)
+            bootCI <- lapply(seq_len(num.boot),
+                             function(j, score, annotationData) {
+                index <- sample(seq_len(length(score)), replace = TRUE)
                 tmp_score <- score[index]
                 tmp_annotationData <- annotationData[index]
                 ## Consider when re-sampling only has 1 cases, remove it
-                if (base::length(base::unique(tmp_annotationData)) == 2) {
+                if (length(unique(tmp_annotationData)) == 2) {
                     tmp_pred <- ROCit::rocit(tmp_score, tmp_annotationData)
                     if (AUC.abs) {
                         tmp_auc <- tmp_pred$AUC
                     } else {
-                        tmp_auc <- base::max(tmp_pred$AUC, 1 - tmp_pred$AUC)
+                        tmp_auc <- max(tmp_pred$AUC, 1 - tmp_pred$AUC)
                     }
                     tmp_auc
                 } else {
                     NA
                 }
             }, score, annotationData)
-            bootCI <- base::unlist(bootCI) %>%
+            bootCI <- unlist(bootCI) %>%
                 stats::na.omit()
             LowerAUC <- stats::quantile(bootCI, prob = lower, na.rm = TRUE)
             UpperAUC <- stats::quantile(bootCI, prob = upper, na.rm = TRUE)
-            dat <- base::data.frame(i,
-                                    base::round(pvals, 4),
-                                    base::round(neg10log, 4),
-                                    base::round(aucs, 4),
-                                    base::round(LowerAUC, 4),
-                                    base::round(UpperAUC, 4))
-            base::colnames(dat) <- c("Signature", "P.value",
-                                     "neg10xP.value", "AUC",
-                                     paste0("CI lower.", lower * 100, "%"),
-                                     paste0("CI upper.", upper * 100, "%"))
+            dat <- data.frame(i, round(pvals, 4), round(neg10log, 4),
+                              round(aucs, 4), round(LowerAUC, 4),
+                              round(UpperAUC, 4))
+            colnames(dat) <- c("Signature", "P.value", "neg10xP.value", "AUC",
+                               paste0("CI lower.", lower * 100, "%"),
+                               paste0("CI upper.", upper * 100, "%"))
             dat
         }, SE_scored, annotationData, percent)
-        result <- base::do.call(base::rbind, sig_result)
-        base::row.names(result) <- NULL
+        result <- do.call(rbind, sig_result)
+        row.names(result) <- NULL
         return(result)
     }
 }
