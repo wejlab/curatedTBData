@@ -39,39 +39,37 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     param <- BPPARAM
     ## Check if the input is a list
     if (!methods::is(SE_scored_list, "list")) {
-        base::sprintf("The input class: %s.",
+        sprintf("The input class: %s.",
                       base::class(SE_scored_list)[1]) %>%
-            base::paste("Function only supports a list",
+            paste("Function only supports a list",
                         "containing SummarizrdExperiment objetcs.") %>%
-            base::stop(call. = FALSE)
+            stop(call. = FALSE)
     }
-    check_element_class <- base::vapply(SE_scored_list, function(x)
+    check_element_class <- vapply(SE_scored_list, function(x)
         methods::is(x, "SummarizedExperiment"), TRUE)
-    if (!base::all(check_element_class)) {
-        msg <- base::sprintf("Elements(s) %s ",
-                             base::paste0(base::which(!check_element_class),
-                                          collapse = ", "))
-        base::paste("Function only supports class: SummarizedExperiment.",
-                    msg,
-                    "in the list is/are not SummarizedExperiment object.") %>%
-            base::stop(call. = FALSE)
+    if (!all(check_element_class)) {
+        msg <- sprintf("Elements(s) %s ",
+                       paste0(which(!check_element_class), collapse = ", "))
+        paste("Function only supports class: SummarizedExperiment.", msg,
+              "in the list is/are not SummarizedExperiment object.") %>%
+            stop(call. = FALSE)
     }
     ## Check valid list names
-    list_name <- base::names(SE_scored_list)
-    if (base::is.null(list_name)) {
-        base::paste("names of the input list should not be NULL.",
+    list_name <- names(SE_scored_list)
+    if (is.null(list_name)) {
+        paste("names of the input list should not be NULL.",
                     "Add unique name for each element from the list.") %>%
-            base::stop(call. = FALSE)
-    } else if (!base::is.na(base::match("", list_name))) {
-        base::paste("Names of the input contains \"\".",
-                    "Replace  \"\" with unique character.") %>%
-            base::stop(call. = FALSE)
+            stop(call. = FALSE)
+    } else if (!is.na(match("", list_name))) {
+        paste("Names of the input contains \"\".",
+              "Replace  \"\" with unique character.") %>%
+            stop(call. = FALSE)
     }
     aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x) {
         .get_auc_stats(x, annotationColName, signatureColNames, num.boot,
                        percent, AUC.abs)
     }, BPPARAM = param)
-    aucs_result_dat <- base::do.call(base::rbind, aucs_result)
+    aucs_result_dat <- do.call(rbind, aucs_result)
     ## Re-order data based on their median AUC Remove NA value
     aucs_result_dat1 <- stats::na.omit(aucs_result_dat)
     aucs_result_dat_median <- aucs_result_dat1 %>%
@@ -79,15 +77,14 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
         dplyr::summarise_all(stats::median) %>%
         dplyr::arrange(dplyr::desc(.data$AUC))
     ## Order signatures based on median AUC values
-    Signature_order <- base::as.character(aucs_result_dat_median$Signature)
+    Signature_order <- as.character(aucs_result_dat_median$Signature)
     ## Re-order gene signature
     ## re-level this step is to let ridge plot ordered based on median value
-    aucs_result_dat$Signature <- base::factor(aucs_result_dat$Signature,
-                                              levels = Signature_order)
+    aucs_result_dat$Signature <- factor(aucs_result_dat$Signature,
+                                        levels = Signature_order)
     ## Label name of each data under column 'Study'
-    aucs_result_dat$Study <- base::gsub("\\..*", "",
-                                        base::row.names(aucs_result_dat))
-    base::row.names(aucs_result_dat) <- NULL
+    aucs_result_dat$Study <- gsub("\\..*", "", row.names(aucs_result_dat))
+    row.names(aucs_result_dat) <- NULL
     return(aucs_result_dat)
 }
 
