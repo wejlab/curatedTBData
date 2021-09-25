@@ -19,31 +19,31 @@
 #' @export
 combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
     ## check the experiment_name argument
-    if (base::missing(experiment_name)) {
-        base::stop("Argument \"experiment_name\" is missing, with no default.")
+    if (missing(experiment_name)) {
+        stop("Argument \"experiment_name\" is missing, with no default.")
     }
     ## check length of the list, should be greater than 1
-    n <- base::length(object_list)
+    n <- length(object_list)
     if (n <= 1L) {
-        base::sprintf("The length of the input list is %i,", n) %>%
-            base::paste("expecting more than 1 elements from the list") %>%
-            base::stop(call. = FALSE)
+        sprintf("The length of the input list is %i,", n) %>%
+            paste("expecting more than 1 elements from the list") %>%
+            stop(call. = FALSE)
     }
     ## check names of the input object list
-    obj_name <- base::names(object_list)
-    if (base::is.null(obj_name)) {
-        base::paste("Names of the input list should not be NULL.",
+    obj_name <- names(object_list)
+    if (is.null(obj_name)) {
+        paste("Names of the input list should not be NULL.",
                     "Add unique name for each element in the list.") %>%
-            base::stop(call. = FALSE)
-    } else if (!base::is.na(base::match("", obj_name))) {
-        base::paste("Names of the input contains \"\".",
+            stop(call. = FALSE)
+    } else if (!is.na(match("", obj_name))) {
+        paste("Names of the input contains \"\".",
                     "Replace  \"\" with unique character.") %>%
-            base::stop(call. = FALSE)
+            stop(call. = FALSE)
     }
     ## Check whether it is a list of SummarizedExperiment or MultiAssayExperiment objects
-    isSummarizedExperiment <- base::all(base::vapply(object_list, function(x)
+    isSummarizedExperiment <- all(vapply(object_list, function(x)
         methods::is(x, "SummarizedExperiment"), TRUE))
-    isMultiAssayExperiement <- base::all(base::vapply(object_list, function(x)
+    isMultiAssayExperiement <- all(vapply(object_list, function(x)
         methods::is(x, "MultiAssayExperiment"), TRUE))
     if (isSummarizedExperiment) {
         dat_exprs_match <- .select_assay(object_list, experiment_name,
@@ -57,54 +57,54 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
             base::stop(call. = FALSE)
     }
     if (update_genes) {
-        base::message("\"update_genes\" is TRUE, updating gene symbols")
-        dat_exprs_match <- base::lapply(dat_exprs_match, update_gene_symbol)
+        message("\"update_genes\" is TRUE, updating gene symbols")
+        dat_exprs_match <- lapply(dat_exprs_match, update_gene_symbol)
     }
     ## Combine sample with common genes from a list of objects.
     ## Input data type should be data.frame
-    dat_exprs_combine <- base::Reduce(function(x, y)
-        base::merge(x, y, by = "id", all = FALSE),
-        base::lapply(dat_exprs_match, function(x) {
-           x$id <- base::row.names(x)
+    dat_exprs_combine <- Reduce(function(x, y)
+        merge(x, y, by = "id", all = FALSE),
+        lapply(dat_exprs_match, function(x) {
+           x$id <- row.names(x)
            x
     }))
     row_names <- dat_exprs_combine$id
     dat_exprs_count <- dat_exprs_combine %>%
         dplyr::select(-.data$id) %>%
-        base::as.data.frame()
-    base::row.names(dat_exprs_count) <- row_names
+        as.data.frame()
+    row.names(dat_exprs_count) <- row_names
     ## Create combined column data information
-    col_data <- base::lapply(base::seq_len(n), function(x) {
+    col_data <- lapply(base::seq_len(n), function(x) {
         col_data <- SummarizedExperiment::colData(object_list[[x]])
-        col_data$Study <- base::names(object_list[x])
-        base::as.data.frame(col_data)
+        col_data$Study <- names(object_list[x])
+        as.data.frame(col_data)
     })
     ## Combine list into data frame with unequal columns
     ## fill in NA when columns from studies are not found
     rbindx <- function(dfs) {
-        ns <- base::lapply(dfs, base::colnames) %>%
-            base::unlist() %>%
-            base::unique()
-        base::do.call(base::rbind, base::lapply(dfs, function(x) {
-            for (n in ns[!ns %in% base::colnames(x)]) {
+        ns <- lapply(dfs, colnames) %>%
+            unlist() %>%
+            unique()
+        do.call(rbind, lapply(dfs, function(x) {
+            for (n in ns[!ns %in% colnames(x)]) {
                 x[[n]] <- NA
             }
             x
         }))
     }
     col_info <- rbindx(col_data)
-    Sample <- base::lapply(object_list, function(x)
+    Sample <- lapply(object_list, function(x)
         SummarizedExperiment::colData(x) %>%
-            base::row.names()) %>%
-        base::unlist(use.names = FALSE)
-    base::row.names(col_info) <- Sample
+            row.names()) %>%
+            unlist(use.names = FALSE)
+    row.names(col_info) <- Sample
     ## Remove samples that does not exist in the count
-    index <- base::match(base::colnames(dat_exprs_count), Sample) %>%
+    index <- match(colnames(dat_exprs_count), Sample) %>%
         stats::na.omit()
     col_info <- col_info[index, ]
     ## Create output in the format of SummarizedExperiment
     result <- SummarizedExperiment::SummarizedExperiment(
-        assays = base::list(assay1 = base::as.matrix(dat_exprs_count)),
+        assays = list(assay1 = as.matrix(dat_exprs_count)),
         colData = col_info)
     return(result)
 }
@@ -119,14 +119,14 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
 #'
 .select_assay <- function(object_list, experiment_name, Sobject) {
     ## Merge code starts here
-    n <- base::length(object_list)
-    object_list_seq <- base::seq_len(n)
-    object_list_names <- base::names(object_list)
-    if (base::length(experiment_name) > 1L) {
-        base::message("Found more than one \"experiment_name\".")
+    n <- length(object_list)
+    object_list_seq <- seq_len(n)
+    object_list_names <- names(object_list)
+    if (length(experiment_name) > 1L) {
+        message("Found more than one \"experiment_name\".")
         ## experiment name for the list of object is different
-        if (base::length(experiment_name) == n) {
-            dat_exprs_match <- base::mapply(function(i, y) {
+        if (length(experiment_name) == n) {
+            dat_exprs_match <- mapply(function(i, y) {
                 x <- object_list[[i]]
                 ## Avoid using ifelse, it deals with vectorized arguments.
                 ## Returns same shape with the test.
@@ -144,12 +144,12 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
                 base::as.data.frame(dat_assay)
             }, object_list_seq, experiment_name)
         } else {
-            base::paste("Input list length",
-                        "is different from the \"experiment_name\" vector.") %>%
-                base::stop(call. = FALSE)
+            paste("Input list length",
+                  "is different from the \"experiment_name\" vector.") %>%
+                stop(call. = FALSE)
         }
     } else {
-        dat_exprs_match <- base::lapply(object_list_seq, function(i) {
+        dat_exprs_match <- lapply(object_list_seq, function(i) {
             x <- object_list[[i]]
             ## Avoid using ifelse, it deals with vectorized arguments.
             ## Returns same shape with the test.
@@ -158,16 +158,16 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
             } else {
                 dat_assay <- MultiAssayExperiment::experiments(x)[[experiment_name]]
             }
-            if (base::is.null(dat_assay)) {
-                base::sprintf("Object: %s with experiment name: %s",
-                              object_list_names[i], experiment_name) %>%
-                    base::paste("has assay NULL.") %>%
-                    base::stop(call. = FALSE)
+            if (is.null(dat_assay)) {
+                sprintf("Object: %s with experiment name: %s",
+                        object_list_names[i], experiment_name) %>%
+                    paste("has assay NULL.") %>%
+                    stop(call. = FALSE)
             }
-            base::as.data.frame(dat_assay)
+            as.data.frame(dat_assay)
         })
     }
-    base::names(dat_exprs_match) <- object_list_names
+    names(dat_exprs_match) <- object_list_names
     return(dat_exprs_match)
 }
 
@@ -184,35 +184,34 @@ update_gene_symbol <- function(dat_exprs) {
             base::suppressWarnings() %>%
             base::suppressMessages()
         newgenes <- newgenes$Suggested.Symbol
-        ind <- base::grep("//", newgenes)
-        if (base::length(ind) != 0) {
-            newgenes[ind] <- base::strsplit(newgenes[ind], " /// ")[[1]][1]
+        ind <- grep("//", newgenes)
+        if (length(ind) != 0) {
+            newgenes[ind] <- strsplit(newgenes[ind], " /// ")[[1]][1]
         }
         return(newgenes)
     }
-    new_gene_names <- base::row.names(dat_exprs) %>%
+    new_gene_names <- row.names(dat_exprs) %>%
         update_genenames()
-    new_gene_names_tab <- base::table(new_gene_names)
+    new_gene_names_tab <- table(new_gene_names)
     ## Get genes with duplicates
-    gene_names_dup <- base::names(new_gene_names_tab)[new_gene_names_tab > 1]
-    if (!base::is.null(gene_names_dup)) {
+    gene_names_dup <- names(new_gene_names_tab)[new_gene_names_tab > 1]
+    if (!is.null(gene_names_dup)) {
         ## when we find duplicated gene names, we collapse gene symbol
-        index <- base::which(new_gene_names %in% gene_names_dup)
+        index <- which(new_gene_names %in% gene_names_dup)
         dat_exprs_no_duplicates <- dat_exprs[-index, ]
-        base::row.names(dat_exprs_no_duplicates) <- new_gene_names[-index]
+        row.names(dat_exprs_no_duplicates) <- new_gene_names[-index]
         dat_exprs_with_duplicates <- dat_exprs[index, ] %>%
-            base::as.data.frame() %>%
+            as.data.frame() %>%
             dplyr::mutate(SYMBOL = new_gene_names[index])
         exprs2 <- stats::aggregate(stats::as.formula(". ~ SYMBOL"),
                                    data = dat_exprs_with_duplicates,
                                    FUN = median, na.action = na.pass)
-        base::row.names(exprs2) <- exprs2$SYMBOL
+        row.names(exprs2) <- exprs2$SYMBOL
         dat_exprs_with_duplicates <- exprs2 %>%
             dplyr::select(-.data$SYMBOL)
-        dat_exprs <- base::rbind(dat_exprs_with_duplicates,
-                                 dat_exprs_no_duplicates)
+        dat_exprs <- rbind(dat_exprs_with_duplicates, dat_exprs_no_duplicates)
     } else {
-        base::row.names(dat_exprs) <- new_gene_names
+        row.names(dat_exprs) <- new_gene_names
     }
     return(dat_exprs)
 }
