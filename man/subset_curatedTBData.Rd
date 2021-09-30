@@ -2,35 +2,19 @@
 % Please edit documentation in R/subset_curatedTBData.R
 \name{subset_curatedTBData}
 \alias{subset_curatedTBData}
-\alias{subset_curatedTBData,SummarizedExperiment-method}
-\alias{subset_curatedTBData,MultiAssayExperiment-method}
 \title{Subset curatedTBData based on single/multiple conditions}
 \usage{
-subset_curatedTBData(theObject, ...)
-
-\S4method{subset_curatedTBData}{SummarizedExperiment}(
+subset_curatedTBData(
   theObject,
   annotationColName,
   annotationCondition,
-  assayName = NULL,
-  ...
-)
-
-\S4method{subset_curatedTBData}{MultiAssayExperiment}(
-  theObject,
-  annotationColName,
-  annotationCondition,
-  assayName = NULL,
-  useAssay = NULL,
-  ...
+  assayName = NULL
 )
 }
 \arguments{
 \item{theObject}{A
 \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} or
 \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment} object.}
-
-\item{...}{Extra named arguments passed to function}
 
 \item{annotationColName}{A character indicates
 feature of interest in the object's annotation data.}

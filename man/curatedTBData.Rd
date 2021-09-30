@@ -4,14 +4,14 @@
 \alias{curatedTBData}
 \title{Import curated Tuberculosis Data}
 \usage{
-curatedTBData(study_name, dryrun = TRUE, curated.only = TRUE)
+curatedTBData(study_name, dry.run = TRUE, curated.only = TRUE)
 }
 \arguments{
 \item{study_name}{A character or vector of characters that contain name
 of the studies. When \code{any(study_name == "") == TRUE},
 the function will return all available studies.}
 
-\item{dryrun}{Boolean. Indicate the whether downloading resources from the
+\item{dry.run}{Boolean. Indicate the whether downloading resources from the
 ExperimentHub services.
 If \code{TRUE} (Default), return the names of the available resources
 to be downloaded. If \code{FALSE}, start downloading data.}
@@ -32,6 +32,6 @@ A function to access available curated tuberculosis transcriptomic data
   from the Bioconductor's ExperimentHub services
 }
 \examples{
-curatedTBData("GSE39939", dryrun = TRUE)
-curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
+curatedTBData("GSE39939", dry.run = TRUE)
+curatedTBData(c("GSE39939", "GSE39940"), dry.run = FALSE, curated.only = TRUE)
 }

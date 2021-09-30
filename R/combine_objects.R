@@ -1,5 +1,5 @@
 #' Merge samples with common gene names from selected studies
-#' @name combineObjects
+#' @name combine_objects
 #' @param object_list A \code{list} of
 #'   \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
 #'   or \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
@@ -15,9 +15,9 @@
 #' @examples
 #' geo <-  c("GSE19435", "GSE19439")
 #' data_list <-  curatedTBData(geo, dryrun = FALSE, curated.only = TRUE)
-#' combineObjects(data_list, experiment_name = "assay_curated")
+#' combine_objects(data_list, experiment_name = "assay_curated")
 #' @export
-combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
+combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
     ## check the experiment_name argument
     if (missing(experiment_name)) {
         stop("Argument \"experiment_name\" is missing, with no default.")
@@ -111,7 +111,7 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
 
 #' Select assay based on input list type
 #'
-#' @inheritParams combineObjects
+#' @inheritParams combine_objects
 #' @param Sobject Boolean. Indicate whether the input is a \code{list} of
 #'   \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
 #'   objects.
@@ -142,7 +142,7 @@ combineObjects <- function(object_list, experiment_name, update_genes = TRUE) {
                         base::stop(call. = FALSE)
                 }
                 base::as.data.frame(dat_assay)
-            }, object_list_seq, experiment_name)
+            }, object_list_seq, experiment_name, SIMPLIFY = FALSE)
         } else {
             paste("Input list length",
                   "is different from the \"experiment_name\" vector.") %>%

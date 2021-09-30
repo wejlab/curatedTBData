@@ -1,6 +1,6 @@
 #' Compute mean AUC value and bootstrapped confidence interval
 #'   for multiple signature's mean AUC across studies
-#' @name get_mean_AUC
+#' @name get_mean_auc
 #' @param df A data frame/matrix contains the interested numeric vector obtained
 #'   from \code{\link[curatedTBData]{combine_auc}}.
 #' @param colName A character string specifying the column name of the
@@ -32,9 +32,9 @@
 #' df <- combine_auc(re2, annotationColName = "TBStatus",
 #'                   signatureColNames = names(TBsignaturesSub),
 #'                   num.boot = 100, percent = 0.95)
-#' get_mean_AUC(df, colName = "AUC", method = "percentile",
+#' get_mean_auc(df, colName = "AUC", method = "percentile",
 #'              num.boot = 1000, percent = 0.95)
-get_mean_AUC <- function(df, colName, method = c("percentile", "empirical"),
+get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
                          num.boot = 100, percent = 0.95) {
     ## Select signatures and associated AUC
     ## split them into list based on signature
@@ -54,7 +54,7 @@ get_mean_AUC <- function(df, colName, method = c("percentile", "empirical"),
 #' Compute bootstrapped confidence interval for single signature's mean AUC
 #'   across multiple studies
 #' @name .bootstrap_mean_CI
-#' @inheritParams get_mean_AUC
+#' @inheritParams get_mean_auc
 #' @return A \code{data.frame} contains mean AUC,
 #'   lower and upper bootstrap confidence interval
 #'   for single gene signature across multiple studies.

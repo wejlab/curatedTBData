@@ -39,10 +39,8 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     param <- BPPARAM
     ## Check if the input is a list
     if (!methods::is(SE_scored_list, "list")) {
-        sprintf("The input class: %s.",
-                      base::class(SE_scored_list)[1]) %>%
-            paste("Function only supports a list",
-                        "containing SummarizrdExperiment objetcs.") %>%
+        paste("Function only supports a list of",
+              "SummarizrdExperiment objetcs.") |>
             stop(call. = FALSE)
     }
     check_element_class <- vapply(SE_scored_list, function(x)
@@ -51,18 +49,18 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
         msg <- sprintf("Elements(s) %s ",
                        paste0(which(!check_element_class), collapse = ", "))
         paste("Function only supports class: SummarizedExperiment.", msg,
-              "in the list is/are not SummarizedExperiment object.") %>%
+              "in the list is/are not SummarizedExperiment object.") |>
             stop(call. = FALSE)
     }
     ## Check valid list names
     list_name <- names(SE_scored_list)
     if (is.null(list_name)) {
         paste("names of the input list should not be NULL.",
-                    "Add unique name for each element from the list.") %>%
+                    "Add unique name for each element from the list.") |>
             stop(call. = FALSE)
     } else if (!is.na(match("", list_name))) {
         paste("Names of the input contains \"\".",
-              "Replace  \"\" with unique character.") %>%
+              "Replace  \"\" with unique character.") |>
             stop(call. = FALSE)
     }
     aucs_result <- BiocParallel::bplapply(SE_scored_list, function(x) {
@@ -72,9 +70,9 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     aucs_result_dat <- do.call(rbind, aucs_result)
     ## Re-order data based on their median AUC Remove NA value
     aucs_result_dat1 <- stats::na.omit(aucs_result_dat)
-    aucs_result_dat_median <- aucs_result_dat1 %>%
-        dplyr::group_by(.data$Signature) %>%
-        dplyr::summarise_all(stats::median) %>%
+    aucs_result_dat_median <- aucs_result_dat1 |>
+        dplyr::group_by(.data$Signature) |>
+        dplyr::summarise_all(stats::median) |>
         dplyr::arrange(dplyr::desc(.data$AUC))
     ## Order signatures based on median AUC values
     Signature_order <- as.character(aucs_result_dat_median$Signature)
@@ -107,11 +105,11 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                            num.boot, percent, AUC.abs) {
     ## Check signatureColNames
     col_info <- SummarizedExperiment::colData(SE_scored)
-    index <- match(signatureColNames, colnames(col_info)) %>%
+    index <- match(signatureColNames, colnames(col_info)) |>
         stats::na.omit()
     signatureColNames <- colnames(col_info)[index]
-    annotationData <- col_info[annotationColName][, 1] %>%
-        as.character() %>%
+    annotationData <- col_info[annotationColName][, 1] |>
+        as.character() |>
         as.factor()
     ## Check levels of annotationData
     anno_level_len <- length(unique(annotationData))
@@ -124,7 +122,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     ## Get AUC value for each signature along with corresponding datasets
     if (is.null(num.boot)) {
         sig_result <- lapply(signatureColNames, function(i, SE_scored, annotationData) {
-            score <- col_info[i][, 1] %>%
+            score <- col_info[i][, 1] |>
                 as.vector()
             ## Deal with scores that have constant value (e.g. Sloot_HIV_2)
             if (length(unique(score)) == 1L) {
@@ -142,7 +140,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             base::data.frame(Signature = i, P.value = round(pvals, 4),
                              AUC = round(aucs, 4))
         }, SE_scored, annotationData)
-        result <- do.call(rbind, sig_result) %>%
+        result <- do.call(rbind, sig_result) |>
             as.data.frame()
         row.names(result) <- NULL
         return(result)
@@ -190,7 +188,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                     NA
                 }
             }, score, annotationData)
-            bootCI <- unlist(bootCI) %>%
+            bootCI <- unlist(bootCI) |>
                 stats::na.omit()
             LowerAUC <- stats::quantile(bootCI, prob = lower, na.rm = TRUE)
             UpperAUC <- stats::quantile(bootCI, prob = upper, na.rm = TRUE)

@@ -6,7 +6,7 @@
 #' @param study_name A character or vector of characters that contain name
 #'   of the studies. When \code{any(study_name == "") == TRUE},
 #'   the function will return all available studies.
-#' @param dryrun Boolean. Indicate the whether downloading resources from the
+#' @param dry.run Boolean. Indicate the whether downloading resources from the
 #'   ExperimentHub services.
 #'   If \code{TRUE} (Default), return the names of the available resources
 #'   to be downloaded. If \code{FALSE}, start downloading data.
@@ -20,53 +20,53 @@
 #'   objects.
 #' @export
 #' @examples
-#' curatedTBData("GSE39939", dryrun = TRUE)
-#' curatedTBData(c("GSE39939", "GSE39940"), dryrun = FALSE, curated.only = TRUE)
+#' curatedTBData("GSE39939", dry.run = TRUE)
+#' curatedTBData(c("GSE39939", "GSE39940"), dry.run = FALSE, curated.only = TRUE)
 #' @importFrom AnnotationHub query
 #' @importFrom ExperimentHub ExperimentHub
 #' @importFrom MultiAssayExperiment MultiAssayExperiment
 #' @importFrom rlang .data
 #' @importFrom magrittr %>%
-curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
+curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
     ## Access to ExperimentHub
-    if (base::missing(study_name)) {
-        base::stop("Argument \"study_name\" is missing, with no default.")
+    if (missing(study_name)) {
+        stop("Argument \"study_name\" is missing, with no default.")
     }
     eh <- ExperimentHub::ExperimentHub()
     tbData <- AnnotationHub::query(eh, "curatedTBData")
     ## List available data
-    names_all <- base::unique(base::gsub("_.*", "", tbData$title))
+    names_all <- unique(gsub("_.*", "", tbData$title))
     ## Let study_name equals to all the the studies when ''.
-    if (base::any(study_name == "")) {
+    if (any(study_name == "")) {
         study_name <- names_all
     }
-    indexMatch <- base::match(study_name, names_all)
+    indexMatch <- match(study_name, names_all)
     names_sub <- names_all[indexMatch]
 
-    if (base::any(base::is.na(names_sub))) {
-        if (base::all(base::is.na(names_sub))) {
-            base::sprintf("The input \"study_name\": %s",
-                          paste0(study_name, collapse = ", ")) %>%
-                base::paste("is/are not available.") %>%
-                base::stop(call. = FALSE)
+    if (any(is.na(names_sub))) {
+        if (all(is.na(names_sub))) {
+            sprintf("The input \"study_name\": %s",
+                    paste0(study_name, collapse = ", "))  |>
+                paste("is/are not available.") |>
+                stop(call. = FALSE)
         } else {
-            indexNA <- base::which(base::is.na(names_sub))
-            base::sprintf("The input \"study_name\": %s",
-                          paste0(study_name[indexNA], collapse = ", ")) %>%
-                base::paste("is/are not available.") %>%
+            indexNA <- which(is.na(names_sub))
+            sprintf("The input \"study_name\": %s",
+                    paste0(study_name[indexNA], collapse = ", ")) |>
+                base::paste("is/are not available.") |>
                 base::stop(call. = FALSE)
         }
-        names_sub <- names_sub[!base::is.na(names_sub)]
+        names_sub <- names_sub[!is.na(names_sub)]
     }
-    ## Check dryrun status
-    if (dryrun) {
-        base::paste("dryrun = TRUE, listing dataset(s) to be downloaded",
-                    "\nSet dryrun = FALSE to download dataset(s).") %>%
-            base::message()
+    ## Check dry.run status
+    if (dry.run) {
+        paste("dry.run = TRUE, listing dataset(s) to be downloaded",
+                    "\nSet dry.run = FALSE to download dataset(s).") |>
+            message()
         resources <- NULL
         for (geo in names_sub) {
             resources <- c(resources,
-                           tbData$title[base::grep(geo, tbData$title)])
+                           tbData$title[grep(geo, tbData$title)])
         }
         ## Subset resources if curated.only = TRUE.
         ## Remove assay_raw, row_data, meta_data
@@ -75,13 +75,13 @@ curatedTBData <- function(study_name, dryrun = TRUE, curated.only = TRUE) {
                         resources)
             resources <- resources[-idx]
         }
-        msg <- base::sprintf("%s from the ExperiementHub:\n%s",
-                             paste0(names_sub, collapse = ", "),
-                             paste0(resources, collapse = "\n"))
-        base::paste("Will download the following resources for", msg) %>%
-            base::cat()
+        msg <- sprintf("%s from the ExperiementHub:\n%s",
+                       paste0(names_sub, collapse = ", "),
+                       paste0(resources, collapse = "\n"))
+        paste("Will download the following resources for", msg) |>
+            message()
         # invisible: The results will not be printed if not assigned
-        return(base::invisible(resources))
+        return(invisible(resources))
     }
     ## check whether downloading the curated version
     if (curated.only) {
