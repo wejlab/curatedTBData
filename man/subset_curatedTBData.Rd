@@ -47,4 +47,5 @@ database based pre-specified conditions
 obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
 subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
                      annotationCondition = c("Control","PTB"))
+
 }

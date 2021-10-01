@@ -38,7 +38,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                         BPPARAM = BiocParallel::SerialParam(progressbar = TRUE)) {
     param <- BPPARAM
     ## Check if the input is a list
-    if (!methods::is(SE_scored_list, "list")) {
+    if (!is.list(SE_scored_list)) {
         paste("Function only supports a list of",
               "SummarizrdExperiment objetcs.") |>
             stop(call. = FALSE)
@@ -56,7 +56,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     list_name <- names(SE_scored_list)
     if (is.null(list_name)) {
         paste("names of the input list should not be NULL.",
-                    "Add unique name for each element from the list.") |>
+              "Add unique name for each element from the list.") |>
             stop(call. = FALSE)
     } else if (!is.na(match("", list_name))) {
         paste("Names of the input contains \"\".",
@@ -116,7 +116,7 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     if (anno_level_len != 2L) {
         paste("Annotation data should have exactly two levels.",
               "The number of input levels is:",
-              anno_level_len) %>%
+              anno_level_len) |>
             stop(call. = FALSE)
     }
     ## Get AUC value for each signature along with corresponding datasets
@@ -134,11 +134,11 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
             if (AUC.abs) {
                 aucs <- pred$AUC
             } else {
-                aucs <- base::max(pred$AUC, 1 - pred$AUC)
+                aucs <- max(pred$AUC, 1 - pred$AUC)
             }
             ## Create data frame for With signature, P.value, AUC
-            base::data.frame(Signature = i, P.value = round(pvals, 4),
-                             AUC = round(aucs, 4))
+            data.frame(Signature = i, P.value = round(pvals, 4),
+                       AUC = round(aucs, 4))
         }, SE_scored, annotationData)
         result <- do.call(rbind, sig_result) |>
             as.data.frame()
@@ -149,11 +149,11 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
                              function(i, SE_scored, annotationData, percent) {
             score <- col_info[i][, 1]
             ## Deal with PLAGE that have constant score (e.g. Sloot_HIV_2)
-            if (base::length(base::unique(score)) == 1) {
-                dat <- base::data.frame(i, NA, NA, NA, NA)
-                base::colnames(dat) <- c("Signature", "P.value", "AUC",
-                                         paste0("CI lower.", lower * 100, "%"),
-                                         paste0("CI upper.", upper * 100, "%"))
+            if (length(unique(score)) == 1) {
+                dat <- data.frame(i, NA, NA, NA, NA)
+                colnames(dat) <- c("Signature", "P.value", "AUC",
+                                   paste0("CI lower.", lower * 100, "%"),
+                                   paste0("CI upper.", upper * 100, "%"))
                 return(dat)
             }
             pvals <- stats::t.test(score ~ annotationData)$p.value

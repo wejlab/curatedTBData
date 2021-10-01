@@ -25,19 +25,19 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
     ## check length of the list, should be greater than 1
     n <- length(object_list)
     if (n <= 1L) {
-        sprintf("The length of the input list is %i,", n) %>%
-            paste("expecting more than 1 elements from the list") %>%
+        sprintf("The length of the input list is %i,", n) |>
+            paste("expecting more than 1 elements from the list") |>
             stop(call. = FALSE)
     }
     ## check names of the input object list
     obj_name <- names(object_list)
     if (is.null(obj_name)) {
         paste("Names of the input list should not be NULL.",
-                    "Add unique name for each element in the list.") %>%
+                    "Add unique name for each element in the list.") |>
             stop(call. = FALSE)
     } else if (!is.na(match("", obj_name))) {
         paste("Names of the input contains \"\".",
-                    "Replace  \"\" with unique character.") %>%
+                    "Replace  \"\" with unique character.") |>
             stop(call. = FALSE)
     }
     ## Check whether it is a list of SummarizedExperiment or MultiAssayExperiment objects
@@ -52,9 +52,9 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
         dat_exprs_match <- .select_assay(object_list, experiment_name,
                                          Sobject = FALSE)
     } else {
-        base::paste("Input is not a list of MultiAssayExperiment",
-                    "or SummarizedExperiment objetcs.") %>%
-            base::stop(call. = FALSE)
+        paste("Input is not a list of MultiAssayExperiment",
+                    "or SummarizedExperiment objetcs.") |>
+            stop(call. = FALSE)
     }
     if (update_genes) {
         message("\"update_genes\" is TRUE, updating gene symbols")
@@ -69,12 +69,12 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
            x
     }))
     row_names <- dat_exprs_combine$id
-    dat_exprs_count <- dat_exprs_combine %>%
-        dplyr::select(-.data$id) %>%
+    dat_exprs_count <- dat_exprs_combine |>
+        dplyr::select(-.data$id) |>
         as.data.frame()
     row.names(dat_exprs_count) <- row_names
     ## Create combined column data information
-    col_data <- lapply(base::seq_len(n), function(x) {
+    col_data <- lapply(seq_len(n), function(x) {
         col_data <- SummarizedExperiment::colData(object_list[[x]])
         col_data$Study <- names(object_list[x])
         as.data.frame(col_data)
@@ -82,8 +82,8 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
     ## Combine list into data frame with unequal columns
     ## fill in NA when columns from studies are not found
     rbindx <- function(dfs) {
-        ns <- lapply(dfs, colnames) %>%
-            unlist() %>%
+        ns <- lapply(dfs, colnames) |>
+            unlist() |>
             unique()
         do.call(rbind, lapply(dfs, function(x) {
             for (n in ns[!ns %in% colnames(x)]) {
@@ -94,12 +94,12 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
     }
     col_info <- rbindx(col_data)
     Sample <- lapply(object_list, function(x)
-        SummarizedExperiment::colData(x) %>%
-            row.names()) %>%
+        SummarizedExperiment::colData(x) |>
+            row.names()) |>
             unlist(use.names = FALSE)
     row.names(col_info) <- Sample
     ## Remove samples that does not exist in the count
-    index <- match(colnames(dat_exprs_count), Sample) %>%
+    index <- match(colnames(dat_exprs_count), Sample)  |>
         stats::na.omit()
     col_info <- col_info[index, ]
     ## Create output in the format of SummarizedExperiment
@@ -135,17 +135,17 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
                 } else {
                     dat_assay <- MultiAssayExperiment::experiments(x)[[y]]
                 }
-                if (base::is.null(dat_assay)) {
-                    base::sprintf("Object: %s with experiment name: %s",
-                                  object_list_names[i], experiment_name) %>%
-                        base::paste("has assay NULL.") %>%
-                        base::stop(call. = FALSE)
+                if (is.null(dat_assay)) {
+                    sprintf("Object: %s with experiment name: %s",
+                                  object_list_names[i], experiment_name) |>
+                        paste("has assay NULL.") |>
+                        stop(call. = FALSE)
                 }
-                base::as.data.frame(dat_assay)
+                as.data.frame(dat_assay)
             }, object_list_seq, experiment_name, SIMPLIFY = FALSE)
         } else {
             paste("Input list length",
-                  "is different from the \"experiment_name\" vector.") %>%
+                  "is different from the \"experiment_name\" vector.") |>
                 stop(call. = FALSE)
         }
     } else {
@@ -160,8 +160,8 @@ combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {
             }
             if (is.null(dat_assay)) {
                 sprintf("Object: %s with experiment name: %s",
-                        object_list_names[i], experiment_name) %>%
-                    paste("has assay NULL.") %>%
+                        object_list_names[i], experiment_name) |>
+                    paste("has assay NULL.") |>
                     stop(call. = FALSE)
             }
             as.data.frame(dat_assay)
@@ -180,9 +180,9 @@ update_gene_symbol <- function(dat_exprs) {
     ## Function for updating gene names from HGNChelper::checkGeneSymbols
     update_genenames <- function(siglist) {
         newgenes <- HGNChelper::checkGeneSymbols(siglist,
-                                                 unmapped.as.na = FALSE) %>%
-            base::suppressWarnings() %>%
-            base::suppressMessages()
+                                                 unmapped.as.na = FALSE) |>
+            suppressWarnings() |>
+            suppressMessages()
         newgenes <- newgenes$Suggested.Symbol
         ind <- grep("//", newgenes)
         if (length(ind) != 0) {
@@ -190,7 +190,7 @@ update_gene_symbol <- function(dat_exprs) {
         }
         return(newgenes)
     }
-    new_gene_names <- row.names(dat_exprs) %>%
+    new_gene_names <- row.names(dat_exprs) |>
         update_genenames()
     new_gene_names_tab <- table(new_gene_names)
     ## Get genes with duplicates
@@ -200,14 +200,14 @@ update_gene_symbol <- function(dat_exprs) {
         index <- which(new_gene_names %in% gene_names_dup)
         dat_exprs_no_duplicates <- dat_exprs[-index, ]
         row.names(dat_exprs_no_duplicates) <- new_gene_names[-index]
-        dat_exprs_with_duplicates <- dat_exprs[index, ] %>%
-            as.data.frame() %>%
+        dat_exprs_with_duplicates <- dat_exprs[index, ] |>
+            as.data.frame() |>
             dplyr::mutate(SYMBOL = new_gene_names[index])
         exprs2 <- stats::aggregate(stats::as.formula(". ~ SYMBOL"),
                                    data = dat_exprs_with_duplicates,
                                    FUN = median, na.action = na.pass)
         row.names(exprs2) <- exprs2$SYMBOL
-        dat_exprs_with_duplicates <- exprs2 %>%
+        dat_exprs_with_duplicates <- exprs2 |>
             dplyr::select(-.data$SYMBOL)
         dat_exprs <- rbind(dat_exprs_with_duplicates, dat_exprs_no_duplicates)
     } else {

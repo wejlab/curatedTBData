@@ -28,14 +28,14 @@
 #' subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
 #'                      annotationCondition = c("Control","PTB"))
 #'
-subset_curatedTBData <- function(theObject, annotationColName, annotationCondition,
-                                 assayName = NULL) {
+subset_curatedTBData <- function(theObject, annotationColName,
+                                 annotationCondition, assayName = NULL) {
     ## Input class's class type
     check_type <- methods::is(theObject, "MultiAssayExperiment") ||
         methods::is(theObject, "MultiAssayExperiment")
     if (!check_type) {
         stop(paste("subset_curatedTBData() only support for",
-        "SummarizedExperiment/MultiAssayExperiment object"),
+                   "SummarizedExperiment/MultiAssayExperiment object"),
              call. = FALSE)
     }
     ## Check whether annotationColName exists in the column data
@@ -47,23 +47,24 @@ subset_curatedTBData <- function(theObject, annotationColName, annotationConditi
             message()
         return()
     }
-    if (methods::is(theObject) == "SummarizedExperiment") {
+    if (methods::is(theObject, "SummarizedExperiment")) {
         theObject_filter <- .subset_curatedTBData(theObject, annotationColName,
-                                                  annotationCondition, assayName)
+                                                  annotationCondition,
+                                                  assayName)
         return(theObject_filter)
     } else {
         if (is.null(assayName)) {
-            if (length(base::names(theObject)) >= 1L) {
+            if (length(names(theObject)) >= 1L) {
                 paste("assayName not specified",
                       "select the first assay as default.") |>
-                    base::message()
+                    message()
                 assayName <- 1
             } else {
                 stop("No available assay from the input.")
             }
         } else {
             experiment_name_index <- which(names(theObject) %in% assayName)
-            if (base::length(experiment_name_index) == 0L) {
+            if (length(experiment_name_index) == 0L) {
                 ## Use names(theObject) when theObject is MultiAssayExperiment
                 msg1 <- sprintf("assay with name: %s not found", assayName)
                 msg2 <- sprintf("\nThe available assay(s) is/are: %s",
@@ -76,13 +77,13 @@ subset_curatedTBData <- function(theObject, annotationColName, annotationConditi
         theObject_reduced <- theObject[, index_filter, assayName]
         col_info <- SummarizedExperiment::colData(theObject_reduced)
         theObject_sub <- theObject_reduced[[assayName]]
+        support_classes <- c("SummarizedExperiment", "matrix", "data.frame")
         if (methods::is(theObject_sub, "SummarizedExperiment")) {
             ## assay_raw is selected in the full version
             ## For those datasets that do not include all samples from the study
             SummarizedExperiment::colData(theObject_sub) <- col_info
             return(theObject_sub)
-        } else if (methods::is(theObject_sub, "matrix") ||
-                   methods::is(theObject_sub, "data.frame")) {
+        } else if (is.matrix(theObject_sub) || is.data.frame(theObject_sub)) {
             ## assay_curated/assay_reprocess is selected. S
             ## set attribute to be NULL
             ## ensure that row/column names have NULL attributes
@@ -94,12 +95,12 @@ subset_curatedTBData <- function(theObject, annotationColName, annotationConditi
                 assays = list(assay1 = as.matrix(theObject_sub)),
                 colData = col_info)
             return(.subset_curatedTBData(sobject_TBSig, annotationColName,
-                                        annotationCondition, "assay1"))
+                                         annotationCondition, "assay1"))
         } else {
-            base::paste("The class of the selects assay is not recognized",
-                        "\n Selected assay has class:",
-                        paste0(base::class(theObject_sub), collapse = ", ")) %>%
-                base::stop(call. = FALSE)
+            paste("The class of the selected assay is not recognized.\n",
+                  sprintf("Supported classes are: %s",
+                          paste(support_classes, collapse = ", "))) |>
+                stop(call. = FALSE)
         }
     }
 }
@@ -109,8 +110,8 @@ subset_curatedTBData <- function(theObject, annotationColName, annotationConditi
 #' @inheritParams subset_curatedTBData
 #' @return A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
 #'   object containing subjects with desired annotation conditions.
-.subset_curatedTBData <- function(theObject, annotationColName, annotationCondition,
-                           assayName) {
+.subset_curatedTBData <- function(theObject, annotationColName,
+                                  annotationCondition, assayName) {
     ## Check assayName whether it is specified by the users
     if (is.null(assayName)) {
         theObject_length <- length(SummarizedExperiment::assays(theObject))
@@ -120,7 +121,7 @@ subset_curatedTBData <- function(theObject, annotationColName, annotationConditi
                 message()
             assay_name_exclude <- -1
         } else {
-            base::stop("No available assay from the input.")
+            stop("No available assay from the input.")
         }
     } else {
         ## Check whether assay exists in the object

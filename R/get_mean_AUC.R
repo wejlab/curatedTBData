@@ -38,18 +38,18 @@ get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
                          num.boot = 100, percent = 0.95) {
     ## Select signatures and associated AUC
     ## split them into list based on signature
-    df_list <- df %>%
-        dplyr::select("Signature", "AUC") %>%
+    df_list <- df |>
+        dplyr::select("Signature", "AUC") |>
         dplyr::group_split(.data$Signature)
-    sigInfo <- df_list %>%
-        base::vapply(function(x) as.character(x$Signature[1]), character(1))
+    sigInfo <- df_list |>
+        vapply(function(x) as.character(x$Signature[1]), character(1))
     ## Get summarized table and
     ## bootstrap 95% Confidence Interval for the mean AUC
-    sigInfo <- base::data.frame(Signature = sigInfo)
-    meanAUC_list <- base::lapply(df_list, function(x)
+    sigInfo <- data.frame(Signature = sigInfo)
+    meanAUC_list <- lapply(df_list, function(x)
         .bootstrap_mean_CI(x, colName, method, num.boot, percent))
-    meanAUC <- base::do.call(base::rbind, meanAUC_list)
-    return(base::cbind(sigInfo, meanAUC))
+    meanAUC <- do.call(rbind, meanAUC_list)
+    return(cbind(sigInfo, meanAUC))
 }
 #' Compute bootstrapped confidence interval for single signature's mean AUC
 #'   across multiple studies
@@ -61,36 +61,35 @@ get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
 .bootstrap_mean_CI <- function(df, colName,
                                method = c("percentile", "empirical"),
                                num.boot, percent = 0.95) {
-    if (base::missing(method)) {
+    if (missing(method)) {
         method <- "empirical"
-        base::paste("Missing method argument.",
-                    "Using the default method: empirical") %>%
-            base::message()
+        paste("Missing method argument.",
+                    "Using the default method: empirical") |>
+            message()
     }
-    method <- base::match.arg(method)
+    method <- match.arg(method)
     lower <- (1 - percent) / 2
     upper <- 1 - lower
-    x <- base::unlist(df[, colName], use.names = FALSE)
+    x <- unlist(df[, colName], use.names = FALSE)
     ## Remove NA's in PLAGE method
     x <- stats::na.omit(x)
     n <- length(x)
     if (n == 1L) {
         xbar <- x
-        ci <- base::data.frame(base::round(xbar, 4), NA, NA)
-        base::colnames(ci) <- c("MeanAUC",
-                                base::paste0("CI lower.", lower * 100, "%"),
-                                base::paste0("CI upper.", upper * 100, "%"))
-        base::row.names(ci) <- NULL
+        ci <- data.frame(round(xbar, 4), NA, NA)
+        colnames(ci) <- c("MeanAUC", paste0("CI lower.", lower * 100, "%"),
+                                     paste0("CI upper.", upper * 100, "%"))
+        row.names(ci) <- NULL
         return(ci)
     }
     ## Sample mean
-    xbar <- base::mean(x)
+    xbar <- mean(x)
     ## Random re-samples from x
-    bootstrapsample <- base::lapply(base::seq_len(num.boot), function(i)
-        base::sample(x, n, replace = TRUE))
-    bootstrapsample <- base::do.call(base::cbind, bootstrapsample)
+    bootstrapsample <- lapply(seq_len(num.boot), function(i)
+        sample(x, n, replace = TRUE))
+    bootstrapsample <- do.call(cbind, bootstrapsample)
     ## Compute the means x∗
-    bsmeans <- base::colMeans(bootstrapsample)
+    bsmeans <- colMeans(bootstrapsample)
     if (method == "empirical") {
         ## Compute deltastar for each bootstrap sample
         deltastar <- bsmeans - xbar
@@ -102,14 +101,13 @@ get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
         ci <- stats::quantile(bsmeans, c(lower, upper), na.rm = TRUE)
     }
     ## Set upper and lower bound for the confidence interval
-    lower_ci <- base::round(ci[1], 4)
-    lower_ci <- base::ifelse(lower_ci <= 0.5, 0.5, lower_ci)
-    upper_ci <- base::round(ci[2], 4)
-    upper_ci <- base::ifelse(upper_ci >= 1, 1, upper_ci)
-    ci <- base::data.frame(base::round(xbar, 4), lower_ci, upper_ci)
-    base::colnames(ci) <- c("MeanAUC",
-                            base::paste0("CI lower.", lower * 100, "%"),
-                            base::paste0("CI upper.", upper * 100, "%"))
-    base::row.names(ci) <- NULL
+    lower_ci <- round(ci[1], 4)
+    lower_ci <- ifelse(lower_ci <= 0.5, 0.5, lower_ci)
+    upper_ci <- round(ci[2], 4)
+    upper_ci <- ifelse(upper_ci >= 1, 1, upper_ci)
+    ci <- data.frame(round(xbar, 4), lower_ci, upper_ci)
+    colnames(ci) <- c("MeanAUC", paste0("CI lower.", lower * 100, "%"),
+                                 paste0("CI upper.", upper * 100, "%"))
+    row.names(ci) <- NULL
     return(ci)
 }

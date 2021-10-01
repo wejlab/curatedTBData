@@ -77,7 +77,9 @@ There are two experiments assay being included in the output Microarray studies.
 GSE19439 <- curatedTBData("GSE19439", dry.run = FALSE, curated.only = FALSE)
 GSE19439
 ```
+
 When accessing data for RNA sequencing studies, a third `experiment` called `assay_reprocess` is included. This `matrix` represents the reprocessed version of gene expression profile from the raw .fastq files using `r Biocpkg("Rsubread")`.
+
 ```{r, warning=FALSE}
 GSE79362 <- curatedTBData("GSE79362", dry.run = FALSE, curated.only = FALSE)
 GSE79362
