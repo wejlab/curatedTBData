@@ -37,78 +37,83 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
     ## Subset input data.frame with the desired column names
     ## check whether column contains 'Signature', 'Study', 'AUC'
     expect_name <- c("Signature", "Study", "AUC")
-    index_name <- base::match(expect_name, base::colnames(combine_dat))
-    if (base::any(base::is.na(index_name))) {
-        base::stop(base::sprintf("Column with name(s): %s is/are missing.",
-                                 paste0(expect_name[base::is.na(index_name)],
-                                        collapse = ", ")))
+    index_name <- match(expect_name, colnames(combine_dat))
+    if (any(is.na(index_name))) {
+        stop(sprintf("Column with name(s): %s is/are missing.",
+                     paste0(expect_name[is.na(index_name)], collapse = ", ")))
     }
     dat <- combine_dat[, index_name]
-    if (!base::is.factor(dat$Study)) {
-        dat$Study <- base::as.factor(dat$Study)
+    if (!is.factor(dat$Study)) {
+        dat$Study <- factor(dat$Study)
     }
-    if (base::length(base::unique(dat$Study)) > 1L && clustering == TRUE) {
+    if (length(unique(dat$Study)) > 1L && clustering == TRUE) {
         ## Clustering AUC values if the number of studies is greater than 1
         ## Transform form long to wide data:
         ## First column is the study names and column names is signatures
         ## This step is necessary for clustering
-        data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"))
-        base::row.names(data_wide) <- data_wide$Study
+        data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"),
+                                     value.var = "AUC")
+        row.names(data_wide) <- data_wide$Study
         ## remove study name column
-        dat_input <- base::as.matrix(data_wide[, -1])
-        dat_input[base::is.na(dat_input)] <- NA
+        dat_input <- as.matrix(data_wide[, -1])
+        dat_input[is.na(dat_input)] <- NA
         dd <- stats::dist(dat_input)
         hc <- stats::hclust(dd)
         dat_input <- dat_input[hc$order, ]
         ## Get mean AUC for each study across multiple gene signatures
-        Avg <- base::rowMeans(dat_input, na.rm = TRUE)
+        Avg <- rowMeans(dat_input, na.rm = TRUE)
         ## Transform back into long format
-        datta <- base::cbind(dat_input, Avg = Avg) %>%
+        datta <- cbind(dat_input, Avg = Avg) |>
             reshape2::melt()
     } else {
-        datta <- base::data.frame(Var1 = dat$Study, Var2 = dat$Signature,
-                                  value = dat$AUC)
-        mean_df <- dat %>%
-            dplyr::group_by(.data$Study) %>%
+        datta <- data.frame(Var1 = dat$Study, Var2 = dat$Signature,
+                            value = dat$AUC)
+        mean_df <- dat |>
+            dplyr::group_by(.data$Study) |>
             dplyr::summarise(value = mean(.data$AUC))
-        mean_df <- base::data.frame(Var1 = mean_df$Study, Var2 = "Avg",
-                                    value = mean_df$value)
-        datta <- base::rbind(datta, mean_df)
+        mean_df <- data.frame(Var1 = mean_df$Study, Var2 = "Avg",
+                              value = mean_df$value)
+        datta <- rbind(datta, mean_df)
     }
     ## Get training data position index
     datta$trian <- FALSE
-    index <- NULL
-    if (!base::is.null(GSE_sig)) {
+    if (!is.null(GSE_sig)) {
         GSE_sig <- .expand_study(GSE_sig)
-        for (i in base::seq_len(base::nrow(GSE_sig))) {
-            kk <- datta[base::grep(GSE_sig$TBSignature[i], datta$Var2), ]
-            kk$indx <- base::row.names(kk)
-            indx <- kk[base::which(base::as.character(kk$Var1) %in%
-                                       GSE_sig$Study[i]), "indx"]
-            index <- c(index, indx)
-        }
+        index <- lapply(seq_len(nrow(GSE_sig)), function(i) {
+            kk <- datta[grep(GSE_sig$TBSignature[i], datta$Var2), ]
+            kk$indx <- row.names(kk)
+            indx <- kk[which(as.character(kk$Var1) %in%
+                                 GSE_sig$Study[i]), "indx"]
+            indx
+        }) |>
+            unlist(use.names = FALSE)
+    } else {
+        paste("GSE_sig not provided.",
+              "Training data information is not available for the output") |>
+            message()
+        index <- NULL
     }
     ## Label signature type based on the input signatures
-    signatureColNames <- base::as.character(base::unique(dat$Signature))
-    sig_type_temp <- base::vapply(base::strsplit(signatureColNames, "_"),
-                                  function(x) x[2], base::character(1))
-    sig_type_index <- sig_type_temp %>%
-        base::as.numeric() %>%
-        base::is.na() %>%
-        base::suppressWarnings()
+    signatureColNames <- as.character(unique(dat$Signature))
+    sig_type_temp <- vapply(strsplit(signatureColNames, "_"),
+                            function(x) x[2], character(1))
+    sig_type_index <- sig_type_temp |>
+        as.numeric() |>
+        is.na() |>
+        suppressWarnings()
     ## Get signature type
-    sig_type <- sig_type_temp[sig_type_index] %>%
-        base::unique()
+    sig_type <- sig_type_temp[sig_type_index] |>
+        unique()
     ## Assign category:
     ## Disease for those do not have signature type: e.g. Anderson_42
     datta$sig_typek <- "Disease"
     for (i in sig_type) {
         datta$sig_typek[grep(i, datta$Var2)] <- i
     }
-    datta$sig_typek[base::grep("Avg", datta$Var2)] <- "Avg"
-    datta$sig_typek <- base::factor(datta$sig_typek,
-                                    levels = c("Avg", sig_type, "Disease"))
-    datta[base::as.numeric(index), "trian"] <- TRUE
+    datta$sig_typek[grep("Avg", datta$Var2)] <- "Avg"
+    datta$sig_typek <- factor(datta$sig_typek,
+                              levels = c("Avg", sig_type, "Disease"))
+    datta[as.numeric(index), "trian"] <- TRUE
     ## Subset datta with training study and its associated signature(s)
     frames <- datta[datta$trian, c("Var1", "Var2", "sig_typek")]
     p <- ggplot2::ggplot(data = datta,
@@ -116,13 +121,13 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
                                       fill = .data$value)) +
         ggplot2::geom_tile() +
         ggplot2::scale_fill_distiller(palette = "RdPu", trans = "reverse") +
-        ggplot2::geom_text(ggplot2::aes(label = base::round(.data$value, 2)),
+        ggplot2::geom_text(ggplot2::aes(label = round(.data$value, 2)),
                            cex = 3.5)
     if (facet) {
         p <- p + ggplot2::facet_grid(.data$sig_typek ~ ., switch = "y",
                                      scales = "free", space = "free")
         frame_facet <- .facet_rect_position(datta, frames)
-        if (!base::nrow(frame_facet) == 0L) {
+        if (!nrow(frame_facet) == 0L) {
             p <- p + ggplot2::geom_rect(data = frame_facet,
                                         ggplot2::aes(xmin = .data$Var1 - 0.5,
                                                      xmax = .data$Var1 + 0.5,
@@ -132,8 +137,8 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
                                         inherit.aes = FALSE)
         }
     } else {
-        frames$Var1 <- base::as.integer(frames$Var1)
-        frames$Var2 <- base::as.integer(frames$Var2)
+        frames$Var1 <- as.integer(frames$Var1)
+        frames$Var2 <- as.integer(frames$Var2)
         p <- p +
             ggplot2::geom_rect(data = frames,
                                ggplot2::aes(xmin = .data$Var1 - 0.5,
@@ -163,29 +168,27 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
 #'   The output is used as input for \code{\link[ggplot2]{geom_rect}}
 .facet_rect_position <- function(datta, frames) {
     # Split data frame into list based on different signature type
-    frames_list <- frames %>%
+    frames_list <- frames |>
         dplyr::group_split(.data$sig_typek)
-    base::names(frames_list) <- base::lapply(frames_list, function(x)
-        x$sig_typek[1]) %>%
-        base::unlist()
-    datta_list <- datta %>%
+    names(frames_list) <- vapply(frames_list, function(x) x$sig_typek[1],
+                                 numeric(1))
+    datta_list <- datta |>
         dplyr::group_split(.data$sig_typek)
-    base::names(datta_list) <- base::lapply(datta_list, function(x)
-        x$sig_typek[1]) %>%
-        base::unlist()
+    names(datta_list) <- vapply(datta_list, function(x) x$sig_typek[1],
+                                numeric(1))
     ## Get the correct index in for training study change
     ## sig_type levels from sub list based on characters in the full list
-    frame_facet1 <- base::lapply(base::names(frames_list), function(i) {
-        num_Var1 <- frames_list[[i]]$Var1 %>%
-            base::as.integer()
+    frame_facet1 <- lapply(names(frames_list), function(i) {
+        num_Var1 <- frames_list[[i]]$Var1 |>
+            as.integer()
         frame_sig <- frames_list[[i]]$Var2
-        num_Var2 <- base::factor(frame_sig, levels = unique(frame_sig)) %>%
-            base::as.integer()
-        frames_list[[i]] %>%
+        num_Var2 <- factor(frame_sig, levels = unique(frame_sig)) |>
+            as.integer()
+        frames_list[[i]] |>
             dplyr::mutate(Var1 = num_Var1, Var2 = num_Var2)
     })
-    re <- base::do.call(base::rbind, frame_facet1) %>%
-        base::as.data.frame()
+    re <- do.call(rbind, frame_facet1) |>
+        as.data.frame()
     return(re)
 }
 
@@ -194,15 +197,23 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
 #'   and its training/discovery dataset(s) name. Default is \code{NULL}.
 #' @return A expand \code{data.frame} for gene signatures and dataset.
 .expand_study <- function(GSE_sig) {
-    n <- base::nrow(GSE_sig)
-    col_name <- base::colnames(GSE_sig)
-    data_list <- base::lapply(base::seq_len(n), function(i) {
-        study_vector <- base::strsplit(GSE_sig[, col_name[2]][i], split = "&")
-        df <- base::data.frame(GSE_sig[, col_name[1]][i], study_vector)
+    n <- nrow(GSE_sig)
+    col_name <- colnames(GSE_sig)
+    ## check for column names:TBSignature and Study
+    expect_name <- c("TBSignature", "Study")
+    index_name <- match(expect_name, colnames(GSE_sig))
+    if (any(is.na(index_name))) {
+        stop(sprintf("Column with name(s): %s is/are missing.",
+                     paste0(expect_name[is.na(index_name)], collapse = ", ")))
+    }
+    GSE_sig <- GSE_sig[, index_name]
+    data_list <- lapply(seq_len(n), function(i) {
+        study_vector <- strsplit(GSE_sig[, col_name[2]][i], split = "&")
+        df <- data.frame(GSE_sig[, col_name[1]][i], study_vector)
         colnames(df) <- col_name
         df
     })
-    re <- base::do.call(rbind, data_list) %>%
-        base::as.data.frame()
+    re <- do.call(rbind, data_list) |>
+        as.data.frame()
     return(re)
 }

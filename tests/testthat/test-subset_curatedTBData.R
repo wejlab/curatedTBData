@@ -1,6 +1,6 @@
-returned_resource <- curatedTBData("GSE74092", dryrun = FALSE,
-                                    curated.only = TRUE) %>%
-  base::suppressMessages()
+returned_resource <- curatedTBData("GSE74092", dry.run = FALSE,
+                                    curated.only = TRUE) |>
+  suppressMessages()
 mobject <- returned_resource[[1]]
 assay_curated <- returned_resource$GSE74092[["assay_curated"]]
 col_info <- SummarizedExperiment::colData(mobject)
@@ -14,7 +14,8 @@ test_that("message when \"annotationColName\" is not found in the metadata", {
                                       assayName = "assay_curated"))
 })
 
-test_that("return type is NULL if at least one of the conditions is not found from the column data", {
+test_that("return type is NULL if at least one of the conditions is not found
+          from the column data", {
   expect_null(subset_curatedTBData(mobject,
                                    annotationColName = "TBStatus",
                                    annotationCondition = c("Control", "LTBI"),

@@ -5,7 +5,7 @@
 \alias{boxplotTBSig}
 \title{Generate Boxplot for single gene signature scores across multiple studies}
 \usage{
-boxplotTBSig(object_list, gset, annotationColName)
+boxplotTBSig(object_list, annotationColName, signatureColNames)
 }
 \arguments{
 \item{object_list}{A \code{list} of
@@ -13,12 +13,12 @@ boxplotTBSig(object_list, gset, annotationColName)
 objects. Usually output from
 \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
-\item{gset}{A character of vector of characters
-represent name(s) of the signatures.
-See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.}
-
 \item{annotationColName}{A character indicates the name of interest in the
 object's column data.}
+
+\item{signatureColNames}{A character of vector of characters
+represent name(s) of the signatures.
+See \code{\link[TBSignatureProfiler]{TBsignatures}} for details.}
 }
 \value{
 A \code{gtable} object that contains multiple Boxplots in the form of
@@ -29,8 +29,8 @@ A \code{gtable} object that contains multiple Boxplots in the form of
 Generate Boxplot for single gene signature scores across multiple studies
 }
 \examples{
-returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
-                                    dryrun = FALSE, curated.only = TRUE)
+returned_resources <- curatedTBData(c("GSE107104", "GSE19435"),
+                                    dry.run = FALSE, curated.only = TRUE)
 mysignatures <- list(Sweeney_OD_3 = c("DUSP3", "GBP5", "KLF2"))
 re1 <- lapply(returned_resources, function(x)
                    subset_curatedTBData(x, "TBStatus", c("Control","PTB")))
@@ -41,6 +41,6 @@ re2 <- lapply(re1, function(x)
                                                    algorithm = "ssGSEA",
                                                    update_genes = FALSE))
 boxplotTBSig(object_list = re2,
-             gset = "Sweeney_OD_3",
-             annotationColName = "TBStatus")
+             annotationColName = "TBStatus",
+             signatureColNames = "Sweeney_OD_3")
 }
