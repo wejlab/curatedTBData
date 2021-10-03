@@ -101,13 +101,13 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
     df <- data.frame(ah_id = tbData$ah_id, title = tbData$title)
     ## Add progress bar for lapply
     lapply_pb <- function(X, FUN, ...) {
-        pb <- txtProgressBar(min = 0, max = length(X), style = 3)
+        pb <- utils::txtProgressBar(min = 0, max = length(X), style = 3)
         cur <- 0
         env <- environment()
         wrapper <- function(...) {
             i <- get("cur", envir = env)
             assign("cur", i + 1, envir = env)
-            setTxtProgressBar(get("pb", envir = env), i + 1)
+            utils::setTxtProgressBar(get("pb", envir = env), i + 1)
             FUN(...)
         }
         re <- lapply(X, wrapper, ...)

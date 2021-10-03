@@ -13,18 +13,11 @@
 #'   the name of the assay from the input object. The default is \code{NULL}.
 #'   When \code{assayName} is \code{NULL}, the function selects
 #'   the first assay along assay list.
-#' @param useAssay A character indicates the name of the assay when a
-#'   \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
-#'   is selected from the
-#'   \link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
-#'   object. The default is \code{NULL}.
-#'   When \code{assayName} is \code{NULL}, the function selects
-#'   the first assay along assay list.
 #' @return A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
 #'   object containing subjects with desired annotation conditions.
 #' @export
 #' @examples
-#' obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
+#' obj <-  curatedTBData("GSE74092", dry.run = FALSE, curated.only = TRUE)
 #' subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
 #'                      annotationCondition = c("Control","PTB"))
 #'
@@ -34,9 +27,9 @@ subset_curatedTBData <- function(theObject, annotationColName,
     check_type <- methods::is(theObject, "MultiAssayExperiment") ||
         methods::is(theObject, "SummarizedExperiment")
     if (!check_type) {
-        stop(paste("subset_curatedTBData() only support for",
-                   "SummarizedExperiment/MultiAssayExperiment object"),
-             call. = FALSE)
+        paste("subset_curatedTBData() only supports for",
+              "SummarizedExperiment/MultiAssayExperiment object") |>
+            stop(call. = FALSE)
     }
     ## Check whether annotationColName exists in the column data
     col_data <- SummarizedExperiment::colData(theObject)

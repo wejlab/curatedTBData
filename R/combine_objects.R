@@ -15,7 +15,7 @@
 #' @examples
 #' geo <-  c("GSE19435", "GSE19439")
 #' data_list <-  curatedTBData(c("GSE19435", "GSE19439"),
-#'                             dryrun = FALSE, curated.only = TRUE)
+#'                             dry.run = FALSE, curated.only = TRUE)
 #' combine_objects(data_list, experiment_name = "assay_curated")
 #' @export
 combine_objects <- function(object_list, experiment_name, update_genes = TRUE) {

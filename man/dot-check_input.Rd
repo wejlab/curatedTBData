@@ -2,7 +2,7 @@
 % Please edit documentation in R/combine_auc.R
 \name{.check_input}
 \alias{.check_input}
-\title{Function to checking the input list format}
+\title{Check the input list format}
 \usage{
 .check_input(object_list)
 }
@@ -10,6 +10,9 @@
 \item{object_list}{A \code{list} of
 \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}}
 }
+\value{
+Nothing is returned for this function.
+}
 \description{
-Function to checking the input list format
+Function to check whether input list has desired format.
 }

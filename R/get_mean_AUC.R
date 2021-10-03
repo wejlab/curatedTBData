@@ -3,8 +3,10 @@
 #' @name get_mean_auc
 #' @param df A data frame/matrix contains the interested numeric vector obtained
 #'   from \code{\link[curatedTBData]{combine_auc}}.
+#' @param column_name_variable A character string specifying the column name of
+#'   the signatures.
 #' @param column_name_value A character string specifying the column name of the
-#'   \code{data frame} for bootstrapping.
+#'   value for bootstrapping.
 #' @param method A character string specifying the method used for
 #'   computing bootstrap confidence interval.
 #'   The choices are \code{c("percentile","empirical")}.
@@ -19,7 +21,7 @@
 #' @export
 #' @examples
 #' returned_resources <- curatedTBData(c("GSE107104", "GSE19435"),
-#'                                     dryrun = FALSE, curated.only = TRUE)
+#'                                     dry.run = FALSE, curated.only = TRUE)
 #' TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
 #' re1 <- lapply(returned_resources, function(x)
 #'                    subset_curatedTBData(x, "TBStatus", c("Control","PTB")))

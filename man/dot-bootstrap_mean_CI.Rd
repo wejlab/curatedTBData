@@ -12,7 +12,7 @@
 from \code{\link[curatedTBData]{combine_auc}}.}
 
 \item{column_name_value}{A character string specifying the column name of the
-\code{data frame} for bootstrapping.}
+value for bootstrapping.}
 
 \item{method}{A character string specifying the method used for
 computing bootstrap confidence interval.

@@ -26,14 +26,6 @@ conditions want to be selected.}
 the name of the assay from the input object. The default is \code{NULL}.
 When \code{assayName} is \code{NULL}, the function selects
 the first assay along assay list.}
-
-\item{useAssay}{A character indicates the name of the assay when a
-\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
-is selected from the
-\link[MultiAssayExperiment:MultiAssayExperiment-class]{MultiAssayExperiment}
-object. The default is \code{NULL}.
-When \code{assayName} is \code{NULL}, the function selects
-the first assay along assay list.}
 }
 \value{
 A \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
@@ -44,7 +36,7 @@ The function selects desired samples from curatedTBData
 database based pre-specified conditions
 }
 \examples{
-obj <-  curatedTBData("GSE74092", dryrun = FALSE, curated.only = TRUE)
+obj <-  curatedTBData("GSE74092", dry.run = FALSE, curated.only = TRUE)
 subset_curatedTBData(obj[[1]], annotationColName = "TBStatus",
                      annotationCondition = c("Control","PTB"))
 

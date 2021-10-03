@@ -89,9 +89,8 @@ we set `dry.run = FALSE` and `curated.only = FALSE`.
 There are two experiments assay being included in the output Microarray studies. 
 The first experiment is `assay_curated`, which is a `matrix` that represents 
 normalized, curated version of the gene expression profile. 
-The second experiment is `assay_raw`, which is a `r Biocpkg("SummarziedExperiment")` 
-object that contains the raw gene expression profile and 
-information about probe features.
+The second experiment is `assay_raw`, which is a 
+`r Biocpkg("SummarziedExperiment")` object that contains the raw gene expression profile and information about probe features.
 ```{r download full data for GSE19439, warning=FALSE}
 GSE19439 <- curatedTBData("GSE19439", dry.run = FALSE, curated.only = FALSE)
 GSE19439
@@ -112,7 +111,7 @@ when `dry.run` is `FALSE`. \
 To save running time, in the following example, we set the `curated.only = TRUE` 
 and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) 
 from the Gene Expression Omnibus.
-```{r access selected curated datasets microarray, warning=FALSE, message=FALSE}
+```{r access selected curated datasets microarray, warning=FALSE}
 myGEO <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
 object_list <- curatedTBData(myGEO, dry.run = FALSE, curated.only = TRUE)
 object_list[1:2]
@@ -151,9 +150,9 @@ The function returns a `r Biocpkg("SummarizedExperiment")` object that contains
 the merged assay and associated clinical annotation. Noticed that [GSE74092](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi) is usually 
 removed from merging, because it used quantitative PCR,
 which did not have enough coverage to capture all genes. \
-There two arguments in the `combine_objects()` function. 
-The first one is `object_list`, 
-which takes a list of `r Biocpkg("MultiAssayExperiment")` objects obtained from `curatedTBData()`. Notice that the `names(object_list)` should not be `NULL` 
+There are two arguments in the `combine_objects()` function. 
+The first one is `object_list`, which takes a list of 
+`r Biocpkg("MultiAssayExperiment")` objects obtained from `curatedTBData()`. Notice that the `names(object_list)` should not be `NULL` 
 and must be unique for each object within the list,
 so that we can keep track the original study after merging. 
 The second argument is `experiment_name`, which can be a string or vector of strings representing the name of the assay from the object. 
@@ -193,12 +192,14 @@ GSE19491
 ```
 
 # Dataset subset
-The function `subset_curatedTBData()` allows the users to subset a list of `r Biocpkg("MultiAssayExperiment")` with the output contains the exact conditions
-as asked. \
+The function `subset_curatedTBData()` allows the users to subset a list of 
+`r Biocpkg("MultiAssayExperiment")` with the output contains 
+the exact conditions given by the `annotationCondition`. \
 With `subset_curatedTBData()`, users can quickly subset desired results 
-from `r Biocpkg(curatedTBData)` database without checking individual object. \
+from `Rpackage("curatedTBData")` database without checking individual object. \
 There are four arguments in this function. 
-The `theObject` represents a `r Biocpkg("MultiAssayExperiment")` or `r Biocpkg("SummarizedExperiment")` object. 
+The `theObject` represents a `r Biocpkg("MultiAssayExperiment")` or 
+`r Biocpkg("SummarizedExperiment")` object. 
 The `annotationColName` is a character that indicates the 
 column name in the metadata. The `annotationCondition` is a character or 
 vector of characters that the users intend to select.
@@ -218,7 +219,7 @@ multi_set_PTB_LTBI <- multi_set_PTB_LTBI[!sapply(multi_set_PTB_LTBI, is.null)]
 
 ## Select other outcome of interests
 The HIV status (`HIVStatus`) and diabetes status (`DiabetesStatus`) for each 
-subject were also recorded for each study in the `r Biocpkg("curatedTBData")`. \
+subject were also recorded for each study in the `Rpackage("curatedTBData")`. \
 In the following example, we select subjects with HIV positive from the input. \
 Users can also find HIV status information for each study by 
 looking at the column: `HIVStatus` from `DataSummary`. \
@@ -226,12 +227,12 @@ When the the length of the `annotationCondition` equals 1, we can subset using
 either `MultiAssayExperiment` built-in procedure or `subset_curatedTBData`.
 ```{r subset patients with HIV, results = "hide", message=FALSE, warning=FALSE}
 multi_set_HIV <- lapply(object_list, function(x)
-  subset_curatedTBData(x, annotationColName = "HIV",
+  subset_curatedTBData(x, annotationColName = "HIVStatus",
                        annotationCondition = "Negative",
                        assayName = "assay_curated"))
 # Remove NULL from the list
 multi_set_HIV <- multi_set_HIV[!vapply(multi_set_HIV, is.null, TRUE)]
-head(multi_set_HIV)
+multi_set_HIV[1:3]
 ```
 
 # Example analysis - Active TB  vs. LTBI infection using `TBSignatureProfiler`
@@ -264,7 +265,7 @@ The `combine_auc` function allows the users to compute the
 area under the curve (AUC) value, p-value, and Bootstrap Confidence Interval 
 for multiple signatures across different studies.\
 The mean AUC for each gene signature can be calculated using `get_mean_auc()`. \
-For visualization plots, the relationship between study and signature performance 
+Finally, the performance of TB signatures across different studies 
 can be displayed using Boxplot, ridge plot, and Heatmap.
 
 ### Area under the curve (AUC) and p-value results
@@ -303,7 +304,7 @@ The `signatureBoxplot()` function from `r Biocpkg("TBSignatureProfiler")`
 provide straightforward visualization of multiple signature's performance 
 on single study. \
 Based on the `signatureBoxplot()` function, the `BoxplotTBsig()` in the 
-`r Biocpkg("curatedTBData")` provides an alternative display such that 
+`Rpackage("curatedTBData")` provides an alternative display such that 
 it allows the comparison of signature's performance across different studies. 
 The arguments of this function are defined in similar way with `combine_auc()`.
 

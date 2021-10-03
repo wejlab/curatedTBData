@@ -30,7 +30,7 @@ Generate Boxplot for single gene signature scores across multiple studies
 }
 \examples{
 returned_resources <- curatedTBData(c("GSE107104", "GSE19435"),
-                                    dryrun = FALSE, curated.only = TRUE)
+                                    dry.run = FALSE, curated.only = TRUE)
 mysignatures <- list(Sweeney_OD_3 = c("DUSP3", "GBP5", "KLF2"))
 re1 <- lapply(returned_resources, function(x)
                    subset_curatedTBData(x, "TBStatus", c("Control","PTB")))

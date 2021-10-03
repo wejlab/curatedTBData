@@ -224,11 +224,12 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
     }
 }
 
-#' Function to checking the input list format
+#' Check the input list format
 #'
+#' Function to check whether input list has desired format.
 #' @param object_list A \code{list} of
 #'   \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
-#' @return NULL
+#' @return Nothing is returned for this function.
 .check_input <- function(object_list) {
     ## Check if the input is a list
     if (!is.list(object_list)) {
