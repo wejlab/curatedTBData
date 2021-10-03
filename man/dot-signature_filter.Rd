@@ -5,17 +5,17 @@
 \title{Subset signatures scores and disease status from \code{list} of
   \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment} objects}
 \usage{
-.signature_filter(object_list, gset, annotationColName)
+.signature_filter(object_list, annotationColName, signatureColNames)
 }
 \arguments{
 \item{object_list}{A \code{list} of
 \link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment}
 objects. Usually output from \code{\link[TBSignatureProfiler]{runTBsigProfiler}}.}
 
-\item{gset}{A character indicates the name of the signatures.}
-
 \item{annotationColName}{A character indicates the name of interest in the
 object's column data.}
+
+\item{signatureColNames}{A character indicates the name of the signatures.}
 }
 \value{
 A \code{list} of \code{data.frame} contains the

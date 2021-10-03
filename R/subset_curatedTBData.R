@@ -32,7 +32,7 @@ subset_curatedTBData <- function(theObject, annotationColName,
                                  annotationCondition, assayName = NULL) {
     ## Input class's class type
     check_type <- methods::is(theObject, "MultiAssayExperiment") ||
-        methods::is(theObject, "MultiAssayExperiment")
+        methods::is(theObject, "SummarizedExperiment")
     if (!check_type) {
         stop(paste("subset_curatedTBData() only support for",
                    "SummarizedExperiment/MultiAssayExperiment object"),

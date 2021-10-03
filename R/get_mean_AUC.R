@@ -3,7 +3,7 @@
 #' @name get_mean_auc
 #' @param df A data frame/matrix contains the interested numeric vector obtained
 #'   from \code{\link[curatedTBData]{combine_auc}}.
-#' @param colName A character string specifying the column name of the
+#' @param column_name_value A character string specifying the column name of the
 #'   \code{data frame} for bootstrapping.
 #' @param method A character string specifying the method used for
 #'   computing bootstrap confidence interval.
@@ -18,7 +18,7 @@
 #'   for each gene signature across multiple studies.
 #' @export
 #' @examples
-#' returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
+#' returned_resources <- curatedTBData(c("GSE107104", "GSE19435"),
 #'                                     dryrun = FALSE, curated.only = TRUE)
 #' TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
 #' re1 <- lapply(returned_resources, function(x)
@@ -32,22 +32,36 @@
 #' df <- combine_auc(re2, annotationColName = "TBStatus",
 #'                   signatureColNames = names(TBsignaturesSub),
 #'                   num.boot = 100, percent = 0.95)
-#' get_mean_auc(df, colName = "AUC", method = "percentile",
-#'              num.boot = 1000, percent = 0.95)
-get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
+#' get_mean_auc(df, column_name_variable = "Signature",
+#'              column_name_value = "AUC", method = "percentile",
+#'              num.boot = 100, percent = 0.95)
+get_mean_auc <- function(df, column_name_variable, column_name_value,
+                         method = c("percentile", "empirical"),
                          num.boot = 100, percent = 0.95) {
     ## Select signatures and associated AUC
     ## split them into list based on signature
     df_list <- df |>
-        dplyr::select("Signature", "AUC") |>
-        dplyr::group_split(.data$Signature)
+        dplyr::select(c(column_name_variable, column_name_value)) |>
+        dplyr::group_split(.data[[column_name_variable]])
     sigInfo <- df_list |>
-        vapply(function(x) as.character(x$Signature[1]), character(1))
+        vapply(function(x) as.character(unlist(x[column_name_variable])[1]),
+               character(1))
     ## Get summarized table and
     ## bootstrap 95% Confidence Interval for the mean AUC
     sigInfo <- data.frame(Signature = sigInfo)
+    if (missing(method)) {
+        method <- "empirical"
+        paste("Missing method argument.",
+              "Using the default method: empirical") |>
+            message()
+    } else {
+        method <- match.arg(method)
+    }
+    sprintf("Use %s method to compute Bootstrap Confidence Interval",
+            method) |>
+        message()
     meanAUC_list <- lapply(df_list, function(x)
-        .bootstrap_mean_CI(x, colName, method, num.boot, percent))
+        .bootstrap_mean_CI(x, column_name_value, method, num.boot, percent))
     meanAUC <- do.call(rbind, meanAUC_list)
     return(cbind(sigInfo, meanAUC))
 }
@@ -58,20 +72,12 @@ get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
 #' @return A \code{data.frame} contains mean AUC,
 #'   lower and upper bootstrap confidence interval
 #'   for single gene signature across multiple studies.
-.bootstrap_mean_CI <- function(df, colName,
-                               method = c("percentile", "empirical"),
+.bootstrap_mean_CI <- function(df, column_name_value, method,
                                num.boot, percent = 0.95) {
-    if (missing(method)) {
-        method <- "empirical"
-        paste("Missing method argument.",
-                    "Using the default method: empirical") |>
-            message()
-    }
-    method <- match.arg(method)
     lower <- (1 - percent) / 2
     upper <- 1 - lower
-    x <- unlist(df[, colName], use.names = FALSE)
-    ## Remove NA's in PLAGE method
+    x <- unlist(df[, column_name_value], use.names = FALSE)
+    ## Remove NA's (e.g. in PLAGE method)
     x <- stats::na.omit(x)
     n <- length(x)
     if (n == 1L) {
@@ -93,7 +99,7 @@ get_mean_auc <- function(df, colName, method = c("percentile", "empirical"),
     if (method == "empirical") {
         ## Compute deltastar for each bootstrap sample
         deltastar <- bsmeans - xbar
-        # Find the 0.0.25 and 0.975 quantile for deltastar
+        ## Find the 0.0.25 and 0.975 quantile for deltastar
         d <- stats::quantile(deltastar, c(lower, upper), na.rm = TRUE)
         ## Calculate the confidence interval for the mean.
         ci <- xbar - c(d[2], d[1])

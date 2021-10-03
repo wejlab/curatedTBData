@@ -106,8 +106,8 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
         env <- environment()
         wrapper <- function(...) {
             i <- get("cur", envir = env)
-            assign("cur", i + 1 , envir=env)
-            setTxtProgressBar(get("pb", envir=env), i + 1)
+            assign("cur", i + 1, envir = env)
+            setTxtProgressBar(get("pb", envir = env), i + 1)
             FUN(...)
         }
         re <- lapply(X, wrapper, ...)

@@ -44,14 +44,15 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
     }
     dat <- combine_dat[, index_name]
     if (!is.factor(dat$Study)) {
-        dat$Study <- as.factor(dat$Study)
+        dat$Study <- factor(dat$Study)
     }
     if (length(unique(dat$Study)) > 1L && clustering == TRUE) {
         ## Clustering AUC values if the number of studies is greater than 1
         ## Transform form long to wide data:
         ## First column is the study names and column names is signatures
         ## This step is necessary for clustering
-        data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"))
+        data_wide <- reshape2::dcast(dat, stats::formula("Study ~ Signature"),
+                                     value.var = "AUC")
         row.names(data_wide) <- data_wide$Study
         ## remove study name column
         dat_input <- as.matrix(data_wide[, -1])
@@ -76,7 +77,6 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
     }
     ## Get training data position index
     datta$trian <- FALSE
-    index <- NULL
     if (!is.null(GSE_sig)) {
         GSE_sig <- .expand_study(GSE_sig)
         index <- lapply(seq_len(nrow(GSE_sig)), function(i) {
@@ -87,6 +87,11 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
             indx
         }) |>
             unlist(use.names = FALSE)
+    } else {
+        paste("GSE_sig not provided.",
+              "Training data information is not available for the output") |>
+            message()
+        index <- NULL
     }
     ## Label signature type based on the input signatures
     signatureColNames <- as.character(unique(dat$Signature))
@@ -166,11 +171,11 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
     frames_list <- frames |>
         dplyr::group_split(.data$sig_typek)
     names(frames_list) <- vapply(frames_list, function(x) x$sig_typek[1],
-                                 character(1))
+                                 numeric(1))
     datta_list <- datta |>
         dplyr::group_split(.data$sig_typek)
     names(datta_list) <- vapply(datta_list, function(x) x$sig_typek[1],
-                                character(1))
+                                numeric(1))
     ## Get the correct index in for training study change
     ## sig_type levels from sub list based on characters in the full list
     frame_facet1 <- lapply(names(frames_list), function(i) {
@@ -194,6 +199,14 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
 .expand_study <- function(GSE_sig) {
     n <- nrow(GSE_sig)
     col_name <- colnames(GSE_sig)
+    ## check for column names:TBSignature and Study
+    expect_name <- c("TBSignature", "Study")
+    index_name <- match(expect_name, colnames(GSE_sig))
+    if (any(is.na(index_name))) {
+        stop(sprintf("Column with name(s): %s is/are missing.",
+                     paste0(expect_name[is.na(index_name)], collapse = ", ")))
+    }
+    GSE_sig <- GSE_sig[, index_name]
     data_list <- lapply(seq_len(n), function(i) {
         study_vector <- strsplit(GSE_sig[, col_name[2]][i], split = "&")
         df <- data.frame(GSE_sig[, col_name[1]][i], study_vector)

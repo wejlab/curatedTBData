@@ -5,19 +5,13 @@
 \title{Compute bootstrapped confidence interval for single signature's mean AUC
   across multiple studies}
 \usage{
-.bootstrap_mean_CI(
-  df,
-  colName,
-  method = c("percentile", "empirical"),
-  num.boot,
-  percent = 0.95
-)
+.bootstrap_mean_CI(df, column_name_value, method, num.boot, percent = 0.95)
 }
 \arguments{
 \item{df}{A data frame/matrix contains the interested numeric vector obtained
 from \code{\link[curatedTBData]{combine_auc}}.}
 
-\item{colName}{A character string specifying the column name of the
+\item{column_name_value}{A character string specifying the column name of the
 \code{data frame} for bootstrapping.}
 
 \item{method}{A character string specifying the method used for

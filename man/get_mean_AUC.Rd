@@ -7,7 +7,8 @@
 \usage{
 get_mean_auc(
   df,
-  colName,
+  column_name_variable,
+  column_name_value,
   method = c("percentile", "empirical"),
   num.boot = 100,
   percent = 0.95
@@ -17,7 +18,7 @@ get_mean_auc(
 \item{df}{A data frame/matrix contains the interested numeric vector obtained
 from \code{\link[curatedTBData]{combine_auc}}.}
 
-\item{colName}{A character string specifying the column name of the
+\item{column_name_value}{A character string specifying the column name of the
 \code{data frame} for bootstrapping.}
 
 \item{method}{A character string specifying the method used for
@@ -41,7 +42,7 @@ Compute mean AUC value and bootstrapped confidence interval
   for multiple signature's mean AUC across studies
 }
 \examples{
-returned_resources <- curatedTBData(c("GSE107104", "GSE19435", "GSE19443"),
+returned_resources <- curatedTBData(c("GSE107104", "GSE19435"),
                                     dryrun = FALSE, curated.only = TRUE)
 TBsignaturesSub <- TBSignatureProfiler::TBsignatures[1:5]
 re1 <- lapply(returned_resources, function(x)
@@ -55,6 +56,7 @@ re2 <- lapply(re1, function(x)
 df <- combine_auc(re2, annotationColName = "TBStatus",
                   signatureColNames = names(TBsignaturesSub),
                   num.boot = 100, percent = 0.95)
-get_mean_auc(df, colName = "AUC", method = "percentile",
-             num.boot = 1000, percent = 0.95)
+get_mean_auc(df, column_name_variable = "Signature",
+             column_name_value = "AUC", method = "percentile",
+             num.boot = 100, percent = 0.95)
 }
