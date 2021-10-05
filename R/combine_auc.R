@@ -70,8 +70,9 @@ combine_auc <- function(SE_scored_list, annotationColName, signatureColNames,
         unique()
     ## Re-order gene signature
     ## re-level this step is to let ridge plot ordered based on median value
+    sig_levels <- unique(c(Signature_order, Sig_NA))
     aucs_result_dat$Signature <- factor(aucs_result_dat$Signature,
-                                        levels = c(Signature_order, Sig_NA))
+                                        levels = sig_levels)
     ## Label name of each data under column 'Study'
     aucs_result_dat$Study <- gsub("\\..*", "", row.names(aucs_result_dat))
     row.names(aucs_result_dat) <- NULL
