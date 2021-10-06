@@ -1,7 +1,7 @@
 Package: curatedTBData
 Type: Package
 Title: Curation of existing 49 tuberculosis transcriptomic studies
-Version: 0.99.2
+Version: 0.99.3
 Authors@R: c(
     person(given = "Xutao", family = "Wang", role = c("aut", "cre"), email = "xutaow@bu.edu"),
     person(given = c("W.", "Evan"), family = "Johnson", role = c("aut"), email = "wej@bu.edu"),
@@ -25,24 +25,15 @@ Imports:
     rlang,
     stats
 Suggests:
-    BiocParallel,
     BiocStyle,
-    devtools,
     DT,
     dplyr,
-    ggplot2,
-    ggridges,
-    gridExtra,
     HGNChelper,
     knitr,
     methods,
-    RColorBrewer,
-    reshape2,
     rmarkdown,
-    ROCit,
     SummarizedExperiment,
     sva,
-    TBSignatureProfiler,
     testthat
 biocViews: ExperimentHub, GEO, Homo_sapiens_Data
 URL: https://github.com/compbiomed/curatedTBData

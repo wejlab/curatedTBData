@@ -149,7 +149,7 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
         }
         listMap <- lapply(objlist, function(x) {
             data.frame(primary = colnames(x), colname = colnames(x),
-                             stringsAsFactors = FALSE)
+                       stringsAsFactors = FALSE)
         })
         myMultiAssay <- MultiAssayExperiment::MultiAssayExperiment(
             objlist, data_list[["column_data"]])
