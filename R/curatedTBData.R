@@ -83,7 +83,7 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
                         resources)
             resources <- resources[-idx]
         }
-        msg <- sprintf("%s from the ExperiementHub:\n%s\n",
+        msg <- sprintf("%s from the ExperimentHub:\n%s\n",
                        paste0(names_sub, collapse = ", "),
                        paste0(resources, collapse = "\n"))
         paste("Will download the following resources for", msg) |>
