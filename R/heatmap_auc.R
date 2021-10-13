@@ -170,26 +170,30 @@ heatmap_auc <- function(combine_dat, GSE_sig = NULL,
     # Split data frame into list based on different signature type
     frames_list <- frames |>
         dplyr::group_split(.data$sig_typek)
-    names(frames_list) <- vapply(frames_list, function(x) x$sig_typek[1],
-                                 numeric(1))
+    names(frames_list) <- vapply(frames_list,
+                                 function(x) as.character(x$sig_typek[1]),
+                                 character(1))
     datta_list <- datta |>
         dplyr::group_split(.data$sig_typek)
-    names(datta_list) <- vapply(datta_list, function(x) x$sig_typek[1],
-                                numeric(1))
+    names(datta_list) <- vapply(datta_list,
+                                function(x) as.character(x$sig_typek[1]),
+                                character(1))
     ## Get the correct index in for training study change
     ## sig_type levels from sub list based on characters in the full list
+    level_all <- levels(datta$Var2)
     frame_facet1 <- lapply(names(frames_list), function(i) {
         num_Var1 <- frames_list[[i]]$Var1 |>
             as.integer()
         frame_sig <- frames_list[[i]]$Var2
-        num_Var2 <- factor(frame_sig, levels = unique(frame_sig)) |>
+        datta_sig <- unique(datta_list[[i]]$Var2)
+        num_Var2 <- factor(frame_sig, 
+                           levels = level_all[which(level_all %in% datta_sig)]) |> 
             as.integer()
-        frames_list[[i]] |>
-            dplyr::mutate(Var1 = num_Var1, Var2 = num_Var2)
-    })
-    re <- do.call(rbind, frame_facet1) |>
+        data.frame(Var1 = num_Var1, Var2 = num_Var2, sig_typek = i)
+    }) |> 
+        dplyr::bind_rows() |> 
         as.data.frame()
-    return(re)
+    return(frame_facet1)
 }
 
 #' Expand study section for \code{SignatureInfoTraining}
