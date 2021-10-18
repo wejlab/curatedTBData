@@ -12,7 +12,10 @@
 
 ## Changes in version 0.99.3 (2021-10-07)
 * Remove analysis/graphical functions from the master branch
-* Update vignette output
 * Accepted by Bioconductor
+
+## Changes in version 0.99.4 (2021-10-18)
+* Update vignette output
+* Edit DESCRIPTION file
 
 
