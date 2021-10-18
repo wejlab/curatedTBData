@@ -109,15 +109,22 @@ when `dry.run` is `FALSE`. \
 To save running time, in the following example, we set the `curated.only = TRUE` 
 and selected five studies that belong to [GSE19491](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE19491) 
 from the Gene Expression Omnibus.
-```{r access selected curated datasets microarray, warning=FALSE}
+```{r access selected curated datasets microarray, warning=FALSE, results='hide'}
 myGEO <- c("GSE19435", "GSE19439", "GSE19442", "GSE19444", "GSE22098")
 object_list <- curatedTBData(myGEO, dry.run = FALSE, curated.only = TRUE)
+```
+
+```{r}
 object_list[1:2]
 ```
+
 A full version example for RNA sequencing data:
 [GSE79362](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE79362). 
-```{r ACS RNA-seq, warning=FALSE, results='hide', eval=FALSE, include=FALSE}
-GSE79362 <- curatedTBData("GSE79362", dry.run = FALSE, curated.only = TRUE)
+```{r ACS RNA-seq, warning=FALSE, results='hide'}
+GSE79362 <- curatedTBData("GSE79362", dry.run = FALSE, curated.only = FALSE)
+```
+
+```{r}
 GSE79362
 ```
 
@@ -194,7 +201,7 @@ The function `subset_curatedTBData()` allows the users to subset a list of
 `r Biocpkg("MultiAssayExperiment")` with the output contains 
 the exact conditions given by the `annotationCondition`. \
 With `subset_curatedTBData()`, users can quickly subset desired results 
-from `Rpackage("curatedTBData")` database without checking individual object. \
+from `r Biocpkg("curatedTBData")` database without checking individual object. \
 There are four arguments in this function. 
 The `theObject` represents a `r Biocpkg("MultiAssayExperiment")` or 
 `r Biocpkg("SummarizedExperiment")` object. 
@@ -206,24 +213,25 @@ vector of characters that the users intend to select.
 In the following example, we call `subset_curatedTBData()` function to 
 subset samples with active TB (`PTB`) and latent TB infection (`LTBI`) for 
 binary classification. 
-```{r subset active TB and LTBI, results = "hide", message=FALSE, warning=FALSE}
+```{r subset active TB and LTBI, message=FALSE, warning=FALSE}
 multi_set_PTB_LTBI <- lapply(object_list, function(x)
   subset_curatedTBData(x, annotationColName = "TBStatus",
                        annotationCondition = c("LTBI", "PTB"), 
                        assayName = "assay_curated"))
 # Remove NULL from the list
 multi_set_PTB_LTBI <- multi_set_PTB_LTBI[!sapply(multi_set_PTB_LTBI, is.null)]
+multi_set_PTB_LTBI[1:3]
 ```
 
 ## Select other outcome of interests
 The HIV status (`HIVStatus`) and diabetes status (`DiabetesStatus`) for each 
-subject were also recorded for each study in the `Rpackage("curatedTBData")`. \
+subject were also recorded for each study in the `r Biocpkg("curatedTBData")`. \
 In the following example, we select subjects with HIV positive from the input. \
 Users can also find HIV status information for each study by 
 looking at the column: `HIVStatus` from `DataSummary`. \
-When the the length of the `annotationCondition` equals 1, we can subset using 
+When the the length of the `annotationCondition` equals to 1, we can subset using 
 either `MultiAssayExperiment` built-in procedure or `subset_curatedTBData`.
-```{r subset patients with HIV, results = "hide", message=FALSE, warning=FALSE}
+```{r subset patients with HIV, message=FALSE, warning=FALSE}
 multi_set_HIV <- lapply(object_list, function(x)
   subset_curatedTBData(x, annotationColName = "HIVStatus",
                        annotationCondition = "Negative",
