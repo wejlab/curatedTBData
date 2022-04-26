@@ -1,7 +1,7 @@
 Package: curatedTBData
 Type: Package
 Title: Curation of existing 49 tuberculosis transcriptomic studies
-Version: 1.2.0
+Version: 1.3.0
 Authors@R: c(
     person(given = "Xutao", family = "Wang", role = c("aut", "cre"), email = "xutaow@bu.edu"),
     person(given = c("W.", "Evan"), family = "Johnson", role = c("aut"), email = "wej@bu.edu"),
