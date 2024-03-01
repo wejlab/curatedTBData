@@ -23,7 +23,7 @@ data_normalized_counts <- data_list_processed$data_normalized %>% data.frame()
 data_normalized_counts$SYMBOL <- data_list$data_normalized$Gene_name
 exprs2 <- stats::aggregate(. ~ SYMBOL, data = data_normalized_counts,
                            FUN = median, na.action = na.pass)
-row.names(exprs2) <- exprs2$SYMBOL
+row.names(exprs2) <- exprs2$SYMBOLb
 final <- as.matrix(exprs2[, -which(colnames(exprs2) == "SYMBOL")])
 saveRDS(final, paste0("data-raw/", geo, "_assay_curated.RDS"))
 

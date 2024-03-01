@@ -210,6 +210,22 @@ readRawColData <- function(gse) {
   row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
   return(characteristic_data_frame)
 }
+readRawColData2 <- function(gse) {
+  data_characteristic <- lapply(1:length(GEOquery::GSMList(gse)), function(x)
+    GEOquery::GSMList(gse)[[x]]@header$characteristics_ch1)
+  characteristic_data_frame <- lapply(data_characteristic, function(x) {
+      col_names <- sub("\\:.*", "", x)
+      content_names <- sub("(.*?): ","", x)
+      out <- data.frame(content_names) |> 
+          t() |> 
+          as.data.frame()
+      colnames(out) <- col_names
+      out
+  }) |> 
+      plyr::rbind.fill()
+  row.names(characteristic_data_frame) <- names(GEOquery::GSMList(gse))
+  return(characteristic_data_frame)
+}
 create_standard_coldata <- function(col_data) {
   standard_name_seq <- c("Age", "Gender", "Ethnicity", "TBStatus", "GeographicalRegion",
                          "BcgVaccinated", "BirthRegion", "TST", "Tissue", "HIVStatus",
@@ -253,7 +269,7 @@ map_gene_symbol <- function(data_non_pvalue, sequencePlatform) {
     OUT <- AnnotationDbi::select(hgu133plus2.db::hgu133plus2.db, PROBES, "SYMBOL")
   } else if (sequencePlatform == "GPL11532") {
 
-  }
+  } else if (sequencePlatform == "GPL16791")
   OUT[is.na(OUT)] <- NA
   # Map ProbeID to Gene Symbol
   OUT_collapse <- OUT %>%

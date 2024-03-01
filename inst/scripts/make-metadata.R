@@ -5,15 +5,15 @@ if (!require("magrittr", character.only = TRUE)) {
 }
 ####################################################
 data("DataSummary")
-TitleAll <- DataSummary$`GEO accession`[grep("GSE", DataSummary$`GEO accession`)]
+TitleAll <- DataSummary$GEOAccession[grep("GSE", DataSummary$GEOAccession)]
 # Check the 4th character
 indexGEO <- which(suppressWarnings(!is.na(as.numeric(substring(TitleAll, 4, 4)))))
 TitleGEOMicroarray <- DataSummary[indexGEO, ] %>%
   dplyr::filter(GeneralType != "Illumina RNA-seq") %>%
-  dplyr::select(`GEO accession`) %>% unlist(use.names = FALSE)
+  dplyr::select(GEOAccession) %>% unlist(use.names = FALSE)
 TitleGEORNASeq <- DataSummary[indexGEO, ] %>%
   dplyr::filter(GeneralType == "Illumina RNA-seq") %>%
-  dplyr::select(`GEO accession`) %>% unlist(use.names = FALSE)
+  dplyr::select(GEOAccession) %>% unlist(use.names = FALSE)
 ####################################################
 #' @param GSEName The name of the GEO accession.
 #' @param isGEO Boolean. Indicate whether the data is downloaded from the Gene Expression Omnibus.
@@ -47,59 +47,59 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_raw", sep = ":")
       }
-      if(length(grep("assay_curated", Title[i])) == 1){
+      if (length(grep("assay_curated", Title[i])) == 1) {
         Description[i] <- paste("Curated transcriptome data derived from GEO accession:", GSEName)
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_curated", sep = ":")
       }
-      if(length(grep("column_data", Title[i])) == 1){
+      if (length(grep("column_data", Title[i])) == 1) {
         Description[i] <- paste("Clinical information for samples derived from GEO accession:", GSEName)
         RDataClass[i] <- "DFrame"
         Tags[i] <- paste(GSEName, "column_data", sep = ":")
       }
-      if(length(grep("meta_data", Title[i]) == 1)){
+      if (length(grep("meta_data", Title[i]) == 1)) {
         Description[i] <- paste("Meta data information for samples derived from GEO accession:", GSEName)
         RDataClass[i] <- "MIAME"
         Tags[i] <- paste(GSEName, "meta_data", sep = ":")
       }
-      if(length(grep("row_data", Title[i]) == 1)){
+      if (length(grep("row_data", Title[i]) == 1)) {
         Description[i] <- paste("Probe set information for samples for derived from GEO accession:", GSEName)
         RDataClass[i] <- "DFrame"
         Tags[i] <- paste(GSEName, "row_data", sep = ":")
       }
-      if(length(grep("assay_reprocess", Title[i])) == 1){
+      if (length(grep("assay_reprocess", Title[i])) == 1) {
         Description[i] <- paste("Reprocessed RNA-seq data derived from GEO accession:", GSEName)
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_reprocess", sep = ":")
       }
     } else {
-      GSE0 <- base::gsub("GSE","", GSEName)
-      if(length(grep("assay_raw", Title[i])) == 1){
+      GSE0 <- gsub("GSE","", GSEName)
+      if (length(grep("assay_raw", Title[i])) == 1) {
         Description[i] <- paste("Raw transcriptome data derived from", GSE0, "et.al")
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_raw", sep = ":")
       }
-      if(length(grep("assay_curated", Title[i])) == 1){
+      if (length(grep("assay_curated", Title[i])) == 1) {
         Description[i] <- paste("Curated transcriptome data derived from", GSE0, "et.al")
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_curated", sep = ":")
       }
-      if(length(grep("column_data", Title[i])) == 1){
+      if (length(grep("column_data", Title[i])) == 1) {
         Description[i] <- paste("Clinical information for samples derived from", GSE0, "et.al")
         RDataClass[i] <- "DFrame"
         Tags[i] <- paste(GSEName, "column_data", sep = ":")
       }
-      if(length(grep("meta_data", Title[i]) == 1)){
+      if (length(grep("meta_data", Title[i]) == 1)) {
         Description[i] <- paste("Meta data information for samples derived from", GSE0, "et.al")
         RDataClass[i] <- "MIAME"
         Tags[i] <- paste(GSEName, "meta_data", sep = ":")
       }
-      if(length(grep("row_data", Title[i]) == 1)){
+      if (length(grep("row_data", Title[i]) == 1)) {
         Description[i] <- paste("Probe set information for samples for derived from", GSE0, "et.al")
         RDataClass[i] <- "DFrame"
         Tags[i] <- paste(GSEName, "row_data", sep = ":")
       }
-      if(length(grep("assay_reprocess", Title[i])) == 1){
+      if (length(grep("assay_reprocess", Title[i])) == 1) {
         Description[i] <- paste("Reprocessed RNA-seq data derived from", GSE0, "et.al")
         RDataClass[i] <- "matrix"
         Tags[i] <- paste(GSEName, "assay_reprocess", sep = ":")
@@ -112,7 +112,7 @@ createMetaData <- function(GSEName, isGEO = TRUE, dataType = c("RNA-seq", "Micro
   #   base::as.character()
   BiocVersion <- "3.14" # Edit based on review
   ####################################################
-  Genome <- base::as.character(NA)
+  Genome <- as.character(NA)
   ####################################################
   if (isGEO) {
     SourceType <- rep(base::as.character("tar.gz"))
@@ -174,4 +174,4 @@ metadataTornheim$DataProvider <- "The National Center for Biotechnology Informat
 metadata <- rbind(metadataMicroarray, metadataRNASeq, metadataBruno, metadataTornheim)
 utils::write.csv(metadata, "inst/extdata/metadata.csv", row.names = FALSE)
 
-ExperimentHubData::makeExperimentHubMetadata("~/Desktop/curatedTBData/")
+ExperimentHubData::makeExperimentHubMetadata("curatedTBData/")
