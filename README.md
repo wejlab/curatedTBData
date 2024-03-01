@@ -1,24 +1,24 @@
 # curatedTBData
 
-The curatedTBData package collects 49 transcriptomic studies for patients with tuberculosis (TB) and other clinical conditions.
+The curatedTBData package collects 49 transcriptomic studies, with ongoing additions, focusing on patients with tuberculosis (TB) and other clinical conditions.
 
 ## Installation
 
-curatedTBData is under development. You can install the development version via
-GitHub:
+curatedTBData is now available on Bioconductor. You can install the package via:
 
 ``` r
-install.packages("devtools")
-devtools::install_github("compbiomed/curatedTBData")
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("curatedTBData")
 ```
 
 
 ## Load Data
 
-View summarized table for all the available data
+View summarized table for all the available data:
 ``` r
 data("DataSummary", package = "curatedTBData")
-View(DataSummary$Study)
+View(DataSummary)
 ```
 
 Load studies:
