@@ -6,9 +6,9 @@ if (!require("magrittr", character.only = TRUE)) {
 dataNamesAll <- list.files("data-raw/", pattern = "*.RDS")
 dataNames <- gsub("\\.RDS", "", dataNamesAll)
 make_metadata <- function(dataName) {
-    # dataCategory <- c("assay_raw", "assay_curated", "column_data", "row_data", 
+    # dataCategory <- c("assay_raw", "assay_curated", "column_data", "row_data",
     #                   "meta_data", "assay_reprocess")
-    dataNames_seq <- strsplit(dataName, "_") |> 
+    dataNames_seq <- strsplit(dataName, "_") |>
         unlist()
     GSEName <- dataNames_seq[1]
     if (length(grep("assay_raw", dataName)) == 1) {
@@ -62,13 +62,13 @@ make_metadata <- function(dataName) {
     ####################################################
     RDataPath <- sprintf("curatedTBData/data/%s.rda", dataName)
     ####################################################
-    metadata1 <- data.frame(dataName, Description, BiocVersion, Genome, SourceType,
+    metadata1 <- data.frame(Title = dataName, Description, BiocVersion, Genome, SourceType,
                             SourceUrl, SourceVersion, Species, TaxonomyId,
                             Coordinate_1_based, DataProvider, Maintainer, RDataClass,
                             DispatchClass, RDataPath, Tags)
     return(metadata1)
 }
-metadata_v1 <- lapply(dataNames, make_metadata) |> 
+metadata_v1 <- lapply(dataNames, make_metadata) |>
     dplyr::bind_rows()
 utils::write.csv(metadata_v1, "inst/extdata/metadata_v1.csv", row.names = FALSE)
 
