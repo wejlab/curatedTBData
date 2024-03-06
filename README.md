@@ -12,7 +12,12 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install("curatedTBData")
 ```
 
+To install the development version:
 
+```r
+install.packages("devtools") 
+devtools::install_github("xutao-wang/curatedTBData")
+```
 ## Load Data
 
 View summarized table for all the available data:

@@ -1,6 +1,6 @@
 Package: curatedTBData
 Type: Package
-Title: Curation of existing 49 tuberculosis transcriptomic studies
+Title: Curation of existing tuberculosis transcriptomic studies
 Version: 0.99.5
 Authors@R: c(
     person(given = "Xutao", family = "Wang", role = c("aut", "cre"), email = "xutaow@bu.edu"),
@@ -16,7 +16,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.1.2
-Depends: R (>= 4.1.0)
+Depends: R (>= 4.3.0)
 Imports:
     AnnotationHub,
     ExperimentHub,

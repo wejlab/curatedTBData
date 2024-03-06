@@ -11,15 +11,18 @@ test_that("Resources not available", {
 })
 
 test_that("All resources from metadata exist in the ExperimentHub service", {
-  metadata_file_path <- system.file("extdata/metadata.csv",
-                                    package = "curatedTBData")
-  if (!file.exists(metadata_file_path)) {
-    metadata_file_path <- as.character("inst/extdata/metadata.csv")
+  sys_file_paths <- system.file("extdata", package = "curatedTBData")
+  metadata_file_paths <- list.files(sys_file_paths, pattern = "metadata",
+                                    full.names = TRUE)
+  if (length(metadata_file_paths) == 0) { # For development
+    metadata_file_paths <- list.files("inst/extdata", pattern = "metadata",
+                                      full.names = TRUE)
   }
   returned_resources_names <- curatedTBData("", dry.run = TRUE,
                                             curated.only = FALSE) |>
     sort()
-  metadata <- utils::read.csv(metadata_file_path)
+  metadata_tab_list <- lapply(metadata_file_paths, utils::read.csv)
+  metadata <- do.call(rbind, metadata_tab_list)
   expect_equal(sort(metadata$Title), returned_resources_names)
   # return type is character when dry.run is `TRUE`
   expect_type(returned_resources_names, "character")

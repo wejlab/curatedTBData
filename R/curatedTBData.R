@@ -34,17 +34,20 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
     eh <- ExperimentHub::ExperimentHub()
     tbData <- AnnotationHub::query(eh, "curatedTBData")
     ## List available data from metadata
-    metadata_file_path <- system.file("extdata/metadata.csv",
-                                      package = "curatedTBData") |>
+    sys_file_paths <- system.file("extdata", package = "curatedTBData") |>
         suppressWarnings()
-    if (!file.exists(metadata_file_path)) {
-        metadata_file_path <- as.character("inst/extdata/metadata.csv")
+    metadata_file_paths <- list.files(sys_file_paths, pattern = "metadata",
+                                      full.names = TRUE)
+    if (length(metadata_file_paths) == 0) { # For development
+        metadata_file_paths <- list.files("inst/extdata", pattern = "metadata",
+                                          full.names = TRUE)
     }
-    metadata_tab <- utils::read.csv(metadata_file_path)
+    metadata_tab_list <- lapply(metadata_file_paths, utils::read.csv)
+    metadata_tab <- do.call(rbind, metadata_tab_list)
     metadata_title <- metadata_tab$Title
     if (!all(sort(metadata_title) == sort(tbData$title))) {
         paste("Resources in metadata are not consistent with",
-              "resources on ExperimentHub.") |>
+              "resources on the ExperimentHub.") |>
             warning()
     }
     names_all <- unique(gsub("_.*", "", metadata_title))
@@ -88,7 +91,7 @@ curatedTBData <- function(study_name, dry.run = TRUE, curated.only = TRUE) {
                        paste0(resources, collapse = "\n"))
         paste("Will download the following resources for", msg) |>
             message()
-        # invisible: The results will not be printed if not assigned
+        # invisible: Results will not be printed if not assigned
         return(invisible(resources))
     }
     ## check whether downloading the curated version
