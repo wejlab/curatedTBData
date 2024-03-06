@@ -1,0 +1,15 @@
+citHeader("To cite curatedTBData in publications use:")
+
+citEntry(entry="article",
+         title = "Analysis of the Cross-Study Replicability of Tuberculosis Gene Signatures Using 49 Curated Transcriptomic Datasets",
+         author = personList( as.person("Xutao Wang"),
+                              as.person("Katie Harper"),
+                              as.person("Pranay Sinha"),
+                              as.person("William Evan Johnson"),
+                              as.person("Prasad Patil")),
+         year = 2023,
+         journal = "bioRxiv",
+         doi = "https://doi.org/10.1101/2023.12.01.569442",
+         textVersion = 
+         paste("Xutao Wang, Katie Harper, Pranay Sinha, William Evan Johnson, and Prasad Patil. Anal- ysis of the cross-study replicability of tuberculosis gene signatures using 49 curated transcrip- tomic datasets. bioRxiv, pages 2023–12, 2023"))
+
