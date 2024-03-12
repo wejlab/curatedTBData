@@ -59,7 +59,7 @@ The table helps users to query avialable datasets quickly.
 # Remove GeographicalRegion, Age, DiagnosisMethod, Notes, Tissue, HIVStatus for concise display
 data("DataSummary", package = "curatedTBData")
 DataSummary |>
-  dplyr::select(-c(GeographicalRegion, Age, DiagnosisMethod, Notes,
+  dplyr::select(-c(`Country/Region`, Age, DiagnosisMethod, Notes,
                    Tissue, HIVStatus)) |>
   DT::datatable()
 ```

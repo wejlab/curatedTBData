@@ -1,7 +1,7 @@
 Package: curatedTBData
 Type: Package
 Title: Curation of existing tuberculosis transcriptomic studies
-Version: 1.9.1
+Version: 1.99.1
 Authors@R: c(
     person(given = "Xutao", family = "Wang", role = c("aut", "cre"), email = "xutaow@bu.edu"),
     person(given = c("W.", "Evan"), family = "Johnson", role = c("aut"), email = "wej@bu.edu"),
@@ -15,7 +15,7 @@ Description:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.1
 Depends: R (>= 4.3.0)
 Imports:
     AnnotationHub,
